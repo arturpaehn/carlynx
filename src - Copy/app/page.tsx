@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { useUser } from '@/hooks/useUser'
+import LogoutButton from '@/components/LogoutButton'
 
 type Listing = {
   id: string
@@ -15,6 +17,7 @@ type Listing = {
 export default function Home() {
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
+  const user = useUser()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,7 +25,6 @@ export default function Home() {
         .from('listings')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(10)
 
       if (error) {
         console.error('Supabase error:', error.message)
@@ -38,7 +40,18 @@ export default function Home() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-center">Latest Cars in Texas</h1>
+      <h1 className="text-3xl font-bold mb-6">Used Cars in Texas</h1>
+
+      {user ? (
+        <p className="text-sm text-gray-600 mb-6">
+          Logged in as <span className="font-medium">{user.email}</span>{' '}
+          <LogoutButton />
+        </p>
+      ) : (
+        <a href="/login" className="text-blue-600 underline mb-6 block">
+          Login to post a listing
+        </a>
+      )}
 
       {loading ? (
         <p>Loading...</p>
