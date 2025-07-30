@@ -8,13 +8,19 @@ type Listing = {
   id: number
   title: string
   price: number
-  location: string
   year: number
   transmission: string
   fuel_type: string
   model: string | null
   image_url: string | null
+  state?: {
+    name: string
+    code: string
+    country_code: string
+  } | null
+  city?: string | null
 }
+
 
 const RESULTS_PER_PAGE = 15
 
@@ -28,6 +34,8 @@ export default function SearchResultsPage() {
   const [totalPages, setTotalPages] = useState(1)
 
   const currentSort = searchParams.get('sort_by') || ''
+  // Для фильтра по городу (без автодополнения)
+  const [cityInput, setCityInput] = useState(searchParams.get('city') || '')
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -58,17 +66,38 @@ export default function SearchResultsPage() {
 
       let query = supabase
         .from('listings')
-        .select('*', { count: 'exact' })
+        .select(`
+          id,
+          title,
+          model,
+          year,
+          price,
+          state_id,
+          city_id,
+          city_name,
+          states (id, name, code, country_code),
+          cities (id, name),
+          transmission,
+          fuel_type,
+          listing_images (image_url)
+        `, { count: 'exact' })
+        .eq('is_active', true)
         .order(sortField, { ascending: sortOrder === 'asc' })
 
       if (filters.brand) query = query.eq('title', filters.brand)
-      if (filters.model) query = query.eq('model', filters.model)
-      if (filters.location) query = query.ilike('location', `%${filters.location}%`)
-      if (filters.year) query = query.eq('year', Number(filters.year))
+      if (filters.city) query = query.ilike('city_name', `%${filters.city}%`)
+      if (filters.year_min) query = query.gte('year', Number(filters.year_min))
+      if (filters.year_max) query = query.lte('year', Number(filters.year_max))
       if (filters.transmission) query = query.eq('transmission', filters.transmission)
       if (filters.fuel_type) query = query.eq('fuel_type', filters.fuel_type)
       if (filters.price_min) query = query.gte('price', Number(filters.price_min))
       if (filters.price_max) query = query.lte('price', Number(filters.price_max))
+
+      // Фильтрация по штатам: если выбраны — только выбранные, если нет — все
+      const stateIds = searchParams.getAll('state_id').map(Number).filter(Boolean)
+      if (stateIds.length > 0) {
+        query = query.in('state_id', stateIds)
+      }
 
       const from = (page - 1) * RESULTS_PER_PAGE
       const to = from + RESULTS_PER_PAGE - 1
@@ -81,24 +110,71 @@ export default function SearchResultsPage() {
         return
       }
 
-      const listingIds = listingsData.map((l) => l.id)
-      const { data: images } = await supabase
-        .from('listing_images')
-        .select('listing_id, image_url')
-        .in('listing_id', listingIds)
+      // Форматируем данные как на главной
+      const formatted: Listing[] = Array.isArray(listingsData)
+        ? listingsData.map((item) => {
+            let stateObj: { name: string; code: string; country_code: string } | null = null;
+            if (item.states) {
+              if (Array.isArray(item.states) && item.states.length > 0 && typeof item.states[0] === 'object' && 'name' in item.states[0]) {
+                stateObj = {
+                  name: item.states[0].name,
+                  code: item.states[0].code,
+                  country_code: item.states[0].country_code,
+                };
+              } else if (!Array.isArray(item.states) && typeof item.states === 'object' && 'name' in item.states) {
+                const s = item.states as { name: string; code: string; country_code: string };
+                stateObj = {
+                  name: s.name,
+                  code: s.code,
+                  country_code: s.country_code,
+                };
+              }
+            }
+            // Логика как на главной: если есть city_name — берём его, иначе — название из cities
+            let city: string | null = null;
+            if (item.city_name && item.city_name.trim()) {
+              city = item.city_name.trim();
+            } else if (item.cities && Array.isArray(item.cities) && item.cities[0]?.name) {
+              city = item.cities[0].name;
+            } else if (item.cities && typeof item.cities === 'object' && 'name' in item.cities) {
+              city = (item.cities as { name: string }).name;
+            }
+            return {
+              id: item.id,
+              title: item.title,
+              model: item.model ?? '',
+              year: item.year ?? undefined,
+              price: item.price,
+              state: stateObj,
+              city,
+              transmission: item.transmission,
+              fuel_type: item.fuel_type,
+              image_url: Array.isArray(item.listing_images) && item.listing_images[0]?.image_url
+                ? item.listing_images[0].image_url
+                : null,
+            }
+          })
+        : []
 
-      const listingsWithImages: Listing[] = listingsData.map((l) => {
-        const image = images?.find((img) => img.listing_id === l.id)
-        return { ...l, image_url: image?.image_url || null }
-      })
-
-      setListings(listingsWithImages)
+      setListings(formatted)
       setTotalPages(Math.ceil((count || 0) / RESULTS_PER_PAGE))
       setLoading(false)
     }
 
     fetchListings()
   }, [searchParams, page])
+
+  // Обработка изменения поля city (обычный input)
+  const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCityInput(e.target.value)
+    const params = new URLSearchParams(searchParams.toString())
+    if (e.target.value) {
+      params.set('city', e.target.value)
+    } else {
+      params.delete('city')
+    }
+    router.push(`/search-results?${params.toString()}`)
+  }
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newSort = e.target.value
@@ -119,11 +195,24 @@ export default function SearchResultsPage() {
 
 
   return (
-    <div className="min-h-screen bg-[#fff2e0] pt-[224px] mt-[-224px] px-4">
+    <div className="min-h-screen bg-[#fff2e0] pt-48 mt-[-48px] px-4">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl font-bold text-center mb-6">Search Results</h1>
 
         {/* Sort selector */}
+        {/* City selector (input) */}
+        <div className="flex justify-end mb-4">
+          <label className="mr-2 text-base font-semibold text-black">City:</label>
+          <input
+            type="text"
+            value={cityInput}
+            onChange={handleCityChange}
+            className="border p-2 rounded"
+            placeholder="City"
+            autoComplete="off"
+            style={{ minWidth: 180 }}
+          />
+        </div>
         <div className="flex justify-end mb-4">
           <label className="mr-2 text-base font-semibold text-black">Sort by:</label>
           <select
@@ -167,10 +256,15 @@ export default function SearchResultsPage() {
 
                 <div>
                   <h2 className="text-lg font-semibold">{listing.title}</h2>
-                  <p>Model: {listing.model || 'N/A'}</p>
+                  <p>City: {listing.city || 'N/A'}</p>
                   <p>Price: ${listing.price}</p>
                   <p>Year: {listing.year}</p>
-                  <p>City: {listing.location}</p>
+                  {(listing.state || listing.city) && (
+                    <p className="text-xs sm:text-sm font-bold text-gray-600">
+                      {listing.state ? `${listing.state.name} (${listing.state.country_code === 'US' ? 'USA' : listing.state.country_code === 'MX' ? 'Mexico' : listing.state.country_code})` : ''}
+                      {listing.city ? `, ${listing.city}` : ''}
+                    </p>
+                  )}
                   <p>Transmission: {listing.transmission}</p>
                   <p>Fuel: {listing.fuel_type}</p>
                 </div>

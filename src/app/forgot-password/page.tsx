@@ -29,14 +29,14 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#fff2e0] pt-[224px] mt-[-224px] flex items-center justify-center">
-      <div className="max-w-md w-full bg-white p-6 rounded shadow text-center">
-        <h1 className="text-2xl font-bold mb-4 text-gray-800">Forgot Password</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <main className="min-h-screen bg-[#fff2e0] pt-40 mt-[-40px] flex items-center justify-center px-2 sm:px-0">
+      <div className="max-w-md w-full bg-white p-3 sm:p-6 rounded shadow text-center">
+        <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-gray-800">Forgot Password</h1>
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <input
             type="email"
             placeholder="Your email"
-            className="w-full border px-3 py-2 rounded"
+            className="w-full border px-2 sm:px-3 py-2 rounded text-xs sm:text-base"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -48,8 +48,8 @@ export default function ForgotPasswordPage() {
           >
             {loading ? 'Sending...' : 'Send Reset Link'}
           </button>
-          {error && <p className="text-red-600 text-sm">{error}</p>}
-          {message && <p className="text-green-600 text-sm">{message}</p>}
+          {error && <p className="text-red-600 text-xs sm:text-sm">{error}</p>}
+          {message && <p className="text-green-600 text-xs sm:text-sm">{message}</p>}
         </form>
       </div>
     </main>

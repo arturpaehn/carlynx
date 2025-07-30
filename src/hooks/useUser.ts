@@ -1,23 +1,65 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
+interface UserProfile {
+  user_id: string;
+  email: string;
+  is_blocked: boolean;
+}
 import { supabase } from '@/lib/supabaseClient'
-import { Session } from '@supabase/supabase-js'
+import { User as SupabaseUser } from '@supabase/supabase-js'
 
 export function useUser() {
-  const [session, setSession] = useState<Session | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [blocked, setBlocked] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const getSession = async () => {
+    const getSessionAndProfile = async () => {
+      setLoading(true)
       const { data } = await supabase.auth.getSession()
-      setSession(data.session)
+      const user = data.session?.user as SupabaseUser | undefined
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('user_id, email, is_blocked')
+          .eq('user_id', user.id)
+          .single()
+        setProfile(profileData)
+        if (profileData?.is_blocked) {
+          setBlocked(true)
+        } else {
+          setBlocked(false)
+        }
+      } else {
+        setProfile(null)
+        setBlocked(false)
+      }
+      setLoading(false)
     }
 
-    getSession()
+    getSessionAndProfile()
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session)
+      async (_event, authSession) => {
+        const user = authSession?.user as SupabaseUser | undefined
+        if (user) {
+          const { data: profileData } = await supabase
+            .from('user_profiles')
+            .select('user_id, email, is_blocked')
+            .eq('user_id', user.id)
+            .single()
+          setProfile(profileData)
+          if (profileData?.is_blocked) {
+            setBlocked(true)
+          } else {
+            setBlocked(false)
+          }
+        } else {
+          setProfile(null)
+          setBlocked(false)
+        }
       }
     )
 
@@ -26,5 +68,7 @@ export function useUser() {
     }
   }, [])
 
-  return session?.user || null
+  if (loading) return { loading: true }
+  if (blocked) return { blocked: true }
+  return profile ? { ...profile, blocked: false } : null
 }

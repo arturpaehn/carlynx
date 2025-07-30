@@ -12,47 +12,72 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [profileEmail, setProfileEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    const fetchSession = async () => {
-      const { data, error } = await supabase.auth.getSession()
+    const fetchProfile = async () => {
+      const { data: sessionData, error } = await supabase.auth.getSession()
 
-      if (error || !data.session?.user) {
+      if (error || !sessionData.session?.user) {
         router.push('/login')
         return
       }
 
-      const currentUser = data.session.user
+      const currentUser = sessionData.session.user
       setUser(currentUser)
-      setName(currentUser.user_metadata?.name || '')
-      setPhone(currentUser.user_metadata?.phone || '')
+
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('name, phone, email')
+        .eq('user_id', currentUser.id)
+        .single()
+
+      if (profileData) {
+        setName(profileData.name ?? '')
+        setPhone(profileData.phone ?? '')
+        setProfileEmail(profileData.email ?? currentUser.email ?? '')
+      } else {
+        // Если профиль не найден, но пользователь есть — заполняем email
+        setProfileEmail(currentUser.email ?? '')
+      }
+
       setLoading(false)
     }
 
-    fetchSession()
+    fetchProfile()
   }, [router, supabase])
 
   const handleSave = async () => {
     setSaving(true)
     setMessage('')
 
-    const { error: metaError } = await supabase.auth.updateUser({
-      data: {
+    if (!user) {
+      setMessage('User not found.')
+      setSaving(false)
+      return
+    }
+
+    // ✅ Обновляем user_profiles
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .update({
         name: name.trim(),
         phone: phone.trim(),
-      },
-    })
+        email: profileEmail.trim(),
+      })
+      .eq('user_id', user.id)
 
-    if (metaError) {
+    if (profileError) {
       setMessage('Error updating profile.')
       setSaving(false)
       return
     }
 
+    // ✅ Обновляем пароль, если указан
     if (password.trim()) {
       const { error: passError } = await supabase.auth.updateUser({
         password: password.trim(),
@@ -72,60 +97,60 @@ export default function ProfilePage() {
   if (loading) return <p className="text-center py-10">Loading profile...</p>
 
   return (
-    <main className="bg-[#fff6ed] min-h-screen px-4 py-10">
-      <div className="max-w-xl mx-auto p-6 bg-white rounded shadow">
-        <h1 className="text-2xl font-bold mb-4">Your Profile</h1>
+    <main className="bg-[#fff6ed] min-h-screen px-2 sm:px-4 pt-40 mt-[-40px]">
+      <div className="max-w-xl mx-auto p-3 sm:p-6 bg-white rounded shadow">
+        <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Your Profile</h1>
 
         <label className="block mb-2">
-          <span className="text-sm font-medium">Email</span>
+          <span className="text-xs sm:text-sm font-medium">Email</span>
           <input
             type="email"
-            value={user?.email || ''}
-            disabled
-            className="w-full p-2 border rounded bg-gray-100"
+            value={profileEmail}
+            onChange={e => setProfileEmail(e.target.value)}
+            className="w-full p-2 border rounded text-xs sm:text-base"
           />
         </label>
 
-        <label className="block mb-2 mt-4">
-          <span className="text-sm font-medium">Name</span>
+        <label className="block mb-2 mt-3 sm:mt-4">
+          <span className="text-xs sm:text-sm font-medium">Name</span>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded text-xs sm:text-base"
           />
         </label>
 
-        <label className="block mb-2 mt-4">
-          <span className="text-sm font-medium">Phone</span>
+        <label className="block mb-2 mt-3 sm:mt-4">
+          <span className="text-xs sm:text-sm font-medium">Phone</span>
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded text-xs sm:text-base"
           />
         </label>
 
-        <label className="block mb-2 mt-4">
-          <span className="text-sm font-medium">New Password (optional)</span>
+        <label className="block mb-2 mt-3 sm:mt-4">
+          <span className="text-xs sm:text-sm font-medium">New Password (optional)</span>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded text-xs sm:text-base"
           />
         </label>
 
         <button
           onClick={handleSave}
           disabled={saving}
-          className="mt-6 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
+          className="mt-4 sm:mt-6 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 w-full sm:w-auto"
         >
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
 
         {message && (
-          <p className="mt-4 text-sm text-green-600">{message}</p>
+          <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-green-600">{message}</p>
         )}
       </div>
     </main>

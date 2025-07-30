@@ -32,13 +32,13 @@ export default function UpdatePasswordPage() {
   }
 
   return (
-    <main className="max-w-md mx-auto py-10 px-4 text-center">
-      <h1 className="text-2xl font-bold mb-4">Set New Password</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <main className="max-w-md mx-auto pt-40 mt-[-40px] px-2 sm:px-4 text-center min-h-screen flex flex-col justify-center">
+      <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Set New Password</h1>
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         <input
           type="password"
           placeholder="New password"
-          className="w-full border px-3 py-2 rounded"
+          className="w-full border px-2 sm:px-3 py-2 rounded text-xs sm:text-base"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -50,8 +50,8 @@ export default function UpdatePasswordPage() {
         >
           {loading ? 'Updating...' : 'Update Password'}
         </button>
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-        {success && <p className="text-green-600 text-sm">Password updated!</p>}
+        {error && <p className="text-red-600 text-xs sm:text-sm">{error}</p>}
+        {success && <p className="text-green-600 text-xs sm:text-sm">Password updated!</p>}
       </form>
     </main>
   )
