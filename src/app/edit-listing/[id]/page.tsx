@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabaseClient'
 import type { User } from '@supabase/supabase-js'
 
 export default function EditListingPage() {
-  const { id } = useParams()
+  const params = useParams();
+  const id = params && typeof params === 'object' && 'id' in params ? String((params as Record<string, string | string[]>).id) : '';
   const router = useRouter()
 
   const [loading, setLoading] = useState(true)

@@ -36,10 +36,10 @@ type UserInfo = {
 }
 
 export default function ListingDetailPage() {
-  const params = useParams()
-  const id = params.id as string
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const params = useParams();
+  const id = params && typeof params === 'object' && 'id' in params ? String((params as Record<string, string | string[]>).id) : '';
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [listing, setListing] = useState<Listing | null>(null)
   const [images, setImages] = useState<ListingImage[]>([])
@@ -48,9 +48,9 @@ export default function ListingDetailPage() {
   const [error, setError] = useState('')
   const [ownerInfo, setOwnerInfo] = useState<UserInfo | null>(null)
 
-  const cameFromSearch = searchParams.get('from') === 'search';
-  const cameFromMy = searchParams.get('from') === 'my';
-  const queryParams = new URLSearchParams(searchParams.toString());
+  const cameFromSearch = searchParams?.get('from') === 'search';
+  const cameFromMy = searchParams?.get('from') === 'my';
+  const queryParams = new URLSearchParams(searchParams ? searchParams.toString() : '');
   queryParams.delete('from');
   const backSearchUrl = `/search-results${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 

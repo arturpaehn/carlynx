@@ -1,134 +1,126 @@
+
 "use client";
+type Listing = { id: string; is_active: boolean; created_at: string };
+type UserProfile = { user_id: string; is_blocked: boolean };
 
+
+import Link from "next/link";
 import { useEffect, useState } from "react";
-
-interface User {
-  user_id: string;
-  email: string;
-  listings_count: number;
-  dealer_attempts_count: number;
-  is_blocked: boolean;
-}
 import { supabase } from "@/lib/supabaseClient";
 
+// Helper for month labels
+function getMonthLabels(num: number) {
+  const now = new Date();
+  const arr = [];
+  for (let i = num - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    arr.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
+  }
+  return arr;
+}
+
+
 export default function AdminPage() {
-  const [tab, setTab] = useState<'users' | 'listings'>('users');
-  const [users, setUsers] = useState<User[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]); // для хранения всех пользователей
-  const [filter, setFilter] = useState({ email: "", dealerAttempts: "" });
-  const [loading, setLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [rawData, setRawData] = useState<unknown>(null); // для отладки
-  const [sort, setSort] = useState<{ field: string; direction: 'asc' | 'desc' }>({ field: '', direction: 'asc' });
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stats, setStats] = useState<null | {
+    total: number;
+    active: number;
+    inactive: number;
+    last30: number;
+    today: number;
+  }>(null);
+  const [userStats, setUserStats] = useState<null | {
+    total: number;
+    blocked: number;
+    notBlocked: number;
+  }>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [userStatsLoading, setUserStatsLoading] = useState(true);
+  const [monthly, setMonthly] = useState<number[] | null>(null);
+  const [monthlyLoading, setMonthlyLoading] = useState(true);
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    async function checkAdmin() {
+      setLoading(true);
       const { data } = await supabase.auth.getUser();
-      const email = data?.user?.email || "";
-      // Укажите здесь email(ы) админов
-      const adminEmails = ["admin@carlynx.us"];
-      if (adminEmails.includes(email)) {
-        setIsAdmin(true);
-        fetchUsers();
-      } else {
-        setIsAdmin(false);
-      }
-    };
+      const email = data?.user?.email;
+      setIsAdmin(email === "admin@carlynx.us");
+      setLoading(false);
+    }
     checkAdmin();
   }, []);
 
-  async function fetchUsers() {
-    setLoading(true);
-    setFetchError(null);
-    setRawData(null);
-    const { data, error } = await supabase.rpc("admin_get_users");
-    setRawData(data);
-    if (error) {
-      setFetchError(error.message || JSON.stringify(error));
-      setAllUsers([]);
-      setUsers([]);
-    } else if (data) {
-      setAllUsers(data);
-      setUsers(data);
-    } else {
-      setFetchError("No data returned from admin_get_users");
-      setAllUsers([]);
-      setUsers([]);
-    }
-    setLoading(false);
-  }
-
-  function applyFilters() {
-    let filtered = allUsers;
-    if (filter.email.trim()) {
-      filtered = filtered.filter(u => u.email.toLowerCase().includes(filter.email.trim().toLowerCase()));
-    }
-    if (filter.dealerAttempts.trim()) {
-      const attempts = parseInt(filter.dealerAttempts, 10);
-      if (!isNaN(attempts)) {
-        filtered = filtered.filter(u => u.dealer_attempts_count === attempts);
-      }
-    }
-    setUsers(applySort(filtered));
-  }
-
-  function applySort(list: User[]): User[] {
-    if (!sort.field) return list;
-    const sorted = [...list].sort((a, b) => {
-      let aValue: number, bValue: number;
-      switch (sort.field) {
-        case 'status':
-          aValue = a.is_blocked ? 1 : 0;
-          bValue = b.is_blocked ? 1 : 0;
-          break;
-        case 'listings':
-          aValue = a.listings_count;
-          bValue = b.listings_count;
-          break;
-        case 'dealer_attempts':
-          aValue = a.dealer_attempts_count;
-          bValue = b.dealer_attempts_count;
-          break;
-        default:
-          return 0;
-      }
-      if (aValue < bValue) return sort.direction === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sort.direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    return sorted;
-  }
-
-  function handleSort(field: string) {
-    setSort(prev => {
-      if (prev.field === field) {
-        // Меняем направление
-        return { field, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
-      }
-      return { field, direction: 'asc' };
-    });
-  }
-
   useEffect(() => {
-    setUsers(applySort(users));
-    // eslint-disable-next-line
-  }, [sort]);
+    async function fetchStats() {
+      setStatsLoading(true);
+      setMonthlyLoading(true);
+      setUserStatsLoading(true);
+      // 1. Total, active, inactive, and monthly
+      const { data: all, error: err1 } = await supabase.from('listings').select('id, is_active, created_at');
+      if (!all || err1) {
+        setStats(null);
+        setMonthly(null);
+        setStatsLoading(false);
+        setMonthlyLoading(false);
+      } else {
+        const now = new Date();
+        const todayStr = now.toISOString().slice(0, 10);
+        const last30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const total = all.length;
+      const active = (all as Listing[]).filter((l) => l.is_active).length;
+      const inactive = (all as Listing[]).filter((l) => !l.is_active).length;
+      const last30count = (all as Listing[]).filter((l) => l.created_at && new Date(l.created_at) >= last30).length;
+      const todayCount = (all as Listing[]).filter((l) => l.created_at && l.created_at.slice(0, 10) === todayStr).length;
+      setStats({ total, active, inactive, last30: last30count, today: todayCount });
+        setStatsLoading(false);
 
-  const adminEmails = ["admin@carlynx.us"];
-  async function toggleBlock(user_id: string, is_blocked: boolean, email?: string) {
-    if (email && adminEmails.includes(email)) return; // нельзя блокировать админа
-    await supabase.from("user_profiles").update({ is_blocked: !is_blocked }).eq("user_id", user_id);
-    fetchUsers();
-  }
+        // 2. Monthly chart (last 6 months)
+        const months = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          months.push({
+            year: d.getFullYear(),
+            month: d.getMonth(),
+          });
+        }
+        const counts = months.map(({ year, month }) =>
+          (all as Listing[]).filter((l) => {
+            if (!l.created_at) return false;
+            const dt = new Date(l.created_at);
+            return dt.getFullYear() === year && dt.getMonth() === month;
+          }).length
+        );
+        setMonthly(counts);
+        setMonthlyLoading(false);
+      }
 
-  if (isAdmin === null) {
+      // 3. User stats
+      const { data: users, error: userErr } = await supabase.from('user_profiles').select('user_id, is_blocked');
+      if (!users || userErr) {
+        setUserStats(null);
+        setUserStatsLoading(false);
+        return;
+      }
+      const totalUsers = users.length;
+      const blocked = (users as UserProfile[]).filter((u) => u.is_blocked).length;
+      const notBlocked = (users as UserProfile[]).filter((u) => !u.is_blocked).length;
+      setUserStats({ total: totalUsers, blocked, notBlocked });
+      setUserStatsLoading(false);
+    }
+    fetchStats();
+  }, []);
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="p-8 text-center text-lg">Checking admin access...</div>
+        <div className="p-8 text-center text-lg text-gray-600 font-bold border-2 border-gray-200 bg-white rounded shadow-lg">
+          Checking access...
+        </div>
       </div>
     );
   }
+
   if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -138,133 +130,85 @@ export default function AdminPage() {
       </div>
     );
   }
+
   return (
     <div className="p-6 max-w-6xl mx-auto pt-24">
       <h1 className="text-2xl font-bold mb-6">Admin Panel</h1>
-      {/* Tabs */}
-      <div className="mb-6 flex gap-4 border-b">
-        <button
-          className={`px-4 py-2 -mb-px border-b-2 ${tab === 'users' ? 'border-blue-500 font-bold text-blue-700' : 'border-transparent text-gray-500'}`}
-          onClick={() => setTab('users')}
-        >
-          User Management
-        </button>
-        <button
-          className={`px-4 py-2 -mb-px border-b-2 ${tab === 'listings' ? 'border-blue-500 font-bold text-blue-700' : 'border-transparent text-gray-500'}`}
-          onClick={() => setTab('listings')}
-        >
-          Listings Management
-        </button>
-      </div>
-
-      {tab === 'users' && (
-        <>
-          {fetchError && (
-            <div className="mb-4 p-4 bg-red-100 text-red-700 border border-red-300 rounded">
-              <div className="font-bold">Error loading users:</div>
-              <div>{fetchError}</div>
-            </div>
+      <div className="mb-8">
+        <div className="bg-gray-50 border border-gray-200 rounded p-4 flex flex-col sm:flex-row gap-2 sm:gap-8 text-sm sm:text-base">
+          {/* Listings stats */}
+          {statsLoading ? (
+            <span>Loading analytics...</span>
+          ) : stats ? (
+            <>
+              <span><b>Total listings:</b> {stats.total}</span>
+              <span><b>Active:</b> {stats.active}</span>
+              <span><b>Inactive:</b> {stats.inactive}</span>
+              <span><b>Added last 30 days:</b> {stats.last30}</span>
+              <span><b>Added today:</b> {stats.today}</span>
+            </>
+          ) : (
+            <span className="text-red-500">Failed to load analytics</span>
           )}
-          {Array.isArray(rawData) && rawData.length === 0 && (
-            <div className="mb-4 p-4 bg-yellow-100 text-yellow-700 border border-yellow-300 rounded">
-              <div className="font-bold">Debug:</div>
-              <div>admin_get_users вернул пустой массив. Проверьте права доступа и содержимое таблиц.</div>
-            </div>
-          )}
-          {/* Фильтры */}
-          <div className="mb-4 flex flex-wrap gap-4">
-            <input
-              type="text"
-              placeholder="Email"
-              value={filter.email}
-              onChange={e => setFilter(f => ({ ...f, email: e.target.value }))}
-              className="border p-2 rounded"
-            />
-            <input
-              type="number"
-              placeholder="Dealer Attempts"
-              value={filter.dealerAttempts}
-              onChange={e => setFilter(f => ({ ...f, dealerAttempts: e.target.value }))}
-              className="border p-2 rounded"
-            />
-            <button
-              className="px-4 py-2 bg-blue-500 text-white rounded"
-              onClick={applyFilters}
-            >
-              Apply Filters
-            </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full border text-sm">
-              <thead>
-                <tr className="bg-orange-100">
-                  <th className="p-2 border">Email</th>
-                  <th className="p-2 border cursor-pointer select-none" onClick={() => handleSort('listings')}>
-                    Listings
-                    <span className="ml-1 align-middle">
-                      {sort.field === 'listings'
-                        ? (sort.direction === 'asc' ? <b>▲</b> : <b>▼</b>)
-                        : <span style={{ color: '#bbb' }}>▲▼</span>}
-                    </span>
-                  </th>
-                  <th className="p-2 border cursor-pointer select-none" onClick={() => handleSort('dealer_attempts')}>
-                    Dealer Attempts
-                    <span className="ml-1 align-middle">
-                      {sort.field === 'dealer_attempts'
-                        ? (sort.direction === 'asc' ? <b>▲</b> : <b>▼</b>)
-                        : <span style={{ color: '#bbb' }}>▲▼</span>}
-                    </span>
-                  </th>
-                  <th className="p-2 border cursor-pointer select-none" onClick={() => handleSort('status')}>
-                    Status
-                    <span className="ml-1 align-middle">
-                      {sort.field === 'status'
-                        ? (sort.direction === 'asc' ? <b>▲</b> : <b>▼</b>)
-                        : <span style={{ color: '#bbb' }}>▲▼</span>}
-                    </span>
-                  </th>
-                  <th className="p-2 border">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={7} className="text-center p-4">Loading...</td></tr>
-                ) : users.length === 0 ? (
-                  <tr><td colSpan={7} className="text-center p-4">No users found</td></tr>
-                ) : (
-                  users.map(u => (
-                    <tr key={u.user_id} className={u.is_blocked ? "bg-red-50" : ""}>
-                      <td className="border p-2">{u.email}</td>
-                      <td className="border p-2 text-center">{u.listings_count}</td>
-                      <td className="border p-2 text-center">{u.dealer_attempts_count}</td>
-                      <td className="border p-2 text-center font-bold">{u.is_blocked ? "Blocked" : "Active"}</td>
-                      <td className="border p-2 text-center">
-                        {adminEmails.includes(u.email) ? (
-                          <span className="text-gray-400 italic">Admin</span>
-                        ) : (
-                          <button
-                            className={`px-3 py-1 rounded ${u.is_blocked ? "bg-green-500" : "bg-red-500"} text-white`}
-                            onClick={() => toggleBlock(u.user_id, u.is_blocked, u.email)}
-                          >
-                            {u.is_blocked ? "Unblock" : "Block"}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-
-      {tab === 'listings' && (
-        <div className="p-8 text-center text-gray-500">
-          <div className="text-lg font-semibold mb-2">Listings Management</div>
-          <div>Здесь будет управление объявлениями (в разработке).</div>
         </div>
-      )}
+        <div className="bg-gray-50 border border-gray-200 rounded p-4 flex flex-col sm:flex-row gap-2 sm:gap-8 text-sm sm:text-base mt-4">
+          {/* Users stats */}
+          {userStatsLoading ? (
+            <span>Loading user stats...</span>
+          ) : userStats ? (
+            <>
+              <span><b>Total users:</b> {userStats.total}</span>
+              <span><b>Blocked:</b> {userStats.blocked}</span>
+              <span><b>Not blocked:</b> {userStats.notBlocked}</span>
+            </>
+          ) : (
+            <span className="text-red-500">Failed to load user stats</span>
+          )}
+        </div>
+      </div>
+      <div className="flex gap-4 mb-8">
+        <Link href="/admin/users" className="px-4 py-2 bg-blue-500 text-white rounded">Users</Link>
+        <Link href="/admin/listings" className="px-4 py-2 bg-orange-500 text-white rounded">Listings</Link>
+      </div>
+      <div className="text-gray-500">Select an admin section</div>
+
+      {/* Chart */}
+      <div className="mb-8">
+        <div className="bg-white border border-gray-200 rounded p-4 flex flex-col items-center">
+          <div className="mb-2 font-bold text-base">Listings added per month (last 6 months)</div>
+          {monthlyLoading ? (
+            <span>Loading chart...</span>
+          ) : monthly ? (
+            <svg width={320} height={120} className="block w-full max-w-[340px] h-[120px]">
+              {monthly.map((val, i) => {
+                const max = Math.max(...monthly, 1);
+                const barHeight = Math.round((val / max) * 60);
+                // Always leave at least 18px for the number above the bar
+                const barBottom = 90;
+                const barTop = barBottom - barHeight;
+                const numberY = Math.max(barTop - 8, 18); // never above 18px from top
+                return (
+                  <g key={i}>
+                    <text x={34 + i * 45} y={numberY} textAnchor="middle" fontSize="13" fill="#222" fontWeight="bold">
+                      {val}
+                    </text>
+                    <rect x={20 + i * 45} y={barTop} width={28} height={barHeight} fill="#f59e42" rx={4} />
+                    <text x={34 + i * 45} y={105} textAnchor="middle" fontSize="11" fill="#555">
+                      {getMonthLabels(6)[i]}
+                    </text>
+                  </g>
+                );
+              })}
+              {/* Y axis line */}
+              <line x1="15" y1="18" x2="15" y2="90" stroke="#bbb" strokeWidth="1" />
+              {/* X axis line */}
+              <line x1="15" y1="90" x2="295" y2="90" stroke="#bbb" strokeWidth="1" />
+            </svg>
+          ) : (
+            <span className="text-red-500">Failed to load chart</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -10,12 +10,13 @@ export default function ConfirmPage() {
   const [message, setMessage] = useState('Verifying your email...')
 
   useEffect(() => {
-    const access_token = searchParams.get('access_token')
+    const access_token = searchParams?.get('access_token') || '';
+    const refresh_token = searchParams?.get('refresh_token') || '';
     if (access_token) {
       supabase.auth
         .setSession({
           access_token,
-          refresh_token: searchParams.get('refresh_token') || '',
+          refresh_token,
         })
         .then(() => {
           setMessage('Email confirmed! Redirecting...')

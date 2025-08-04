@@ -25,26 +25,28 @@ type Listing = {
 const RESULTS_PER_PAGE = 15
 
 export default function SearchResultsPage() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const [listings, setListings] = useState<Listing[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const currentSort = searchParams.get('sort_by') || ''
+  const currentSort = searchParams?.get('sort_by') || '';
   // Для фильтра по городу (без автодополнения)
-  const [cityInput, setCityInput] = useState(searchParams.get('city') || '')
+  const [cityInput, setCityInput] = useState(searchParams?.get('city') || '');
 
   useEffect(() => {
     const fetchListings = async () => {
       setLoading(true)
       setError('')
 
-      const filters: Record<string, string> = {}
-      for (const [key, value] of searchParams.entries()) {
-        filters[key] = value
+      const filters: Record<string, string> = {};
+      if (searchParams) {
+        for (const [key, value] of searchParams.entries()) {
+          filters[key] = value;
+        }
       }
 
       let sortField = 'id'
@@ -94,9 +96,9 @@ export default function SearchResultsPage() {
       if (filters.price_max) query = query.lte('price', Number(filters.price_max))
 
       // Фильтрация по штатам: если выбраны — только выбранные, если нет — все
-      const stateIds = searchParams.getAll('state_id').map(Number).filter(Boolean)
+      const stateIds = searchParams ? searchParams.getAll('state_id').map(Number).filter(Boolean) : [];
       if (stateIds.length > 0) {
-        query = query.in('state_id', stateIds)
+        query = query.in('state_id', stateIds);
       }
 
       const from = (page - 1) * RESULTS_PER_PAGE
@@ -166,31 +168,31 @@ export default function SearchResultsPage() {
 
   // Обработка изменения поля city (обычный input)
   const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCityInput(e.target.value)
-    const params = new URLSearchParams(searchParams.toString())
+    setCityInput(e.target.value);
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
     if (e.target.value) {
-      params.set('city', e.target.value)
+      params.set('city', e.target.value);
     } else {
-      params.delete('city')
+      params.delete('city');
     }
-    router.push(`/search-results?${params.toString()}`)
-  }
+    router.push(`/search-results?${params.toString()}`);
+  };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newSort = e.target.value
-    const params = new URLSearchParams(searchParams.toString())
+    const newSort = e.target.value;
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
     if (newSort) {
-      params.set('sort_by', newSort)
+      params.set('sort_by', newSort);
     } else {
-      params.delete('sort_by')
+      params.delete('sort_by');
     }
-    router.push(`/search-results?${params.toString()}`)
-  }
+    router.push(`/search-results?${params.toString()}`);
+  };
 
   const handleCardClick = (id: number) => {
-  const params = searchParams.toString()
-  router.push(`/listing/${id}?from=search&${params}`)
-}
+    const params = searchParams ? searchParams.toString() : '';
+    router.push(`/listing/${id}?from=search&${params}`);
+  };
 
 
 
