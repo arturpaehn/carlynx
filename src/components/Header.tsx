@@ -189,7 +189,7 @@ export default function Header() {
     <header className="fixed top-0 left-0 w-full z-50">
       {/* Green info bar */}
       <div className="w-full bg-green-600 text-white text-center py-1 px-1 text-xs md:text-base font-medium shadow">
-        <span className="block">Welcome! CarLynx launched on <b>September 1, 2025</b>. Posting listings is <b>free until October 1, 2025</b> — this is a test period to help us find and fix any issues. No fees will be charged during this time. <b>All new listings after October 1, 2025 will require payment.</b> Thank you for helping us improve!</span>
+        <span className="block">Welcome! CarLynx launched on <b>August, 2025</b>. Posting listings is <b>free until September 15, 2025</b> — this is a test period to help us find and fix any issues. No fees will be charged during this time. <b>All new listings after September 15, 2025 will require payment.</b> Thank you for helping us improve!</span>
       </div>
       <div className="bg-[#ffe6cc] shadow border-b flex flex-col items-center justify-center py-3 md:py-6 space-y-2 md:space-y-4 w-full">
         <div className="relative w-full flex flex-col items-center">

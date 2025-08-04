@@ -11,6 +11,7 @@ interface UserProfile {
   email: string;
   is_blocked: boolean;
   dealer_attempts_count?: number;
+  abuse_attempts_count?: number;
 }
 
 export default function UsersPage() {
@@ -24,7 +25,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'dealer_attempts_count' | 'actions' | null>(null);
+  const [sortBy, setSortBy] = useState<'dealer_attempts_count' | 'abuse_attempts_count' | 'actions' | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
   const USERS_PER_PAGE = 25;
@@ -71,13 +72,13 @@ export default function UsersPage() {
     setError(null);
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('user_id, name, phone, email, is_blocked, dealer_attempts_count');
+      .select('user_id, name, phone, email, is_blocked, dealer_attempts_count, abuse_attempts_count');
     if (error) setError(error.message);
     else setUsers(data || []);
     setLoading(false);
   }
 
-  function handleSort(column: 'dealer_attempts_count' | 'actions') {
+  function handleSort(column: 'dealer_attempts_count' | 'abuse_attempts_count' | 'actions') {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -102,6 +103,12 @@ export default function UsersPage() {
       sorted.sort((a, b) => {
         const aVal = a.dealer_attempts_count ?? 0;
         const bVal = b.dealer_attempts_count ?? 0;
+        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+      });
+    } else if (sortBy === 'abuse_attempts_count') {
+      sorted.sort((a, b) => {
+        const aVal = a.abuse_attempts_count ?? 0;
+        const bVal = b.abuse_attempts_count ?? 0;
         return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
       });
     } else if (sortBy === 'actions') {
@@ -183,6 +190,14 @@ export default function UsersPage() {
                 <span className="inline sm:hidden">Attempts</span> {sortBy === 'dealer_attempts_count' ? (sortOrder === 'asc' ? '▲' : '▼') : <span className="text-gray-400">⇅</span>}
               </th>
               <th
+                className={`p-2 sm:p-2 border cursor-pointer select-none transition-colors duration-150 whitespace-nowrap ${sortBy === 'abuse_attempts_count' ? 'bg-orange-300 text-orange-900 font-bold shadow-inner' : 'hover:bg-orange-200'}`}
+                onClick={() => handleSort('abuse_attempts_count')}
+                title="Sort by abuse attempts"
+              >
+                <span className="hidden sm:inline">Abuse Attempts</span>
+                <span className="inline sm:hidden">Abuse</span> {sortBy === 'abuse_attempts_count' ? (sortOrder === 'asc' ? '▲' : '▼') : <span className="text-gray-400">⇅</span>}
+              </th>
+              <th
                 className={`p-2 sm:p-2 border cursor-pointer select-none transition-colors duration-150 whitespace-nowrap ${sortBy === 'actions' ? 'bg-orange-300 text-orange-900 font-bold shadow-inner' : 'hover:bg-orange-200'}`}
                 onClick={() => handleSort('actions')}
                 title="Sort by blocked status"
@@ -204,6 +219,7 @@ export default function UsersPage() {
                   <td className="border p-2 break-all max-w-[120px] sm:max-w-none">{user.email}</td>
                   <td className="border p-2 break-all max-w-[120px] sm:max-w-none">{user.user_id}</td>
                   <td className="border p-2 text-center">{user.dealer_attempts_count ?? 0}</td>
+                  <td className="border p-2 text-center">{user.abuse_attempts_count ?? 0}</td>
                   <td className="border p-2 text-center">{user.is_blocked ? 'Yes' : 'No'}</td>
                   {user.email === 'admin@carlynx.us' ? (
                     <td className="border p-2 text-center"></td>

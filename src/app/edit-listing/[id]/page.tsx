@@ -6,6 +6,54 @@ import { supabase } from '@/lib/supabaseClient'
 import type { User } from '@supabase/supabase-js'
 
 export default function EditListingPage() {
+  // Массив ключевых слов для дилеров (как в add-listing)
+  const dealerKeywords = [
+    'dealership',
+    'dealer',
+    'auto dealer',
+    'car dealership',
+    'certified dealer',
+    'pre-owned center',
+    'used car lot',
+    'showroom',
+    'inventory',
+    'fleet',
+    'trade-ins accepted',
+    'commercial use',
+    'financing available',
+    'low monthly payments',
+    'in-house financing',
+    'easy approval',
+    'buy here pay here',
+    'guaranteed approval',
+    'extended warranty',
+    'certified pre-owned',
+    'vehicle inspection report',
+    'all credit welcome',
+    'special offer',
+    'down payment',
+    'zero down',
+    'we finance',
+    'apply today',
+    'no credit check',
+    'stock',
+    'vin available',
+    'ready for test drive',
+    'contact our sales team',
+    'visit our location',
+    'call our office',
+    'schedule an appointment',
+    'open 7 days a week',
+    'ask for',
+    'multi-point inspection',
+    'financing options',
+    'service history available',
+    'dealership fees',
+    'trade-in value',
+    'fleet maintained',
+    'carfax available',
+    'insurance options'
+  ];
   const params = useParams();
   const id = params && typeof params === 'object' && 'id' in params ? String((params as Record<string, string | string[]>).id) : '';
   const router = useRouter()
@@ -196,6 +244,19 @@ export default function EditListingPage() {
 
     if (existingImages.length + newImages.length > MAX_IMAGES) {
       setMessage(`You cannot have more than ${MAX_IMAGES} images.`);
+      return;
+    }
+
+    // Проверка на дилерские слова (как в add-listing)
+    const desc = description.toLowerCase();
+    if (dealerKeywords.some(word => desc.includes(word))) {
+      // Увеличить dealer_attempts_count через RPC, если есть user
+      if (user?.id) {
+        await supabase.rpc('increment_dealer_attempts', { user_id_param: user.id });
+      }
+      setMessage(
+        '⚠️ Your listing appears to contain language commonly used by dealerships. Carlynx is dedicated exclusively to private sellers. If you are a dealer, please note that listings from dealerships are not permitted. Kindly review and revise your description to ensure it reflects a private sale.'
+      );
       return;
     }
 

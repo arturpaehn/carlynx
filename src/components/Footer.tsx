@@ -23,7 +23,7 @@ export default function Footer() {
         {/* Правая часть: контакты */}
         <div className="text-sm text-center sm:text-right">
           <p>Contact us:</p>
-          <p className="underline">contact@carlynx.com</p>
+          <p className="underline">support@carlynx.us</p>
         </div>
       </div>
     </footer>
