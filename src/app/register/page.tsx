@@ -2,10 +2,10 @@
 
 
 import { useState } from 'react'
-import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs'
+import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs'
 
 export default function RegisterPage() {
-  const supabase = createBrowserSupabaseClient()
+  const supabase = createPagesBrowserClient()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
