@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -24,7 +24,16 @@ type Listing = {
 
 const RESULTS_PER_PAGE = 15
 
+
 export default function SearchResultsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SearchResultsPageContent />
+    </Suspense>
+  );
+}
+
+function SearchResultsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
@@ -193,8 +202,6 @@ export default function SearchResultsPage() {
     const params = searchParams ? searchParams.toString() : '';
     router.push(`/listing/${id}?from=search&${params}`);
   };
-
-
 
   return (
     <div className="min-h-screen bg-[#fff2e0] pt-48 mt-[-48px] px-4">
