@@ -72,6 +72,7 @@ export default function RegisterPage() {
             name: fullName,
             phone: phone,
           },
+          emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL + '/confirm',
         },
       })
 

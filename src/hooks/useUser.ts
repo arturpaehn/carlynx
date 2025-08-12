@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface UserProfile {
   user_id: string;
@@ -12,53 +13,61 @@ import { User as SupabaseUser } from '@supabase/supabase-js'
 
 export function useUser() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [blocked, setBlocked] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
 
   useEffect(() => {
     const getSessionAndProfile = async () => {
       setLoading(true)
-      const { data } = await supabase.auth.getSession()
-      const user = data.session?.user as SupabaseUser | undefined
-      if (user) {
-        const { data: profileData } = await supabase
-          .from('user_profiles')
-          .select('user_id, email, is_blocked')
-          .eq('user_id', user.id)
-          .single()
-        setProfile(profileData)
-        if (profileData?.is_blocked) {
-          setBlocked(true)
+      setError(null)
+      try {
+        const { data, error: sessionError } = await supabase.auth.getSession()
+        if (sessionError) throw sessionError
+        const user = data.session?.user as SupabaseUser | undefined
+        if (user) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('user_id, email, is_blocked')
+            .eq('user_id', user.id)
+            .single()
+          if (profileError) throw profileError
+          setProfile(profileData)
         } else {
-          setBlocked(false)
+          setProfile(null)
         }
-      } else {
+  } catch {
         setProfile(null)
-        setBlocked(false)
+        setError('Session error. Logging out...')
+        await supabase.auth.signOut()
+        router.push('/login')
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     getSessionAndProfile()
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, authSession) => {
-        const user = authSession?.user as SupabaseUser | undefined
-        if (user) {
-          const { data: profileData } = await supabase
-            .from('user_profiles')
-            .select('user_id, email, is_blocked')
-            .eq('user_id', user.id)
-            .single()
-          setProfile(profileData)
-          if (profileData?.is_blocked) {
-            setBlocked(true)
+        try {
+          const user = authSession?.user as SupabaseUser | undefined
+          if (user) {
+            const { data: profileData, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('user_id, email, is_blocked')
+              .eq('user_id', user.id)
+              .single()
+            if (profileError) throw profileError
+            setProfile(profileData)
           } else {
-            setBlocked(false)
+            setProfile(null)
           }
-        } else {
+  } catch {
           setProfile(null)
-          setBlocked(false)
+          setError('Session error. Logging out...')
+          await supabase.auth.signOut()
+          router.push('/login')
         }
       }
     )
@@ -66,9 +75,9 @@ export function useUser() {
     return () => {
       listener.subscription.unsubscribe()
     }
-  }, [])
+  }, [router])
 
   if (loading) return { loading: true }
-  if (blocked) return { blocked: true }
-  return profile ? { ...profile, blocked: false } : null
+  if (error) return { error }
+  return profile ? profile : null
 }
