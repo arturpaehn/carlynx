@@ -32,11 +32,6 @@ export default function Home() {
   const user = useUser();
 
   useEffect(() => {
-    if (user?.blocked) {
-      setLoading(false);
-      setListings([]);
-      return;
-    }
     const fetchData = async () => {
       const { data, error } = await supabase
         .from('listings')
@@ -115,13 +110,7 @@ export default function Home() {
     fetchData()
   }, [user])
 
-  if (user?.blocked) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-[#fff2e0] pt-40 mt-[-40px]">
-        <div className="text-2xl text-red-600 font-bold">Ваш аккаунт заблокирован</div>
-      </main>
-    );
-  }
+
 
   return (
     <main className="min-h-screen bg-[#fff2e0] pt-40 mt-[-40px]">
