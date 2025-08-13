@@ -96,7 +96,11 @@ function SearchResultsPageContent() {
         .order(sortField, { ascending: sortOrder === 'asc' })
 
       if (filters.brand) query = query.eq('title', filters.brand)
-      if (filters.city) query = query.ilike('city_name', `%${filters.city}%`)
+      if (filters.city_id) {
+        query = query.eq('city_id', Number(filters.city_id));
+      } else if (filters.city) {
+        query = query.ilike('city_name', `%${filters.city}%`)
+      }
       if (filters.year_min) query = query.gte('year', Number(filters.year_min))
       if (filters.year_max) query = query.lte('year', Number(filters.year_max))
       if (filters.transmission) query = query.eq('transmission', filters.transmission)

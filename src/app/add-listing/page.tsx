@@ -157,6 +157,16 @@ export default function AddListingPage() {
       setAgreementChecked(false);
       return;
     }
+    // Определяем city_id и city_name
+    let cityIdToSave = null;
+    let cityNameToSave = cityInput || null;
+    if (cityInput && cities.length > 0) {
+      const match = cities.find(city => city.name === cityInput);
+      if (match) {
+        cityIdToSave = match.id;
+        cityNameToSave = match.name;
+      }
+    }
     // 1. Создаём объявление
     const { data: insertData, error: insertError } = await supabase.from('listings').insert([
       {
@@ -166,8 +176,8 @@ export default function AddListingPage() {
         price: Number(price),
         year: Number(year),
         state_id: stateId,
-        city_id: null,
-        city_name: cityInput || null,
+        city_id: cityIdToSave,
+        city_name: cityNameToSave,
         transmission: transmission || null,
         fuel_type: fuelType || null,
         mileage: mileage ? Number(mileage) : null,

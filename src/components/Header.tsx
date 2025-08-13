@@ -22,13 +22,37 @@ export default function Header() {
   const [model, setModel] = useState('')
   const [priceMin, setPriceMin] = useState('')
   const [priceMax, setPriceMax] = useState('')
-  // Убираем location, добавляем выбор штатов
+  // Штаты и города для поиска
   const [states, setStates] = useState<{ id: number; name: string; code: string; country_code: string }[]>([])
   const [selectedStates, setSelectedStates] = useState<number[]>([])
-  // customState больше не нужен
+  const [cities, setCities] = useState<{ id: number; name: string; state_id: number }[]>([])
+  const [cityInput, setCityInput] = useState('')
+  const [cityExact, setCityExact] = useState(false)
   const [showStatesDropdown, setShowStatesDropdown] = useState(false)
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
   const statesBtnRef = useRef<HTMLButtonElement>(null);
+  // Загружать города при выборе штата(ов)
+  useEffect(() => {
+    if (!selectedStates.length) {
+      setCities([]);
+      setCityInput('');
+      return;
+    }
+    const fetchCities = async () => {
+      // Получаем города для всех выбранных штатов
+      const { data, error } = await supabase
+        .from('cities')
+        .select('id, name, state_id')
+        .in('state_id', selectedStates);
+      if (!error && data) {
+        setCities(data);
+      } else {
+        setCities([]);
+      }
+      setCityInput('');
+    };
+    fetchCities();
+  }, [selectedStates, supabase]);
   // Проверка на админа (по email)
   const user = session?.user;
   useEffect(() => {
@@ -175,7 +199,18 @@ export default function Header() {
     if (selectedStates.length > 0) {
       selectedStates.forEach(id => params.append('state_id', String(id)))
     }
-    // customState больше не нужен
+    if (cityInput) {
+      if (cityExact) {
+        const match = cities.find(city => city.name === cityInput);
+        if (match) {
+          params.append('city_id', String(match.id));
+        } else {
+          params.append('city', cityInput);
+        }
+      } else {
+        params.append('city', cityInput);
+      }
+    }
     if (minYear) params.append('year_min', minYear)
     if (maxYear) params.append('year_max', maxYear)
     if (transmission) params.append('transmission', transmission)
@@ -375,6 +410,30 @@ export default function Header() {
                   </div>
                 )}
               </div>
+              {/* Поле город появляется только если выбран штат */}
+              {selectedStates.length > 0 && (
+                <div className="flex-1 min-w-[140px]">
+                  <input
+                    type="text"
+                    placeholder="City (optional)"
+                    value={cityInput}
+                    onChange={e => {
+                      setCityInput(e.target.value);
+                      const match = cities.find(city => city.name === e.target.value);
+                      setCityExact(!!match);
+                    }}
+                    list="city-list"
+                    className="p-2 border rounded w-full text-xs md:text-base"
+                    autoComplete="off"
+                  />
+                  <datalist id="city-list">
+                    {cities.map(city => (
+                      <option key={city.id} value={city.name} />
+                    ))}
+                  </datalist>
+                  <p className="text-xs text-gray-500 mt-1">Start typing to choose a city</p>
+                </div>
+              )}
               <select value={minYear} onChange={e => setMinYear(e.target.value)} className="p-2 border rounded min-w-[90px] text-xs md:text-base flex-1">
                 <option value="">Year from</option>
                 {years.map((y) => <option key={y} value={y}>{y}</option>)}
