@@ -9,10 +9,11 @@ export default function Footer() {
           <Image
             src="/logo2.png"
             alt="CarLynx Logo"
-            width={120} // в 3 раза больше чем 40
+            width={120}
             height={120}
             className="rounded"
             priority
+            style={{ width: 'auto', height: 'auto' }}
           />
           <div>
             <h2 className="text-2xl font-bold">CarLynx</h2>

@@ -1,3 +1,6 @@
+input, textarea, select {
+  @apply border-black placeholder-black;
+}
 @import "tailwindcss";
 
 :root {
