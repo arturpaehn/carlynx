@@ -1,4 +1,6 @@
+
 import Image from 'next/image'
+import ActiveListingsCount from './ActiveListingsCount';
 
 export default function Footer() {
   return (
@@ -18,6 +20,10 @@ export default function Footer() {
           <div>
             <h2 className="text-2xl font-bold">CarLynx</h2>
             <p className="text-sm text-gray-200">Connecting car owners across Texas.</p>
+            {/* Счётчик активных объявлений */}
+            <div className="mt-2 flex justify-start">
+              <ActiveListingsCount />
+            </div>
           </div>
         </div>
 
