@@ -1,4 +1,14 @@
 input, textarea, select {
+  border-color: #000 !important;
+  color: #000;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #000 !important;
+  opacity: 1 !important;
+}
+input, textarea, select {
   @apply border-black placeholder-black;
 }
 @import "tailwindcss";
