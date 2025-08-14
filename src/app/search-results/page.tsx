@@ -203,11 +203,6 @@ function SearchResultsPageContent() {
     router.push(`/search-results?${params.toString()}`);
   };
 
-  const handleCardClick = (id: number) => {
-    const params = searchParams ? searchParams.toString() : '';
-    router.push(`/listing/${id}?from=search&${params}`);
-  };
-
   return (
     <div className="min-h-screen bg-[#fff2e0] pt-48 mt-[-48px] px-4">
       <div className="max-w-6xl mx-auto">
@@ -250,42 +245,47 @@ function SearchResultsPageContent() {
           <p className="text-center">No listings found.</p>
         ) : (
           <div className="space-y-4">
-            {listings.map((listing) => (
-              <div
-                key={listing.id}
-                onClick={() => handleCardClick(listing.id)}
-                className="flex items-center bg-white p-4 rounded shadow gap-4 cursor-pointer hover:bg-gray-50 transition"
-              >
-                {listing.image_url ? (
-                  <Image
-                    src={listing.image_url}
-                    alt="Listing"
-                    width={128}
-                    height={96}
-                    className="w-32 h-24 object-cover rounded"
-                  />
-                ) : (
-                  <div className="w-32 h-24 bg-gray-300 rounded flex items-center justify-center text-sm text-gray-600">
-                    No Image
-                  </div>
-                )}
-
-                <div>
-                  <h2 className="text-lg font-semibold">{listing.title}</h2>
-                  <p>City: {listing.city || 'N/A'}</p>
-                  <p>Price: ${listing.price}</p>
-                  <p>Year: {listing.year}</p>
-                  {(listing.state || listing.city) && (
-                    <p className="text-xs sm:text-sm font-bold text-gray-600">
-                      {listing.state ? `${listing.state.name} (${listing.state.country_code === 'US' ? 'USA' : listing.state.country_code === 'MX' ? 'Mexico' : listing.state.country_code})` : ''}
-                      {listing.city ? `, ${listing.city}` : ''}
-                    </p>
+            {listings.map((listing) => {
+              const params = searchParams ? searchParams.toString() : '';
+              const href = `/listing/${listing.id}?from=search&${params}`;
+              return (
+                <a
+                  key={listing.id}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center bg-white p-4 rounded shadow gap-4 cursor-pointer hover:bg-gray-50 transition"
+                >
+                  {listing.image_url ? (
+                    <Image
+                      src={listing.image_url}
+                      alt="Listing"
+                      width={128}
+                      height={96}
+                      className="w-32 h-24 object-cover rounded"
+                    />
+                  ) : (
+                    <div className="w-32 h-24 bg-gray-300 rounded flex items-center justify-center text-sm text-gray-600">
+                      No Image
+                    </div>
                   )}
-                  <p>Transmission: {listing.transmission}</p>
-                  <p>Fuel: {listing.fuel_type}</p>
-                </div>
-              </div>
-            ))}
+                  <div>
+                    <h2 className="text-lg font-semibold">{listing.title}</h2>
+                    <p>City: {listing.city || 'N/A'}</p>
+                    <p>Price: ${listing.price}</p>
+                    <p>Year: {listing.year}</p>
+                    {(listing.state || listing.city) && (
+                      <p className="text-xs sm:text-sm font-bold text-gray-600">
+                        {listing.state ? `${listing.state.name} (${listing.state.country_code === 'US' ? 'USA' : listing.state.country_code === 'MX' ? 'Mexico' : listing.state.country_code})` : ''}
+                        {listing.city ? `, ${listing.city}` : ''}
+                      </p>
+                    )}
+                    <p>Transmission: {listing.transmission}</p>
+                    <p>Fuel: {listing.fuel_type}</p>
+                  </div>
+                </a>
+              );
+            })}
 
             {/* Pagination */}
             {totalPages > 1 && (
