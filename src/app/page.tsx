@@ -2,6 +2,7 @@
 
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
 import { useUser } from '@/hooks/useUser'
@@ -136,12 +137,15 @@ export default function Home() {
                 <Link href={`/listing/${item.id}`}>
                   <div className="bg-white p-2 sm:p-4 rounded shadow hover:shadow-md transition cursor-pointer h-full flex flex-col">
                     {item.image_url && (
-                      <img
+                      <Image
                         src={item.image_url}
                         alt={item.title}
+                        width={600}
+                        height={192}
                         className="w-full h-36 sm:h-48 object-cover rounded mb-2 sm:mb-3"
-                        loading="lazy"
                         style={{ minHeight: '9rem', background: '#eee' }}
+                        priority={false}
+                        placeholder="empty"
                       />
                     )}
                     <h2 className="text-base sm:text-xl font-semibold text-gray-900 line-clamp-2">

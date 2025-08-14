@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link'
+import Image from 'next/image';
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
@@ -155,7 +156,7 @@ export default function Header() {
 
     fetchBrands()
     fetchStates()
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -229,7 +230,7 @@ export default function Header() {
       <div className="bg-[#ffe6cc] shadow border-b flex flex-col items-center justify-center py-3 md:py-6 space-y-2 md:space-y-4 w-full">
         <div className="relative w-full flex flex-col items-center">
           <Link href="/">
-            <img src="/logo.png" alt="CarLynx Logo" className="h-16 w-auto md:h-32 transition-all mx-auto" />
+            <Image src="/logo.png" alt="CarLynx Logo" width={128} height={128} className="h-16 w-auto md:h-32 transition-all mx-auto" priority />
           </Link>
           {/* Language switcher removed */}
         </div>

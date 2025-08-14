@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import type { User } from '@supabase/supabase-js'
@@ -435,13 +436,13 @@ export default function EditListingPage() {
             <div className="grid grid-cols-3 gap-2 mt-2">
               {existingImages.map((img) => (
                 <div key={img.id} className="relative">
-                  <img src={img.image_url} alt="Existing" className="w-full h-24 object-cover rounded border" />
+                  <Image src={img.image_url} alt="Existing" width={200} height={96} className="w-full h-24 object-cover rounded border" />
                   <button type="button" onClick={() => removeExistingImage(img.id, img.image_url)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">×</button>
                 </div>
               ))}
               {newPreviews.map((src, idx) => (
                 <div key={idx} className="relative">
-                  <img src={src} alt={`Preview ${idx}`} className="w-full h-24 object-cover rounded border" />
+                  <Image src={src} alt={`Preview ${idx}`} width={200} height={96} className="w-full h-24 object-cover rounded border" />
                   <button type="button" onClick={() => removeNewImage(idx)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">×</button>
                 </div>
               ))}

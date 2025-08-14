@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image';
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -192,12 +193,15 @@ useEffect(() => {
       {images.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           {images.map((img, index) => (
-            <img
+            <Image
               key={index}
               src={img.image_url}
               alt={`Listing ${index}`}
+              width={400}
+              height={192}
               onClick={() => setSelectedImage(img.image_url)}
               className="w-full h-48 object-contain rounded cursor-pointer hover:opacity-80"
+              style={{ cursor: 'pointer' }}
             />
           ))}
         </div>
@@ -241,7 +245,7 @@ useEffect(() => {
           className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
         >
           <div className="relative max-w-4xl w-full">
-            <img src={selectedImage} alt="Full View" className="w-full h-auto max-h-[90vh] object-contain rounded" />
+            <Image src={selectedImage} alt="Full View" width={1200} height={800} className="w-full h-auto max-h-[90vh] object-contain rounded" />
             <button
               onClick={() => setSelectedImage(null)}
               className="absolute top-2 right-2 bg-white text-black px-3 py-1 rounded shadow"

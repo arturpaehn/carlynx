@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image';
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import type { User } from '@supabase/supabase-js'
@@ -506,9 +507,11 @@ export default function AddListingPage() {
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {imagePreviews.map((src, idx) => (
                 <div key={idx} className="relative">
-                  <img
+                  <Image
                     src={src}
                     alt={`Preview ${idx}`}
+                    width={200}
+                    height={96}
                     className="w-full h-20 sm:h-24 object-cover rounded border"
                     style={{ minHeight: '5rem', background: '#eee' }}
                   />

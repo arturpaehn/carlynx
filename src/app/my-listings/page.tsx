@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -117,9 +118,11 @@ export default function MyListingsPage() {
                   onKeyDown={(e) => { if (e.key === 'Enter') router.push(`/listing/${listing.id}?from=my`) }}
                 >
                   {listing.image_url ? (
-                    <img
+                    <Image
                       src={listing.image_url}
                       alt="Listing"
+                      width={128}
+                      height={96}
                       className="w-full sm:w-32 h-24 object-cover rounded mb-2 sm:mb-0"
                       style={{ minWidth: '6rem', background: '#eee' }}
                     />
@@ -166,9 +169,11 @@ export default function MyListingsPage() {
                   className="flex flex-col sm:flex-row items-center p-2 sm:p-4 rounded shadow gap-2 sm:gap-4 bg-gray-100 opacity-70"
                 >
                   {listing.image_url ? (
-                    <img
+                    <Image
                       src={listing.image_url}
                       alt="Listing"
+                      width={128}
+                      height={96}
                       className="w-full sm:w-32 h-24 object-cover rounded mb-2 sm:mb-0"
                       style={{ minWidth: '6rem', background: '#eee' }}
                     />

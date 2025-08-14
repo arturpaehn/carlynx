@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
+import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -177,7 +178,7 @@ function SearchResultsPageContent() {
     }
 
     fetchListings()
-  }, [searchParams, page])
+  }, [searchParams, page, currentSort])
 
   // Обработка изменения поля city (обычный input)
   const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -256,9 +257,11 @@ function SearchResultsPageContent() {
                 className="flex items-center bg-white p-4 rounded shadow gap-4 cursor-pointer hover:bg-gray-50 transition"
               >
                 {listing.image_url ? (
-                  <img
+                  <Image
                     src={listing.image_url}
                     alt="Listing"
+                    width={128}
+                    height={96}
                     className="w-32 h-24 object-cover rounded"
                   />
                 ) : (
