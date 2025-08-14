@@ -1,19 +1,39 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useUser } from '@/hooks/useUser'
 import Image from 'next/image';
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import type { User } from '@supabase/supabase-js'
 
 const fuelOptions = ['gasoline', 'diesel', 'hybrid', 'electric', 'cng', 'lpg']
 const transmissionOptions = ['manual', 'automatic']
 const currentYear = new Date().getFullYear()
 
-export default function AddListingPage() {
-  const router = useRouter()
+// --- Harmful/abusive content keywords ---
+const harmfulKeywords = [
+  // Profanity / Swearing
+  'fuck','fck','f*ck','f**k','f***','f u c k','motherfucker','motherf*cker','mf','m f','shit','sh*t','sh!t','bullshit','bs','ass','a*s','a**','asses','asshole','assh*le','a**hole','bastard','b*tch','b1tch','b!tch','biatch','bi*ch','dick','d1ck','d!ck','d*ck','dicks','dickhead','d*ckhead','piss','p!ss','p*ss','pissed','crap','damn','hell','cum','c*m','c**','jizz','wank','wanker','w*nker','wankr','slut','sl*t','whore','wh*re','hoe','h*e','bollocks','bugger','tosser','prick','twat','cunt','c*nt','cnt','rapist','perv','pervert','degenerate',
+  // Sexual / Pornographic
+  'porn','p*rn','pr0n','xxx','x-rated','x rated','nsfw','adult only','18+','18 plus','sex','s3x','sexual','hardcore','softcore','fetish','bdsm','bondage','kink','nude','naked','topless','explicit','erotic','erotica','lewd','blowjob','bj','handjob','hj','rimjob','anal','deepthroat','dp','gangbang','camgirl','cam boy','onlyfans','only fans','fansly','escort','call girl','prostitute','sex worker','hooker','incest','stepbro','stepsis','step sister','step brother','milf','gilf','teen sex','barely legal','cumshot','money shot','bukkake','facial','wet dream','sext','sexting','nsfw content',
+  // Hate / Racism / Extremism
+  'racist','racism','racial superiority','white power','white pride','supremacist','supremacy','alt-right','alt right','far-right','far right','nazi','neo-nazi','neo nazi','third reich','swastika','kkk','ku klux klan','lynch','lynching','go back to your country','islamophobia','antisemitic','anti-semitic','antiblack','anti black','segregation','ethnic cleansing','genocide','n***a','n****r','ch*nk','sp*c','k*ke','g*psy','tr@nny','f*ggot','f*g','d!ngo','p*ki','sand n***a','wetb*ck','w*g','r*tard','ret*rd','mong*loid',
+  // Violence / Threats
+  'kill','killing','killer','murder','murderer','homicide','manslaughter','suicide','self harm','self-harm','selfharm','rape','r*pe','rap3','sexual assault','assault','battery','stab','stabbing','shoot','shooting','mass shooting','open fire','bomb','bombing','explosive','ied','detonate','behead','decapitate','terror','terrorist','terrorism','jihad','martyrdom','abuse','domestic abuse','domestic violence','child abuse','animal abuse','threat','threaten','death threat','die soon','i will kill you','harass','harassment','bully','bullying','dox','doxx','doxing','doxxing',
+  // Grooming / Minors
+  'cp','child porn','child pornography','underage','minor sexual','loli','shotacon','shota','pedo','ped0','paedo','paed0','pedophile','groom','grooming',
+  // Evasions / Obfuscations
+  'f u c k','s e x','p 0 r n','pr0n','p0rn','h0e','b1tch','d1ck','c* m','c*m','n a z i','k k k','w h o r e','s l u t','r a p e','x x x'
+];
 
-  const [user, setUser] = useState<User | null>(null)
+// --- Dealer keywords (старый массив) ---
+const dealerKeywords = [
+  'dealership','dealer','auto dealer','car dealership','certified dealer','pre-owned center','used car lot','showroom','inventory','fleet','trade-ins accepted','commercial use','financing available','low monthly payments','in-house financing','easy approval','buy here pay here','guaranteed approval','extended warranty','certified pre-owned','vehicle inspection report','all credit welcome','special offer','down payment','zero down','we finance','apply today','no credit check','stock','vin available','ready for test drive','contact our sales team','visit our location','call our office','schedule an appointment','open 7 days a week','ask for','multi-point inspection','financing options','service history available','dealership fees','trade-in value','fleet maintained','carfax available','insurance options'
+];
+
+export default function AddListingPage() {
+  const userProfile = useUser();
+  const router = useRouter()
   const [brands, setBrands] = useState<{ id: number; name: string }[]>([])
   // States и stateId для выбора штата
   const [states, setStates] = useState<{ id: number; code: string; name: string; country_code: string }[]>([])
@@ -44,17 +64,7 @@ export default function AddListingPage() {
   const [showAgreement, setShowAgreement] = useState(false)
   const [agreementChecked, setAgreementChecked] = useState(false)
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data } = await supabase.auth.getUser()
-      if (!data.user) {
-        router.push('/login')
-      } else {
-        setUser(data.user)
-      }
-    }
-    checkUser()
-  }, [router])
+  // useUser уже возвращает профиль или null, отдельная проверка не нужна
 
   useEffect(() => {
     const loadBrands = async () => {
@@ -139,10 +149,9 @@ export default function AddListingPage() {
   };
 
   // Вынесенная функция для реального добавления объявления (теперь с state_id, city_id/city_name)
-  // ...existing code...
   // Основная логика добавления объявления
   const realAddListing = async () => {
-    if (!user?.id) {
+    if (!userProfile || !('user_id' in userProfile) || !userProfile.user_id) {
       setMessage('Authentication failed.');
       return;
     }
@@ -150,7 +159,7 @@ export default function AddListingPage() {
     const { data: existingListings } = await supabase
       .from('listings')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('user_id', userProfile.user_id)
       .eq('is_active', true);
     if ((existingListings?.length || 0) >= 3) {
       setMessage('You have reached the maximum number of active listings.');
@@ -171,7 +180,7 @@ export default function AddListingPage() {
     // 1. Создаём объявление
     const { data: insertData, error: insertError } = await supabase.from('listings').insert([
       {
-        user_id: user.id,
+        user_id: userProfile.user_id,
         title: title,
         model: model || null,
         price: Number(price),
@@ -223,7 +232,7 @@ export default function AddListingPage() {
         {
           listing_id: listingId,
           image_url: imageUrl,
-          user_id: user.id
+          user_id: userProfile.user_id
         }
       ]);
       if (imgInsertError) {
@@ -238,26 +247,14 @@ export default function AddListingPage() {
     router.push('/my-listings');
   };
 
-  // --- Dealer keywords (старый массив) ---
-  const dealerKeywords = [
-    'dealership','dealer','auto dealer','car dealership','certified dealer','pre-owned center','used car lot','showroom','inventory','fleet','trade-ins accepted','commercial use','financing available','low monthly payments','in-house financing','easy approval','buy here pay here','guaranteed approval','extended warranty','certified pre-owned','vehicle inspection report','all credit welcome','special offer','down payment','zero down','we finance','apply today','no credit check','stock','vin available','ready for test drive','contact our sales team','visit our location','call our office','schedule an appointment','open 7 days a week','ask for','multi-point inspection','financing options','service history available','dealership fees','trade-in value','fleet maintained','carfax available','insurance options'
-  ];
-
-  // --- Harmful/abusive content keywords ---
-  const harmfulKeywords = [
-    // Profanity / Swearing
-    'fuck','fck','f*ck','f**k','f***','f u c k','motherfucker','motherf*cker','mf','m f','shit','sh*t','sh!t','bullshit','bs','ass','a*s','a**','asses','asshole','assh*le','a**hole','bastard','b*tch','b1tch','b!tch','biatch','bi*ch','dick','d1ck','d!ck','d*ck','dicks','dickhead','d*ckhead','piss','p!ss','p*ss','pissed','crap','damn','hell','cum','c*m','c**','jizz','wank','wanker','w*nker','wankr','slut','sl*t','whore','wh*re','hoe','h*e','bollocks','bugger','tosser','prick','twat','cunt','c*nt','cnt','rapist','perv','pervert','degenerate',
-    // Sexual / Pornographic
-    'porn','p*rn','pr0n','xxx','x-rated','x rated','nsfw','adult only','18+','18 plus','sex','s3x','sexual','hardcore','softcore','fetish','bdsm','bondage','kink','nude','naked','topless','explicit','erotic','erotica','lewd','blowjob','bj','handjob','hj','rimjob','anal','deepthroat','dp','gangbang','camgirl','cam boy','onlyfans','only fans','fansly','escort','call girl','prostitute','sex worker','hooker','incest','stepbro','stepsis','step sister','step brother','milf','gilf','teen sex','barely legal','cumshot','money shot','bukkake','facial','wet dream','sext','sexting','nsfw content',
-    // Hate / Racism / Extremism
-    'racist','racism','racial superiority','white power','white pride','supremacist','supremacy','alt-right','alt right','far-right','far right','nazi','neo-nazi','neo nazi','third reich','swastika','kkk','ku klux klan','lynch','lynching','go back to your country','islamophobia','antisemitic','anti-semitic','antiblack','anti black','segregation','ethnic cleansing','genocide','n***a','n****r','ch*nk','sp*c','k*ke','g*psy','tr@nny','f*ggot','f*g','d!ngo','p*ki','sand n***a','wetb*ck','w*g','r*tard','ret*rd','mong*loid',
-    // Violence / Threats
-    'kill','killing','killer','murder','murderer','homicide','manslaughter','suicide','self harm','self-harm','selfharm','rape','r*pe','rap3','sexual assault','assault','battery','stab','stabbing','shoot','shooting','mass shooting','open fire','bomb','bombing','explosive','ied','detonate','behead','decapitate','terror','terrorist','terrorism','jihad','martyrdom','abuse','domestic abuse','domestic violence','child abuse','animal abuse','threat','threaten','death threat','die soon','i will kill you','harass','harassment','bully','bullying','dox','doxx','doxing','doxxing',
-    // Grooming / Minors
-    'cp','child porn','child pornography','underage','minor sexual','loli','shotacon','shota','pedo','ped0','paedo','paed0','pedophile','groom','grooming',
-    // Evasions / Obfuscations
-    'f u c k','s e x','p 0 r n','pr0n','p0rn','h0e','b1tch','d1ck','c* m','c*m','n a z i','k k k','w h o r e','s l u t','r a p e','x x x'
-  ];
+  // Проверка блокировки пользователя (после всех хуков)
+  if (userProfile && 'is_blocked' in userProfile && userProfile.is_blocked) {
+    return (
+      <div className="pt-48 text-center text-red-600 font-bold text-lg">
+        You are blocked due to a violation of the platform policy. Access denied.
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,16 +279,16 @@ export default function AddListingPage() {
     // --- Harmful content check ---
     const desc = description.toLowerCase();
     if (harmfulKeywords.some(word => desc.includes(word))) {
-      if (user?.id) {
-        await supabase.rpc('increment_abuse_attempts', { user_id_param: user.id });
+      if (userProfile && 'user_id' in userProfile && userProfile.user_id) {
+        await supabase.rpc('increment_abuse_attempts', { user_id_param: userProfile.user_id });
       }
       setMessage('🚫 Your listing contains words or phrases that are not allowed on Carlynx (profanity, hate, sexual, or violent content). Please remove any inappropriate language and try again. Repeated attempts may result in account restrictions.');
       return;
     }
     // --- Dealer keyword check ---
     if (dealerKeywords.some(word => desc.includes(word))) {
-      if (user?.id) {
-        await supabase.rpc('increment_dealer_attempts', { user_id_param: user.id });
+      if (userProfile && 'user_id' in userProfile && userProfile.user_id) {
+        await supabase.rpc('increment_dealer_attempts', { user_id_param: userProfile.user_id });
       }
       setMessage('⚠️ Your listing appears to contain language commonly used by dealerships. Carlynx is dedicated exclusively to private sellers. If you are a dealer, please note that listings from dealerships are not permitted. Kindly review and revise your description to ensure it reflects a private sale.');
       return;
