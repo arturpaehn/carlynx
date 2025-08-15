@@ -28,8 +28,8 @@ export default function InfoPage() {
   }, []);
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
-      <h1 className="text-2xl font-bold mb-6 text-center">Полезная информация</h1>
+  <div className="max-w-2xl mx-auto py-12 px-4 pt-40">
+      <h1 className="text-2xl font-bold mb-6 text-center">Useful Information</h1>
       {loading ? (
         <div className="text-center">Загрузка...</div>
       ) : articles.length === 0 ? (
