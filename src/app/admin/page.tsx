@@ -169,6 +169,7 @@ export default function AdminPage() {
       <div className="flex gap-4 mb-8">
         <Link href="/admin/users" className="px-4 py-2 bg-blue-500 text-white rounded">Users</Link>
         <Link href="/admin/listings" className="px-4 py-2 bg-orange-500 text-white rounded">Listings</Link>
+        <Link href="/admin/articles" className="px-4 py-2 bg-green-600 text-white rounded">Articles</Link>
       </div>
       <div className="text-gray-500">Select an admin section</div>
 

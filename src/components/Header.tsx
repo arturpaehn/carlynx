@@ -222,7 +222,7 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50">
+  <header className="fixed top-0 left-0 w-full z-50">
       {/* Green info bar */}
       <div className="w-full bg-green-600 text-white text-center py-1 px-1 text-xs md:text-base font-medium shadow">
         <span className="block">Welcome! CarLynx launched on <b>August, 2025</b>. Posting listings is <b>free until September 15, 2025</b> — this is a test period to help us find and fix any issues. No fees will be charged during this time. <b>All new listings after September 15, 2025 will require payment.</b> Thank you for helping us improve!</span>
@@ -235,6 +235,12 @@ export default function Header() {
           {/* Language switcher removed */}
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 w-full px-1 md:px-0 mt-2">
+          {/* ...existing links... */}
+          {/* Useful Info link always last */}
+          {/* Useful Info: desktop only, hidden on mobile */}
+          <Link href="/info" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm whitespace-nowrap min-w-0 max-w-[160px] text-center order-last hidden sm:inline-block">
+            Useful Info
+          </Link>
           <button
             onClick={() => setSearchOpen(!searchOpen)}
             className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded shadow text-sm"
@@ -298,6 +304,9 @@ export default function Header() {
                     <Link href="/my-listings" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
                       My Listings
                     </Link>
+                    <Link href="/info" className="px-4 py-2 hover:bg-green-100 text-green-700 font-semibold" onClick={() => setShowMenu(false)}>
+                      Useful Info
+                    </Link>
                     <button
                       onClick={() => { setShowMenu(false); handleLogout(); }}
                       className="px-4 py-2 text-left hover:bg-orange-100"
@@ -333,6 +342,9 @@ export default function Header() {
                     </Link>
                     <Link href="/register" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
                       Register
+                    </Link>
+                    <Link href="/info" className="px-4 py-2 hover:bg-green-100 text-green-700 font-semibold" onClick={() => setShowMenu(false)}>
+                      Useful Info
                     </Link>
                   </div>
                 )}
