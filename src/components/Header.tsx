@@ -9,6 +9,24 @@ const adminEmails = ["admin@carlynx.us"];
 
 export default function Header() {
   // i18n удалён
+  // Green info bar announcements
+  const announcements = [
+    'Welcome! CarLynx launched in August, 2025. Posting listings is free until September 15, 2025.',
+    'This is a test period to help us find and fix any issues. No fees will be charged during this time.',
+    'All new listings after September 15, 2025 will require payment. Thank you for helping us improve!'
+  ];
+  const [announcementIndex, setAnnouncementIndex] = useState(0);
+  const [fade, setFade] = useState(true);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setAnnouncementIndex((prev) => (prev + 1) % announcements.length);
+        setFade(true);
+      }, 400); // fade out duration
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [announcements.length]);
   const [showMenu, setShowMenu] = useState(false)
   const router = useRouter()
   const session = useSession()
@@ -222,12 +240,31 @@ export default function Header() {
   }
 
   return (
-  <header className="fixed top-0 left-0 w-full z-50">
-      {/* Green info bar */}
-      <div className="w-full bg-green-600 text-white text-center py-1 px-1 text-xs md:text-base font-medium shadow">
-        <span className="block">Welcome! CarLynx launched on <b>August, 2025</b>. Posting listings is <b>free until September 15, 2025</b> — this is a test period to help us find and fix any issues. No fees will be charged during this time. <b>All new listings after September 15, 2025 will require payment.</b> Thank you for helping us improve!</span>
+    <header className="fixed top-0 left-0 w-full z-50">
+      {/* Эффектная зелёная инфо-секция с анимацией */}
+      <div
+        className="w-full flex items-center justify-center px-2 py-2 md:py-3"
+        style={{
+          background: 'linear-gradient(90deg, #2e7d32 0%, #388e3c 100%)',
+          borderRadius: '0 0 20px 20px',
+          boxShadow: '0 6px 24px 0 rgba(46,125,50,0.18)',
+          minHeight: '3.2em',
+        }}
+      >
+  <span className="flex items-center gap-3 w-full max-w-3xl mx-auto text-white text-center text-base md:text-lg font-semibold tracking-wide select-none justify-center">
+          <svg className="w-6 h-6 md:w-7 md:h-7 flex-shrink-0 opacity-95" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="2.2" fill="#388e3c" />
+            <path stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01" />
+          </svg>
+          <span
+            className={`block transition-all duration-600 ease-in-out ${fade ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
+            style={{ transition: 'opacity 0.6s, transform 0.6s' }}
+          >
+            {announcements[announcementIndex]}
+          </span>
+        </span>
       </div>
-      <div className="bg-[#ffe6cc] shadow border-b flex flex-col items-center justify-center py-3 md:py-6 space-y-2 md:space-y-4 w-full">
+  <div className="bg-[#ffe6cc] shadow border-b flex flex-col items-center justify-center py-3 md:py-6 space-y-2 md:space-y-4 w-full">
         <div className="relative w-full flex flex-col items-center">
           <Link href="/">
             <Image src="/logo.png" alt="CarLynx Logo" width={128} height={128} className="h-16 w-auto md:h-32 transition-all mx-auto" priority />
