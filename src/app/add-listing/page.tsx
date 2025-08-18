@@ -120,7 +120,7 @@ export default function AddListingPage() {
     loadModels()
   }, [title, brands])
 
-  const MAX_IMAGES = 5;
+  const MAX_IMAGES = 4;
   const MAX_IMAGE_SIZE = 500 * 1024; // 500 KB
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -161,7 +161,8 @@ export default function AddListingPage() {
       .select('id')
       .eq('user_id', userProfile.user_id)
       .eq('is_active', true);
-    if ((existingListings?.length || 0) >= 3) {
+    // Лимит только для не-админов
+    if (userProfile.email !== 'admin@carlynx.us' && (existingListings?.length || 0) >= 3) {
       setMessage('You have reached the maximum number of active listings.');
       setShowAgreement(false);
       setAgreementChecked(false);
@@ -497,7 +498,7 @@ export default function AddListingPage() {
               onChange={handleImageChange}
               className="hidden"
             />
-            <p className="text-sm text-gray-600 mt-2">You can upload up to 5 images. Only JPG, PNG, or WEBP formats are allowed.</p>
+            <p className="text-sm text-gray-600 mt-2">You can upload up to 4 images. Only JPG, PNG, or WEBP formats are allowed.</p>
           </div>
 
           {imagePreviews.length > 0 && (

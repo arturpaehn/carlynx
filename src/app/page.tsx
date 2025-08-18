@@ -116,15 +116,25 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#fff2e0] pt-40 mt-[-40px]">
       <div className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <section className="bg-[#ffe6cc] py-4 sm:py-8 px-2 sm:px-4 text-center shadow-inner rounded mb-4 sm:mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-orange-700 mb-2">Welcome to CarLynx</h2>
-          <p className="max-w-2xl mx-auto text-gray-800 text-sm sm:text-lg leading-relaxed">
-            CarLynx is your trusted platform for buying and selling cars across Texas, neighboring US states, and Mexico.
-            Whether you&apos;re a private owner or a car enthusiast, you can easily list, find, and purchase great vehicles quickly and securely here.
+        <section className="bg-[#ffe6cc] py-8 sm:py-14 px-2 sm:px-8 text-center shadow-inner rounded-2xl mb-6 sm:mb-12 flex flex-col items-center">
+          <h1 className="text-4xl sm:text-5xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-yellow-400 to-orange-700 drop-shadow-lg tracking-tight inline-block">
+            Welcome to CarLynx
+          </h1>
+          <p className="max-w-2xl mx-auto text-gray-800 text-lg sm:text-xl font-medium leading-relaxed mb-2 sm:mb-4">
+            CarLynx is your trusted marketplace for buying and selling cars across Texas and nearby states.<br className="hidden sm:block" />
+            Whether you&apos;re a private seller or a car enthusiast, discover, list, and purchase vehicles quickly<br className="hidden sm:block" />
+            and securely — all in one place.
           </p>
         </section>
 
-        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center">Latest Cars</h1>
+        <div className="mb-2 sm:mb-4 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-orange-700 mb-1">
+            Latest Cars
+          </h2>
+          <div className="max-w-xl mx-auto text-gray-700 text-sm sm:text-base font-medium border-b-2 border-orange-200 pb-2">
+            Discover the newest listings from our community. Find your next ride today!
+          </div>
+        </div>
 
         {loading ? (
           <p>Loading...</p>
