@@ -1,5 +1,6 @@
 
-"use client";
+'use client'
+export const dynamic = 'force-dynamic';
 type Listing = { id: string; is_active: boolean; created_at: string };
 type UserProfile = { user_id: string; is_blocked: boolean };
 

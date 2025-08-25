@@ -143,9 +143,32 @@ export default function Header() {
 
   const handleLogout = async () => {
     setLoading(true)
-    await supabase.auth.signOut()
-    setLoading(false)
-    router.refresh()
+    
+    try {
+      // Очистить локальное состояние
+      setFullName(null)
+      setIsAdmin(false)
+      
+      // Выйти из Supabase
+      await supabase.auth.signOut()
+      
+      // Принудительное обновление с очисткой кеша
+      router.push('/')
+      router.refresh()
+      
+      // Дополнительная очистка (если нужно)
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+      // В случае ошибки все равно перенаправляем
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
