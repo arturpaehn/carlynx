@@ -11,9 +11,12 @@ interface Article {
   created_at: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function ArticlePage({ params }: any) {
-  const id = params.id;
+interface ArticlePageProps {
+  params: Promise<{ id: string }>
+}
+
+export default async function ArticlePage({ params }: ArticlePageProps) {
+  const { id } = await params;
   const { data, error } = await supabase
     .from('articles')
     .select('id, title, summary, content, created_at')

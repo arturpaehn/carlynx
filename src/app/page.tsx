@@ -58,7 +58,7 @@ export default function Home() {
         .limit(10)
 
       if (error) {
-        console.error('Supabase error:', error.message)
+        console.error('Failed to fetch listings:', error.code, error.hint)
         setLoading(false)
         return
       }

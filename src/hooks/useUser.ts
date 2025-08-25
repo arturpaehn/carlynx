@@ -36,7 +36,8 @@ export function useUser() {
         } else {
           setProfile(null)
         }
-  } catch {
+      } catch (error: unknown) {
+        console.error('Session fetch error:', error)
         setProfile(null)
         setError('Session error. Logging out...')
         await supabase.auth.signOut()
@@ -63,7 +64,8 @@ export function useUser() {
           } else {
             setProfile(null)
           }
-  } catch {
+        } catch (error: unknown) {
+          console.error('Auth state change error:', error)
           setProfile(null)
           setError('Session error. Logging out...')
           await supabase.auth.signOut()
