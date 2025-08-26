@@ -287,47 +287,93 @@ export default function Header() {
           {/* Language switcher removed */}
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 w-full px-1 md:px-0 mt-2">
-          {/* ...existing links... */}
           {/* Useful Info link always last */}
-          {/* Useful Info: desktop only, hidden on mobile */}
-          <Link href="/info" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm whitespace-nowrap min-w-0 max-w-[160px] text-center order-last hidden sm:inline-block">
-            Useful Info
+          <Link href="/info" className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium whitespace-nowrap min-w-0 max-w-[160px] text-center order-last hidden sm:inline-block hover:scale-105">
+            <span className="inline-flex items-center">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
+              </svg>
+              Useful Info
+            </span>
           </Link>
           <button
             onClick={() => setSearchOpen(!searchOpen)}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded shadow text-sm"
+            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105"
           >
-            Search
+            <span className="inline-flex items-center">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Search
+            </span>
           </button>
 
           {user ? (
             <>
-              <span className="text-gray-800 text-base md:text-lg font-semibold italic drop-shadow-sm">
-                Hi, {fullName}
-              </span>
+              <div className="flex items-center bg-gradient-to-r from-orange-100/80 via-yellow-50/80 to-orange-200/80 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-lg border border-orange-200/50">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center shadow-md">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-orange-600 font-medium">Welcome back</span>
+                    <span className="text-sm md:text-base font-bold bg-gradient-to-r from-orange-700 via-yellow-600 to-orange-800 bg-clip-text text-transparent leading-tight">
+                      {fullName}
+                    </span>
+                  </div>
+                </div>
+              </div>
 
               {/* Desktop buttons */}
               <div className="hidden sm:flex gap-2">
                 {isAdmin && (
-                  <Link href="/admin" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
-                    Admin
+                  <Link href="/admin" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                    <span className="inline-flex items-center">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Admin
+                    </span>
                   </Link>
                 )}
-                <Link href="/profile" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow text-sm">
-                  My Profile
+                <Link href="/profile" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                  <span className="inline-flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    My Profile
+                  </span>
                 </Link>
-                <Link href="/add-listing" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow text-sm">
-                  Add Listing
+                <Link href="/add-listing" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                  <span className="inline-flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add Listing
+                  </span>
                 </Link>
-                <Link href="/my-listings" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow text-sm">
-                  My Listings
+                <Link href="/my-listings" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                  <span className="inline-flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                    My Listings
+                  </span>
                 </Link>
                 <button
                   onClick={handleLogout}
                   disabled={loading}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow text-sm disabled:opacity-50"
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium disabled:opacity-50 hover:scale-105 disabled:hover:scale-100"
                 >
-                  {loading ? 'Logging out...' : 'Log out'}
+                  <span className="inline-flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    {loading ? 'Logging out...' : 'Log out'}
+                  </span>
                 </button>
               </div>
 
@@ -335,10 +381,15 @@ export default function Header() {
               <div className="relative sm:hidden">
                 <button
                   onClick={() => setShowMenu((v) => !v)}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded shadow text-sm"
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-3 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105"
                   aria-label="Open menu"
                 >
-                  ≡
+                  <span className="inline-flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    ≡
+                  </span>
                 </button>
                 {showMenu && (
                   <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow z-50 flex flex-col">
@@ -372,20 +423,35 @@ export default function Header() {
           ) : (
             <>
               <div className="hidden sm:flex gap-2">
-                <Link href="/login" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow text-sm">
-                  Login
+                <Link href="/login" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                  <span className="inline-flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    Login
+                  </span>
                 </Link>
-                <Link href="/register" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow text-sm">
-                  Register
+                <Link href="/register" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                  <span className="inline-flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    Register
+                  </span>
                 </Link>
               </div>
               <div className="relative sm:hidden">
                 <button
                   onClick={() => setShowMenu((v) => !v)}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded shadow text-sm"
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-3 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105"
                   aria-label="Open menu"
                 >
-                  ≡
+                  <span className="inline-flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    ≡
+                  </span>
                 </button>
                 {showMenu && (
                   <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow z-50 flex flex-col">
@@ -470,8 +536,15 @@ export default function Header() {
                     ))}
                     <button
                       onClick={() => setShowStatesDropdown(false)}
-                      className="mt-2 mb-2 mx-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-                    >Apply</button>
+                      className="mt-2 mb-2 mx-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium hover:scale-105"
+                    >
+                      <span className="inline-flex items-center">
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Apply
+                      </span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -524,8 +597,13 @@ export default function Header() {
                 <option value="lpg">Liquefied Gas</option>
               </select>
             </div>
-            <button onClick={applyFilters} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded min-w-[90px] text-xs md:text-base w-full md:w-auto">
-              Apply
+            <button onClick={applyFilters} className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 min-w-[90px] text-xs md:text-base w-full md:w-auto font-medium hover:scale-105">
+              <span className="inline-flex items-center justify-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Apply
+              </span>
             </button>
           </div>
         )}

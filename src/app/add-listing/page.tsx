@@ -252,8 +252,18 @@ export default function AddListingPage() {
   // Проверка блокировки пользователя (после всех хуков)
   if (userProfile && 'is_blocked' in userProfile && userProfile.is_blocked) {
     return (
-      <div className="pt-48 text-center text-red-600 font-bold text-lg">
-        You are blocked due to a violation of the platform policy. Access denied.
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex items-center justify-center pt-40 md:pt-56">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="mx-auto h-16 w-16 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
+            <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div className="bg-white rounded-2xl shadow-xl p-8 backdrop-blur-sm bg-opacity-95 border border-red-100">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Account Blocked</h3>
+            <p className="text-red-600 font-medium">You are blocked due to a violation of the platform policy. Access denied.</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -300,270 +310,507 @@ export default function AddListingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff2e0] pt-40 mt-[-40px]">
-      <div className="max-w-xl mx-auto p-2 sm:p-6">
-        <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-center">Add New Listing</h1>
-        {/* Модальное окно подтверждения условий */}
-        {showAgreement && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-orange-500 bg-opacity-90">
-            <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full border-4 border-orange-500">
-              <h2 className="text-xl font-bold mb-3 text-orange-600">Terms and Conditions</h2>
-              <div className="mb-4 text-gray-800">
-                By submitting your listing, you agree that:
-                <ul className="list-disc pl-5 mt-2 text-sm text-gray-700">
-                  <li>Your listing will be visible to all users.</li>
-                  <li>You are responsible for the accuracy of the information provided.</li>
-                  <li>Inappropriate or fraudulent listings will be removed.</li>
-                </ul>
-              </div>
-              <label className="flex items-center mb-4 text-sm">
-                <input
-                  type="checkbox"
-                  checked={agreementChecked}
-                  onChange={e => setAgreementChecked(e.target.checked)}
-                  className="mr-2"
-                />
-                I accept the terms and conditions
-              </label>
-              <div className="flex gap-2 justify-end">
-                <button
-                  className="px-4 py-2 rounded bg-white border border-orange-500 text-orange-600 hover:bg-orange-100"
-                  onClick={() => {
-                    setShowAgreement(false);
-                    setAgreementChecked(false);
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-4 py-2 rounded bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
-                  disabled={!agreementChecked}
-                  onClick={async () => {
-                    await realAddListing();
-                  }}
-                >
-                  Agree
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 bg-white p-3 sm:p-6 rounded shadow">
-          <input
-            type="text"
-            placeholder="Car brand (required)"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            list="car-brand-list"
-            required
-            className="w-full p-2 border rounded"
-          />
-          <datalist id="car-brand-list">
-            {brands.map((brand) => (
-              <option key={brand.id} value={brand.name} />
-            ))}
-          </datalist>
-
-          {availableModels.length > 0 && (
-            <>
-              <input
-                type="text"
-                placeholder="Model (optional)"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                list="model-list"
-                className="w-full p-2 border rounded"
-              />
-              <datalist id="model-list">
-                {availableModels.map((m) => (
-                  <option key={m} value={m} />
-                ))}
-              </datalist>
-            </>
-          )}
-
-          <input
-            type="number"
-            placeholder="Price (required)"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="number"
-            placeholder="Mileage (miles)"
-            value={mileage}
-            onChange={(e) => {
-              const val = e.target.value
-              if (/^\d*$/.test(val)) setMileage(val)
-            }}
-            className="w-full p-2 border rounded"
-          />
-
-          <input
-            type="number"
-            placeholder="Year (required)"
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            list="year-list"
-            required
-            className="w-full p-2 border rounded"
-          />
-          <datalist id="year-list">
-            {Array.from({ length: currentYear - 1899 }, (_, i) => 1900 + i).map((y) => (
-              <option key={y} value={y} />
-            ))}
-          </datalist>
-
-          <select
-            value={stateId}
-            onChange={e => setStateId(e.target.value)}
-            required
-            className="w-full p-2 border rounded"
-          >
-            <option value="">Select state (required)</option>
-            {states.map((state) => (
-              <option key={state.id} value={state.id}>
-                {state.name} ({state.country_code === 'US' ? 'USA' : state.country_code === 'MX' ? 'Mexico' : state.country_code})
-              </option>
-            ))}
-          </select>
-
-          {stateId && (
-            <div>
-              <input
-                type="text"
-                placeholder="City (optional)"
-                value={cityInput}
-                onChange={e => setCityInput(e.target.value)}
-                list="city-list"
-                className="w-full p-2 border rounded"
-                autoComplete="off"
-              />
-              <datalist id="city-list">
-                {cities.map(city => (
-                  <option key={city.id} value={city.name} />
-                ))}
-              </datalist>
-              <p className="text-xs text-gray-500 mt-1">Start typing to choose a city</p>
-            </div>
-          )}
-
-          <select
-            value={transmission}
-            onChange={(e) => setTransmission(e.target.value)}
-            className="w-full p-2 border rounded"
-          >
-            <option value="">Select transmission</option>
-            {transmissionOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt.charAt(0).toUpperCase() + opt.slice(1)}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={fuelType}
-            onChange={(e) => setFuelType(e.target.value)}
-            className="w-full p-2 border rounded"
-          >
-            <option value="">Select fuel type</option>
-            {fuelOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt.charAt(0).toUpperCase() + opt.slice(1)}
-              </option>
-            ))}
-          </select>
-
-          <textarea
-            placeholder="Description (required)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-
-          <div>
-            <label
-              htmlFor="image-upload"
-              className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded cursor-pointer"
-            >
-              Upload Images
-            </label>
-            <input
-              id="image-upload"
-              type="file"
-              multiple
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-            <p className="text-sm text-gray-600 mt-2">You can upload up to 4 images. Only JPG, PNG, or WEBP formats are allowed.</p>
-          </div>
-
-          {imagePreviews.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              {imagePreviews.map((src, idx) => (
-                <div key={idx} className="relative">
-                  <Image
-                    src={src}
-                    alt={`Preview ${idx}`}
-                    width={200}
-                    height={96}
-                    className="w-full h-20 sm:h-24 object-cover rounded border"
-                    style={{ minHeight: '5rem', background: '#eee' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(idx)}
-                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-start sm:items-center">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={contactByPhone}
-                onChange={(e) => setContactByPhone(e.target.checked)}
-              />
-              Contact by phone
-            </label>
-
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={contactByEmail}
-                onChange={(e) => setContactByEmail(e.target.checked)}
-              />
-              Contact by email
-            </label>
-          </div>
-
-          <button
-            type="submit"
-            className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 w-full sm:w-auto"
-          >
-            Submit
-          </button>
-
-          {message && (
-            <div
-              className="mt-4 p-4 rounded border-2 border-orange-400 bg-orange-50 text-orange-900 text-sm font-medium flex items-start gap-2"
-              style={{ boxShadow: '0 2px 8px rgba(255, 140, 0, 0.08)' }}
-            >
-              <span style={{fontSize: '1.5em', lineHeight: '1'}} aria-hidden="true">⚠️</span>
-              <span>{message}</span>
-            </div>
-          )}
-        </form>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 -left-10 w-72 h-72 bg-orange-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+        <div className="absolute top-1/3 -right-10 w-72 h-72 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-1/3 w-72 h-72 bg-amber-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
+
+      <main className="relative pt-40 md:pt-56 pb-8 px-4 sm:px-6 lg:px-8 min-h-screen">
+        <div className="max-w-2xl mx-auto space-y-8">
+          {/* Header */}
+          <div className="text-center">
+            <div className="mx-auto h-16 w-16 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full flex items-center justify-center mb-4 shadow-lg">
+              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Add New Listing</h2>
+            <p className="text-sm text-gray-600">Sell your car to thousands of potential buyers</p>
+          </div>
+
+          {/* Modal Agreement */}
+          {showAgreement && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-orange-100 overflow-hidden">
+                <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-6">
+                  <h3 className="text-xl font-bold text-white flex items-center">
+                    <svg className="h-6 w-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Terms and Conditions
+                  </h3>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="text-gray-700 text-sm">
+                    <p className="mb-3">By submitting your listing, you agree that:</p>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start">
+                        <svg className="h-4 w-4 text-orange-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Your listing will be visible to all users
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="h-4 w-4 text-orange-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        You are responsible for the accuracy of information
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="h-4 w-4 text-orange-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Inappropriate listings will be removed
+                      </li>
+                    </ul>
+                  </div>
+                  <label className="flex items-center p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={agreementChecked}
+                      onChange={e => setAgreementChecked(e.target.checked)}
+                      className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-3 text-sm font-medium text-gray-900">I accept the terms and conditions</span>
+                  </label>
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                      onClick={() => {
+                        setShowAgreement(false);
+                        setAgreementChecked(false);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg text-sm font-medium hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                      disabled={!agreementChecked}
+                      onClick={async () => {
+                        await realAddListing();
+                      }}
+                    >
+                      Agree & Submit
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Form */}
+          {/* Form */}
+          <div className="bg-white rounded-2xl shadow-xl p-8 backdrop-blur-sm bg-opacity-95 border border-orange-100">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Car Brand */}
+              <div className="space-y-1">
+                <label htmlFor="brand" className="block text-sm font-medium text-gray-700">
+                  Car Brand <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <input
+                    id="brand"
+                    type="text"
+                    placeholder="Select or type car brand"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    list="car-brand-list"
+                    required
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                  />
+                  <datalist id="car-brand-list">
+                    {brands.map((brand) => (
+                      <option key={brand.id} value={brand.name} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+
+              {/* Model */}
+              {availableModels.length > 0 && (
+                <div className="space-y-1">
+                  <label htmlFor="model" className="block text-sm font-medium text-gray-700">
+                    Model <span className="text-gray-500 text-sm">(optional)</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                    </div>
+                    <input
+                      id="model"
+                      type="text"
+                      placeholder="Select or type model"
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      list="model-list"
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                    />
+                    <datalist id="model-list">
+                      {availableModels.map((m) => (
+                        <option key={m} value={m} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+              )}
+
+              {/* Price and Year Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Price */}
+                <div className="space-y-1">
+                  <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+                    Price <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-400 text-sm">$</span>
+                    </div>
+                    <input
+                      id="price"
+                      type="number"
+                      placeholder="Enter price"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      required
+                      className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                    />
+                  </div>
+                </div>
+
+                {/* Year */}
+                <div className="space-y-1">
+                  <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+                    Year <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <input
+                      id="year"
+                      type="number"
+                      placeholder="Enter year"
+                      value={year}
+                      onChange={(e) => setYear(e.target.value)}
+                      list="year-list"
+                      required
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                    />
+                    <datalist id="year-list">
+                      {Array.from({ length: currentYear - 1899 }, (_, i) => 1900 + i).map((y) => (
+                        <option key={y} value={y} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mileage */}
+              <div className="space-y-1">
+                <label htmlFor="mileage" className="block text-sm font-medium text-gray-700">
+                  Mileage <span className="text-gray-500 text-sm">(miles)</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <input
+                    id="mileage"
+                    type="number"
+                    placeholder="Enter mileage"
+                    value={mileage}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (/^\d*$/.test(val)) setMileage(val)
+                    }}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                  />
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="space-y-4">
+                {/* State */}
+                <div className="space-y-1">
+                  <label htmlFor="state" className="block text-sm font-medium text-gray-700">
+                    State <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <select
+                      id="state"
+                      value={stateId}
+                      onChange={e => setStateId(e.target.value)}
+                      required
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                    >
+                      <option value="">Select state</option>
+                      {states.map((state) => (
+                        <option key={state.id} value={state.id}>
+                          {state.name} ({state.country_code === 'US' ? 'USA' : state.country_code === 'MX' ? 'Mexico' : state.country_code})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* City */}
+                {stateId && (
+                  <div className="space-y-1">
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+                      City <span className="text-gray-500 text-sm">(optional)</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                      <input
+                        id="city"
+                        type="text"
+                        placeholder="Start typing city name"
+                        value={cityInput}
+                        onChange={e => setCityInput(e.target.value)}
+                        list="city-list"
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                        autoComplete="off"
+                      />
+                      <datalist id="city-list">
+                        {cities.map(city => (
+                          <option key={city.id} value={city.name} />
+                        ))}
+                      </datalist>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Start typing to choose from available cities</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Vehicle Details Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Transmission */}
+                <div className="space-y-1">
+                  <label htmlFor="transmission" className="block text-sm font-medium text-gray-700">
+                    Transmission
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <select
+                      id="transmission"
+                      value={transmission}
+                      onChange={(e) => setTransmission(e.target.value)}
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                    >
+                      <option value="">Select transmission</option>
+                      {transmissionOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Fuel Type */}
+                <div className="space-y-1">
+                  <label htmlFor="fuel" className="block text-sm font-medium text-gray-700">
+                    Fuel Type
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                    </div>
+                    <select
+                      id="fuel"
+                      value={fuelType}
+                      onChange={(e) => setFuelType(e.target.value)}
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                    >
+                      <option value="">Select fuel type</option>
+                      {fuelOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1">
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  placeholder="Describe your car's condition, features, history, etc."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={4}
+                  className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 resize-vertical"
+                />
+                <p className="text-xs text-gray-500 mt-1">Tell buyers what makes your car special</p>
+              </div>
+
+              {/* Images Upload */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Photos <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    {images.length}/4 images
+                  </span>
+                </div>
+                
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors duration-200">
+                  <input
+                    id="image-upload"
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="image-upload"
+                    className="cursor-pointer flex flex-col items-center space-y-2"
+                  >
+                    <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center">
+                      <svg className="h-6 w-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-orange-600">Upload photos</span>
+                      <p className="text-xs text-gray-500">JPG, PNG or WEBP up to 500KB each</p>
+                    </div>
+                  </label>
+                </div>
+
+                {imagePreviews.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {imagePreviews.map((src, idx) => (
+                      <div key={idx} className="relative group">
+                        <Image
+                          src={src}
+                          alt={`Preview ${idx + 1}`}
+                          width={200}
+                          height={150}
+                          className="w-full h-32 object-cover rounded-lg border border-gray-200 group-hover:opacity-75 transition-opacity duration-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="absolute -top-2 -right-2 h-6 w-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 transition-colors duration-200 shadow-sm"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Contact Preferences */}
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Contact Preferences <span className="text-red-500">*</span>
+                </label>
+                <div className="space-y-3">
+                  <label className="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200">
+                    <input
+                      type="checkbox"
+                      checked={contactByPhone}
+                      onChange={(e) => setContactByPhone(e.target.checked)}
+                      className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                    />
+                    <div className="ml-3 flex items-center">
+                      <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      <span className="text-sm font-medium text-gray-900">Allow phone contact</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200">
+                    <input
+                      type="checkbox"
+                      checked={contactByEmail}
+                      onChange={(e) => setContactByEmail(e.target.checked)}
+                      className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                    />
+                    <div className="ml-3 flex items-center">
+                      <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-sm font-medium text-gray-900">Allow email contact</span>
+                    </div>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500">Select at least one contact method</p>
+              </div>
+
+              {/* Error Message */}
+              {message && (
+                <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-orange-700">{message}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <div className="flex justify-end pt-6">
+                <button
+                  type="submit"
+                  className="flex justify-center items-center py-3 px-8 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 transform hover:scale-[1.02]"
+                >
+                  <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create Listing
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
     </div>
   )
 }

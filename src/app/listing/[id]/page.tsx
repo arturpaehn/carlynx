@@ -172,16 +172,16 @@ useEffect(() => {
 }, [listing])
 
 
-  if (loading) return <div className="pt-48 text-center">Loading...</div>
+  if (loading) return <div className="pt-40 md:pt-56 text-center">Loading...</div>
   if (error || !listing)
     return (
-      <div className="pt-48 text-center text-red-500">
+      <div className="pt-40 md:pt-56 text-center text-red-500">
         {error || 'Listing not found.'}
       </div>
     )
 
   return (
-    <div className="min-h-screen bg-[#fff2e0] pt-48 mt-[-48px] px-6 max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#fff2e0] pt-40 md:pt-56 px-6 max-w-4xl mx-auto">
       <button
         onClick={handleBack}
         className="mb-4 text-blue-600 hover:underline text-sm"

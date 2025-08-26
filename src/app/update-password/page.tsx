@@ -32,7 +32,7 @@ export default function UpdatePasswordPage() {
   }
 
   return (
-    <main className="max-w-md mx-auto pt-40 mt-[-40px] px-2 sm:px-4 text-center min-h-screen flex flex-col justify-center">
+    <main className="max-w-md mx-auto pt-40 md:pt-56 px-2 sm:px-4 text-center min-h-screen flex flex-col justify-center">
       <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Set New Password</h1>
       <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         <input

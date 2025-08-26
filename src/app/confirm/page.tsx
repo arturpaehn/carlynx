@@ -36,7 +36,7 @@ function ConfirmPageContent() {
   }, [router, searchParams])
 
   return (
-    <main className="min-h-screen bg-[#fff2e0] pt-40 mt-[-40px] flex items-center justify-center px-2 sm:px-0">
+    <main className="min-h-screen bg-[#fff2e0] pt-40 md:pt-56 flex items-center justify-center px-2 sm:px-0">
       <div className="max-w-md mx-auto bg-white shadow p-3 sm:p-6 rounded text-center">
         <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-gray-800">Email Verified</h1>
         <p className="text-gray-700 text-xs sm:text-base">{message}</p>
