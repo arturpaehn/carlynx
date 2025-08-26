@@ -152,20 +152,12 @@ export default function Header() {
       // Выйти из Supabase
       await supabase.auth.signOut()
       
-      // Принудительное обновление с очисткой кеша
+      // Простой редирект без конфликтов
       router.push('/')
-      router.refresh()
-      
-      // Дополнительная очистка (если нужно)
-      if (typeof window !== 'undefined') {
-        window.location.href = '/'
-      }
     } catch (error) {
       console.error('Logout error:', error)
-      // В случае ошибки все равно перенаправляем
-      if (typeof window !== 'undefined') {
-        window.location.href = '/'
-      }
+      // В случае ошибки просто перенаправляем
+      router.push('/')
     } finally {
       setLoading(false)
     }
