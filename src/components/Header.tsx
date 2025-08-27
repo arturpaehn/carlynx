@@ -12,9 +12,9 @@ export default function Header() {
   // i18n удалён
   // Green info bar announcements
   const announcements = [
-    'Welcome! CarLynx launched in August, 2025. Posting listings is free until September 15, 2025.',
-    'This is a test period to help us find and fix any issues. No fees will be charged during this time.',
-    'All new listings after September 15, 2025 will require payment. Thank you for helping us improve!'
+    'CarLynx.us opened its gates in August 2025, bringing a new and trusted way to buy and sell automobiles across Texas and beyond.',
+    'Throughout September, posting a listing costs only $1.99. Starting October, the regular price will be $5.99.',
+    'AVisit our Useful Info section for helpful resources, including VIN checks and vehicle history reports, before making your decision.'
   ];
   const [announcementIndex, setAnnouncementIndex] = useState(0);
   const [fade, setFade] = useState(true);
