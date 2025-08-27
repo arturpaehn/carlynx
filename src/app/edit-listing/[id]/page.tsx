@@ -348,152 +348,472 @@ export default function EditListingPage() {
     }
   }
 
-  if (loading) return <div className="pt-header text-center">Loading...</div>
-  if (error) return <div className="pt-header text-center text-red-500">{error}</div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex items-center justify-center pt-header">
+        <div className="text-center">
+          <svg className="animate-spin h-12 w-12 text-orange-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-gray-600">Loading listing...</p>
+        </div>
+      </div>
+    )
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex items-center justify-center pt-header">
+        <div className="text-center text-red-500">
+          <svg className="h-12 w-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <p className="text-xl font-semibold">{error}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-[#fff2e0] pt-header">
-      <div className="max-w-xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-4 text-center">Edit Listing</h1>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 pt-header">
+      {/* Background decorative elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-amber-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-40 left-1/2 transform -translate-x-1/2 w-80 h-80 bg-yellow-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+      </div>
 
-        <form onSubmit={handleUpdate} className="space-y-4 bg-white p-6 rounded shadow">
-          <input type="text" placeholder="Car Brand *" value={title} onChange={(e) => setTitle(e.target.value)} required className="w-full p-2 border rounded" />
-          <input type="text" placeholder="Model (optional)" value={model} onChange={(e) => setModel(e.target.value)} className="w-full p-2 border rounded" />
-          <input type="number" placeholder="Price *" value={price} onChange={(e) => setPrice(e.target.value)} required className="w-full p-2 border rounded" />
-          <input type="number" placeholder="Mileage" value={mileage} onChange={(e) => setMileage(e.target.value)} className="w-full p-2 border rounded" />
-          <input type="number" placeholder="Year *" value={year} onChange={(e) => setYear(e.target.value)} required className="w-full p-2 border rounded" />
-          {/* Location (State) с автозаполнением */}
-          <select
-            value={stateId}
-            onChange={e => setStateId(e.target.value)}
-            required
-            className="w-full p-2 border rounded"
-          >
-            <option value="">Select State *</option>
-            {states.map((state) => (
-              <option key={state.id} value={state.id}>
-                {state.name} ({state.country_code === 'US' ? 'USA' : state.country_code === 'MX' ? 'Mexico' : state.country_code})
-              </option>
-            ))}
-          </select>
-          <select value={transmission} onChange={(e) => setTransmission(e.target.value)} className="w-full p-2 border rounded">
-            <option value="">Select Transmission</option>
-            <option value="manual">Manual</option>
-            <option value="automatic">Automatic</option>
-          </select>
-          <select value={fuelType} onChange={(e) => setFuelType(e.target.value)} className="w-full p-2 border rounded">
-            <option value="">Select Fuel Type</option>
-            <option value="gasoline">Gasoline</option>
-            <option value="diesel">Diesel</option>
-            <option value="hybrid">Hybrid</option>
-            <option value="electric">Electric</option>
-            <option value="cng">CNG</option>
-            <option value="lpg">LPG</option>
-          </select>
-          <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-2 border rounded" />
+      <main className="relative px-4 sm:px-6 lg:px-8 min-h-screen">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <div className="mx-auto h-16 w-16 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full flex items-center justify-center mb-4 shadow-lg">
+              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Edit Your Listing</h2>
+            <p className="text-gray-600">Update your car listing details</p>
+          </div>
 
-          {/* Ввод города вместо select */}
-          {stateId && (
-            <div>
+        <form onSubmit={handleUpdate} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 space-y-6">
+          
+          {/* Car Brand */}
+          <div className="space-y-1">
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+              Car Brand *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m0 0H5m0 0h4M9 7h6m-6 4h6m-6 4h6" />
+                </svg>
+              </div>
               <input
+                id="title"
                 type="text"
-                placeholder="City (optional) — choose or type manually"
-                value={cityInput}
-                onChange={e => {
-                  setCityInput(e.target.value);
-                }}
-                list="city-list"
-                className="w-full p-2 border rounded"
-                autoComplete="off"
-                disabled={!stateId}
+                placeholder="Toyota, Honda, BMW..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
               />
-              <datalist id="city-list">
-                {cities.map(city => (
-                  <option key={city.id} value={city.name} />
+            </div>
+          </div>
+
+          {/* Model */}
+          <div className="space-y-1">
+            <label htmlFor="model" className="block text-sm font-medium text-gray-700">
+              Model (optional)
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <input
+                id="model"
+                type="text"
+                placeholder="Camry, Civic, X5..."
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+              />
+            </div>
+          </div>
+
+          {/* Price and Year row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Price */}
+            <div className="space-y-1">
+              <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+                Price *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-gray-400 text-sm">$</span>
+                </div>
+                <input
+                  id="price"
+                  type="number"
+                  placeholder="25000"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  required
+                  className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                />
+              </div>
+            </div>
+
+            {/* Year */}
+            <div className="space-y-1">
+              <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+                Year *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <input
+                  id="year"
+                  type="number"
+                  placeholder="2020"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  required
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Mileage */}
+          <div className="space-y-1">
+            <label htmlFor="mileage" className="block text-sm font-medium text-gray-700">
+              Mileage (optional)
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <input
+                id="mileage"
+                type="number"
+                placeholder="50000"
+                value={mileage}
+                onChange={(e) => setMileage(e.target.value)}
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <span className="text-gray-400 text-sm">miles</span>
+              </div>
+            </div>
+          </div>
+          {/* State */}
+          <div className="space-y-1">
+            <label htmlFor="state" className="block text-sm font-medium text-gray-700">
+              State *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <select
+                id="state"
+                value={stateId}
+                onChange={e => setStateId(e.target.value)}
+                required
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 bg-white"
+              >
+                <option value="">Select State</option>
+                {states.map((state) => (
+                  <option key={state.id} value={state.id}>
+                    {state.name} ({state.country_code === 'US' ? 'USA' : state.country_code === 'MX' ? 'Mexico' : state.country_code})
+                  </option>
                 ))}
-              </datalist>
+              </select>
+            </div>
+          </div>
+
+          {/* City Input */}
+          {stateId && (
+            <div className="space-y-1">
+              <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+                City (optional)
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l7-3 7 3z" />
+                  </svg>
+                </div>
+                <input
+                  id="city"
+                  type="text"
+                  placeholder="Choose from dropdown or type manually"
+                  value={cityInput}
+                  onChange={e => setCityInput(e.target.value)}
+                  list="city-list"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                  autoComplete="off"
+                />
+                <datalist id="city-list">
+                  {cities.map(city => (
+                    <option key={city.id} value={city.name} />
+                  ))}
+                </datalist>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Start typing to choose from available cities</p>
             </div>
           )}
 
-          <div>
-            <label className="block mb-1 font-medium">Images (max 5, .jpg, .png, .webp, max 500 KB each)</label>
-            <label
-              htmlFor="image-upload"
-              className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded cursor-pointer"
-            >
-              Upload Images
-            </label>
-            <input
-              id="image-upload"
-              type="file"
-              multiple
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-            <p className="text-sm text-gray-600 mt-2">
-              You can upload up to 5 images (.jpg, .png, .webp, max 500 KB each)
-            </p>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {existingImages.map((img) => (
-                <div key={img.id} className="relative">
-                  <Image src={img.image_url} alt="Existing" width={200} height={96} className="w-full h-24 object-cover rounded border" />
-                  <button type="button" onClick={() => removeExistingImage(img.id, img.image_url)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">×</button>
+          {/* Transmission and Fuel Type row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Transmission */}
+            <div className="space-y-1">
+              <label htmlFor="transmission" className="block text-sm font-medium text-gray-700">
+                Transmission
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
                 </div>
-              ))}
-              {newPreviews.map((src, idx) => (
-                <div key={idx} className="relative">
-                  <Image src={src} alt={`Preview ${idx}`} width={200} height={96} className="w-full h-24 object-cover rounded border" />
-                  <button type="button" onClick={() => removeNewImage(idx)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">×</button>
+                <select
+                  id="transmission"
+                  value={transmission}
+                  onChange={(e) => setTransmission(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 bg-white"
+                >
+                  <option value="">Select Transmission</option>
+                  <option value="manual">Manual</option>
+                  <option value="automatic">Automatic</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Fuel Type */}
+            <div className="space-y-1">
+              <label htmlFor="fuel" className="block text-sm font-medium text-gray-700">
+                Fuel Type
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
                 </div>
-              ))}
+                <select
+                  id="fuel"
+                  value={fuelType}
+                  onChange={(e) => setFuelType(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 bg-white"
+                >
+                  <option value="">Select Fuel Type</option>
+                  <option value="gasoline">Gasoline</option>
+                  <option value="diesel">Diesel</option>
+                  <option value="hybrid">Hybrid</option>
+                  <option value="electric">Electric</option>
+                  <option value="cng">CNG</option>
+                  <option value="lpg">LPG</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-between">
-            <button type="submit" className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">Save Changes</button>
-            <button type="button" onClick={handleCancel} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Cancel</button>
+          {/* Description */}
+          <div className="space-y-1">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+              Description (optional)
+            </label>
+            <div className="relative">
+              <textarea
+                id="description"
+                placeholder="Tell buyers what makes your car special"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 resize-none"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Tell buyers what makes your car special</p>
           </div>
 
-          <div className="mt-6 text-center">
+          {/* Images Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-700">
+                Images (max 4, .jpg, .png, .webp, max 500 KB each)
+              </label>
+              <span className="text-sm text-gray-500">{existingImages.length + newImages.length}/4</span>
+            </div>
+            
+            <div className="flex items-center justify-center w-full">
+              <label
+                htmlFor="image-upload"
+                className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <svg className="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <p className="mb-2 text-sm text-gray-500">
+                    <span className="font-semibold">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500">PNG, JPG, WEBP up to 500KB each</p>
+                </div>
+                <input
+                  id="image-upload"
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            
+            <p className="text-sm text-gray-600">
+              You can upload up to 4 images (.jpg, .png, .webp, max 500 KB each)
+            </p>
+            
+            {(existingImages.length > 0 || newPreviews.length > 0) && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
+                {existingImages.map((img) => (
+                  <div key={img.id} className="relative group">
+                    <div className="aspect-square overflow-hidden rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                      <Image 
+                        src={img.image_url} 
+                        alt="Car image" 
+                        width={200} 
+                        height={200} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" 
+                      />
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => removeExistingImage(img.id, img.image_url)} 
+                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shadow-lg transition-colors duration-200"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                {newPreviews.map((src, idx) => (
+                  <div key={idx} className="relative group">
+                    <div className="aspect-square overflow-hidden rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                      <Image 
+                        src={src} 
+                        alt={`Preview ${idx + 1}`} 
+                        width={200} 
+                        height={200} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" 
+                      />
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => removeNewImage(idx)} 
+                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shadow-lg transition-colors duration-200"
+                    >
+                      ×
+                    </button>
+                    <div className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                      New
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-gray-200">
             <button
               type="button"
-              onClick={() => setShowConfirm(true)}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              onClick={handleCancel}
+              className="flex items-center justify-center px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl border border-gray-300 shadow-sm hover:shadow-md transition-all duration-200"
             >
-              Deactivate Listing
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancel
+            </button>
+            
+            <button
+              type="submit"
+              className="flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Save Changes
             </button>
           </div>
 
-          {showConfirm && (
-            <div className="fixed inset-0 bg-orange-500 bg-opacity-90 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg shadow-lg max-w-md p-6 text-center">
-                <h2 className="text-xl font-bold mb-4 text-red-700">Are you sure?</h2>
-                <p className="mb-6 text-gray-700">
-                  Once deactivated, this listing will no longer be visible and cannot be restored.<br />
-                  Refunds are not available.
-                </p>
-                <div className="flex justify-center gap-4">
-                  <button
-                    onClick={() => setShowConfirm(false)}
-                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDeactivate}
-                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                  >
-                    Confirm
-                  </button>
+          {/* Delete Section */}
+          <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+            <button
+              type="button"
+              onClick={() => setShowConfirm(true)}
+              className="flex items-center justify-center mx-auto px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Deactivate Listing
+            </button>
+            <p className="mt-2 text-sm text-gray-500">
+              This will permanently remove your listing from the site
+            </p>
+          </div>
+        </form>
+
+        {showConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transform transition-all duration-300 scale-100">
+              <div className="mb-6">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                  <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
                 </div>
+                <h2 className="text-2xl font-bold mb-2 text-gray-900">Delete Listing?</h2>
+                <p className="text-gray-600 leading-relaxed">
+                  This action cannot be undone. Your listing will be permanently removed from the site and will no longer be visible to potential buyers.
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl border border-gray-300 transition-colors duration-200"
+                >
+                  Keep Listing
+                </button>
+                <button
+                  onClick={handleDeactivate}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl shadow-lg transition-all duration-200"
+                >
+                  Delete Forever
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {message && <p className="text-red-500 text-sm mt-2">{message}</p>}
-        </form>
-      </div>
+        {message && <p className="text-red-500 text-sm mt-2">{message}</p>}
+        </div>
+      </main>
     </div>
   )
 }
