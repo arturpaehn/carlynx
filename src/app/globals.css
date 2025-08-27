@@ -12,6 +12,22 @@ textarea::placeholder {
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* Remove all default margins and paddings */
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
