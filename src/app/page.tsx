@@ -116,7 +116,7 @@ export default function Home() {
 
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-100 relative overflow-hidden pt-28 md:pt-36">
+    <main className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-100 relative overflow-hidden pt-header">
       {/* Animated background blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="blob blob-1"></div>
@@ -183,7 +183,7 @@ export default function Home() {
                           className="w-full h-32 sm:h-36 object-contain bg-gray-50 group-hover:scale-105 transition-transform duration-200"
                           placeholder="empty"
                         />
-                        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-semibold text-orange-600">
+                        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-sm font-bold text-green-600">
                           ${item.price.toLocaleString()}
                         </div>
                       </div>
@@ -219,7 +219,7 @@ export default function Home() {
 
                       {!item.image_url && (
                         <div className="text-center py-4 mb-2">
-                          <div className="text-lg sm:text-xl font-bold text-green-600 mb-1">
+                          <div className="text-xl sm:text-2xl font-bold text-green-600 mb-1">
                             ${item.price.toLocaleString()}
                           </div>
                         </div>

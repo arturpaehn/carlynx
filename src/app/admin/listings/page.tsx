@@ -185,7 +185,7 @@ export default function ListingsPage() {
   }
 
   return (
-    <div className="px-2 sm:px-8 pt-40 md:pt-56">
+    <div className="px-2 sm:px-8 pt-header">
       <div className="mb-4">
         <a
           href="/admin"

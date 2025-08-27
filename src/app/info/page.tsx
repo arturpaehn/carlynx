@@ -35,7 +35,7 @@ export default function InfoPage() {
       <div className="absolute top-60 right-20 w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-full blur-xl opacity-15 animate-pulse animation-delay-1000"></div>
       <div className="absolute bottom-40 left-1/3 w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-full blur-xl opacity-25 animate-pulse animation-delay-2000"></div>
       
-      <div className="relative z-10 max-w-4xl mx-auto py-8 px-4 pt-40 md:pt-56">
+      <div className="relative z-10 max-w-4xl mx-auto py-8 px-4 pt-header">
         <div className="text-center mb-8">
           <h1 className="text-2xl md:text-3xl font-bold mb-4 bg-gradient-to-r from-orange-600 via-yellow-500 to-orange-700 bg-clip-text text-transparent leading-tight">
             <span className="inline-flex items-center">

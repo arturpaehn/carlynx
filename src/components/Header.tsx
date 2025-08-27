@@ -8,6 +8,7 @@ import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
 const adminEmails = ["admin@carlynx.us"];
 
 export default function Header() {
+  const headerRef = useRef<HTMLElement>(null);
   // i18n удалён
   // Green info bar announcements
   const announcements = [
@@ -50,6 +51,38 @@ export default function Header() {
   const [showStatesDropdown, setShowStatesDropdown] = useState(false)
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
   const statesBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Функция для обновления высоты Header'а
+  const updateHeaderHeight = () => {
+    if (headerRef.current) {
+      const height = headerRef.current.offsetHeight;
+      document.documentElement.style.setProperty('--header-height', `${height}px`);
+      console.log('Header height updated:', height); // Для отладки
+    }
+  };
+
+  // Обновляем высоту при монтировании и изменении размера окна
+  useEffect(() => {
+    // Используем setTimeout чтобы дать время хэдеру отрендериться
+    const timer = setTimeout(() => {
+      updateHeaderHeight();
+    }, 100);
+    
+    window.addEventListener('resize', updateHeaderHeight);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateHeaderHeight);
+    };
+  }, []);
+
+  // Обновляем высоту при изменении состояния поиска (когда открывается/закрывается панель поиска)
+  useEffect(() => {
+    // Даем время для анимации панели поиска
+    const timer = setTimeout(() => {
+      updateHeaderHeight();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [searchOpen]);
   // Загружать города при выборе штата(ов)
   useEffect(() => {
     if (!selectedStates.length) {
@@ -255,7 +288,7 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50">
+    <header ref={headerRef} className="relative top-0 left-0 w-full z-50">
       {/* Эффектная зелёная инфо-секция с анимацией */}
       <div
         className="w-full flex items-center justify-center px-2 py-2 md:py-3"

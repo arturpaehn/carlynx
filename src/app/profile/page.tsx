@@ -105,7 +105,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex items-center justify-center pt-40 md:pt-56">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex items-center justify-center pt-header-tight">
         <div className="text-center">
           <svg className="animate-spin h-12 w-12 text-orange-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -126,8 +126,8 @@ export default function ProfilePage() {
         <div className="absolute -bottom-8 left-1/3 w-72 h-72 bg-amber-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
-      <main className="relative pt-40 md:pt-56 pb-8 px-4 sm:px-6 lg:px-8 min-h-screen">
-        <div className="max-w-2xl mx-auto space-y-8">
+      <main className="relative pt-header-tight pb-8 px-4 sm:px-6 lg:px-8 min-h-screen">
+        <div className="max-w-2xl mx-auto space-y-4">
           {/* Header */}
           <div className="text-center">
             <div className="mx-auto h-16 w-16 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full flex items-center justify-center mb-4 shadow-lg">

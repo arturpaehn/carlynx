@@ -133,7 +133,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto pt-40 md:pt-56">
+    <div className="p-6 max-w-6xl mx-auto pt-header">
       <h1 className="text-2xl font-bold mb-6">Admin Panel</h1>
       <div className="mb-8">
         <div className="bg-gray-50 border border-gray-200 rounded p-4 flex flex-col sm:flex-row gap-2 sm:gap-8 text-sm sm:text-base">

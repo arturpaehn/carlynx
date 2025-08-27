@@ -348,11 +348,11 @@ export default function EditListingPage() {
     }
   }
 
-  if (loading) return <div className="pt-40 md:pt-56 text-center">Loading...</div>
-  if (error) return <div className="pt-40 md:pt-56 text-center text-red-500">{error}</div>
+  if (loading) return <div className="pt-header text-center">Loading...</div>
+  if (error) return <div className="pt-header text-center text-red-500">{error}</div>
 
   return (
-    <div className="min-h-screen bg-[#fff2e0] pt-40 md:pt-56">
+    <div className="min-h-screen bg-[#fff2e0] pt-header">
       <div className="max-w-xl mx-auto p-6">
         <h1 className="text-2xl font-bold mb-4 text-center">Edit Listing</h1>
 

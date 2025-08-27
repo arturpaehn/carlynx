@@ -15,6 +15,7 @@ textarea::placeholder {
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --header-height: 120px; /* Уменьшаем еще больше */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,6 +23,20 @@ textarea::placeholder {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+}
+
+/* Global utility class for header spacing */
+.pt-header {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.pt-header-tight {
+  margin-top: 0.5rem;
+}
+
+.mt-header {
+  margin-top: var(--header-height);
 }
 
 /* Custom animations for register page */
