@@ -89,7 +89,7 @@ export default function MyListingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 pt-header px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 pt-header px-2 sm:px-4 lg:px-8 relative overflow-hidden">
       {/* Animated Background Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="blob blob-1"></div>
@@ -160,15 +160,15 @@ export default function MyListingsPage() {
                 return (
                   <div
                     key={listing.id}
-                    className="group bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-4 cursor-pointer border border-white/20"
+                    className="group bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-2 sm:p-4 cursor-pointer border border-white/20"
                     onClick={() => router.push(`/listing/${listing.id}?from=my`)}
                     tabIndex={0}
                     role="button"
                     onKeyDown={(e) => { if (e.key === 'Enter') router.push(`/listing/${listing.id}?from=my`) }}
                   >
-                    <div className="flex gap-4">
+                    <div className="flex gap-2 sm:gap-4">
                       {/* Image Section */}
-                      <div className="w-32 flex-shrink-0">
+                      <div className="w-16 sm:w-32 flex-shrink-0">
                         {listing.image_url ? (
                           <div className="relative overflow-hidden rounded-lg">
                             <Image
@@ -176,21 +176,21 @@ export default function MyListingsPage() {
                               alt="Car listing"
                               width={128}
                               height={96}
-                              className="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-300"
+                              className="w-full h-12 sm:h-24 object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                             <div className="absolute top-1 left-1">
-                              <span className="bg-green-500 text-white text-xs font-medium px-2 py-1 rounded-full">
+                              <span className="bg-green-500 text-white text-xs font-medium px-1 sm:px-2 py-1 rounded-full">
                                 Active
                               </span>
                             </div>
                           </div>
                         ) : (
-                          <div className="w-full h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
+                          <div className="w-full h-12 sm:h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
                             <div className="text-center">
-                              <svg className="h-6 w-6 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="h-4 w-4 sm:h-6 sm:w-6 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
-                              <p className="text-xs text-gray-500">No Image</p>
+                              <p className="text-xs text-gray-500 hidden sm:block">No Image</p>
                             </div>
                           </div>
                         )}
@@ -198,11 +198,11 @@ export default function MyListingsPage() {
 
                       {/* Content Section */}
                       <div className="flex-1 min-w-0">
-                        <div className="mb-3">
-                          <h2 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-orange-600 transition-colors duration-200 truncate">
+                        <div className="mb-2 sm:mb-3">
+                          <h2 className="text-sm sm:text-lg font-bold text-gray-800 mb-1 group-hover:text-orange-600 transition-colors duration-200 truncate">
                             {listing.title}
                           </h2>
-                          <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                          <div className="flex flex-wrap gap-2 sm:gap-3 text-sm text-gray-600">
                             <div className="flex items-center">
                               <svg className="h-3 w-3 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -225,13 +225,14 @@ export default function MyListingsPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
+                        {/* Mobile: Stack price and button vertically */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                          <div className="flex items-center flex-wrap gap-2 sm:gap-4">
                             <div className="flex items-center">
                               <svg className="h-4 w-4 text-orange-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                               </svg>
-                              <span className="text-lg font-bold text-orange-600">${listing.price.toLocaleString()}</span>
+                              <span className="text-base sm:text-lg font-bold text-orange-600">${listing.price.toLocaleString()}</span>
                             </div>
                             <div className="flex items-center text-sm text-gray-500">
                               <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,7 +249,7 @@ export default function MyListingsPage() {
                           </div>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleEdit(listing.id); }}
-                            className="flex items-center px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg font-medium hover:from-orange-600 hover:to-amber-600 transition-all duration-200 transform hover:scale-105"
+                            className="w-full sm:w-auto flex items-center justify-center px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg font-medium hover:from-orange-600 hover:to-amber-600 transition-all duration-200 transform hover:scale-105"
                           >
                             <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -286,11 +287,11 @@ export default function MyListingsPage() {
                     return (
                       <div
                         key={listing.id}
-                        className="bg-white/60 backdrop-blur-sm rounded-xl shadow-md p-4 border border-white/20 opacity-75"
+                        className="bg-white/60 backdrop-blur-sm rounded-xl shadow-md p-2 sm:p-4 border border-white/20 opacity-75"
                       >
-                        <div className="flex gap-4">
+                        <div className="flex gap-2 sm:gap-4">
                           {/* Image Section */}
-                          <div className="w-32 flex-shrink-0">
+                          <div className="w-16 sm:w-32 flex-shrink-0">
                             {listing.image_url ? (
                               <div className="relative overflow-hidden rounded-lg">
                                 <Image
@@ -298,21 +299,21 @@ export default function MyListingsPage() {
                                   alt="Car listing"
                                   width={128}
                                   height={96}
-                                  className="w-full h-24 object-cover grayscale"
+                                  className="w-full h-12 sm:h-24 object-cover grayscale"
                                 />
                                 <div className="absolute top-1 left-1">
-                                  <span className="bg-red-500 text-white text-xs font-medium px-2 py-1 rounded-full">
+                                  <span className="bg-red-500 text-white text-xs font-medium px-1 sm:px-2 py-1 rounded-full">
                                     Inactive
                                   </span>
                                 </div>
                               </div>
                             ) : (
-                              <div className="w-full h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
+                              <div className="w-full h-12 sm:h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
                                 <div className="text-center">
-                                  <svg className="h-6 w-6 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="h-4 w-4 sm:h-6 sm:w-6 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
-                                  <p className="text-xs text-gray-500">No Image</p>
+                                  <p className="text-xs text-gray-500 hidden sm:block">No Image</p>
                                 </div>
                               </div>
                             )}
@@ -320,12 +321,12 @@ export default function MyListingsPage() {
 
                           {/* Content Section */}
                           <div className="flex-1 min-w-0">
-                            <div className="mb-3">
-                              <h2 className="text-lg font-bold text-gray-600 mb-1 truncate">
+                            <div className="mb-2 sm:mb-3">
+                              <h2 className="text-sm sm:text-lg font-bold text-gray-600 mb-1 truncate">
                                 {listing.title}
-                                <span className="text-sm text-red-500 font-medium ml-2">(Inactive)</span>
+                                <span className="text-xs sm:text-sm text-red-500 font-medium ml-2">(Inactive)</span>
                               </h2>
-                              <div className="flex flex-wrap gap-3 text-sm text-gray-500">
+                              <div className="flex flex-wrap gap-2 sm:gap-3 text-sm text-gray-500">
                                 <div className="flex items-center">
                                   <svg className="h-3 w-3 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -348,13 +349,13 @@ export default function MyListingsPage() {
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                              <div className="flex items-center flex-wrap gap-2 sm:gap-4">
                                 <div className="flex items-center">
                                   <svg className="h-4 w-4 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                                   </svg>
-                                  <span className="text-lg font-bold text-gray-500">${listing.price.toLocaleString()}</span>
+                                  <span className="text-base sm:text-lg font-bold text-gray-500">${listing.price.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center text-sm text-gray-400">
                                   <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,11 +370,11 @@ export default function MyListingsPage() {
                                   <span className="text-xs">{listing.transmission}</span>
                                 </div>
                               </div>
-                              <div className="flex items-center text-sm text-gray-500">
+                              <div className="flex items-center text-xs sm:text-sm text-gray-500 w-full sm:w-auto justify-center sm:justify-end">
                                 <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <span className="text-xs">Contact admin to reactivate</span>
+                                <span>Contact admin to reactivate</span>
                               </div>
                             </div>
                           </div>
