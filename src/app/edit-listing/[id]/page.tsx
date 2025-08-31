@@ -30,7 +30,6 @@ const vehicleTypes = [
     )
   }
 ]
-const currentYear = new Date().getFullYear()
 
 export default function EditListingPage() {
   // Массив ключевых слов для дилеров (как в add-listing)
