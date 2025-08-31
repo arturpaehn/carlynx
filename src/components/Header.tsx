@@ -42,6 +42,10 @@ export default function Header() {
   const [model, setModel] = useState('')
   const [priceMin, setPriceMin] = useState('')
   const [priceMax, setPriceMax] = useState('')
+  // Новые поля для поддержки мотоциклов
+  const [vehicleType, setVehicleType] = useState<'car' | 'motorcycle' | ''>('')
+  const [engineSizeMin, setEngineSizeMin] = useState('')
+  const [engineSizeMax, setEngineSizeMax] = useState('')
   // Штаты и города для поиска
   const [states, setStates] = useState<{ id: number; name: string; code: string; country_code: string }[]>([])
   const [selectedStates, setSelectedStates] = useState<number[]>([])
@@ -152,6 +156,7 @@ export default function Header() {
 
   const [years, setYears] = useState<number[]>([])
   const [brands, setBrands] = useState<string[]>([])
+  const [motorcycleBrands, setMotorcycleBrands] = useState<string[]>([])
   const [models, setModels] = useState<string[]>([])
 
   // удалено дублирование user
@@ -213,6 +218,13 @@ export default function Header() {
       }
     }
 
+    const fetchMotorcycleBrands = async () => {
+      const { data, error } = await supabase.from('motorcycle_brands').select('name')
+      if (!error && data) {
+        setMotorcycleBrands(data.map(b => b.name))
+      }
+    }
+
     const fetchStates = async () => {
       const { data, error } = await supabase.from('states').select('id, name, code, country_code')
       if (!error && data) {
@@ -221,6 +233,7 @@ export default function Header() {
     }
 
     fetchBrands()
+    fetchMotorcycleBrands()
     fetchStates()
   }, [supabase])
 
@@ -231,17 +244,39 @@ export default function Header() {
         return
       }
 
-      const { data: brandData } = await supabase
-        .from('car_brands')
-        .select('id')
-        .eq('name', brand)
-        .single()
+      // Определяем, из какой таблицы искать бренд
+      let brandData = null
+      
+      if (vehicleType === 'motorcycle') {
+        const { data } = await supabase
+          .from('motorcycle_brands')
+          .select('id')
+          .eq('name', brand)
+          .single()
+        brandData = data
+      } else {
+        // По умолчанию ищем в автомобильных брендах (обратная совместимость)
+        const { data } = await supabase
+          .from('car_brands')
+          .select('id')
+          .eq('name', brand)
+          .single()
+        brandData = data
+      }
 
       if (!brandData) {
         setModels([])
         return
       }
 
+      // У мотоциклов пока нет отдельной таблицы моделей, 
+      // поэтому оставляем models пустым для мотоциклов
+      if (vehicleType === 'motorcycle') {
+        setModels([])
+        return
+      }
+
+      // Для автомобилей загружаем модели как раньше
       const { data: modelData } = await supabase
         .from('car_models')
         .select('name')
@@ -255,14 +290,23 @@ export default function Header() {
     }
 
     fetchModels()
-  }, [brand, supabase])
+  }, [brand, vehicleType, supabase])
 
   const applyFilters = () => {
     const params = new URLSearchParams()
+    
+    // Основные параметры
+    if (vehicleType) params.append('vehicle_type', vehicleType)
     if (brand) params.append('brand', brand)
     if (model) params.append('model', model)
     if (priceMin) params.append('price_min', priceMin)
     if (priceMax) params.append('price_max', priceMax)
+    
+    // Engine size (только если указан vehicle_type)
+    if (engineSizeMin) params.append('engine_size_min', engineSizeMin)
+    if (engineSizeMax) params.append('engine_size_max', engineSizeMax)
+    
+    // Местоположение
     if (selectedStates.length > 0) {
       selectedStates.forEach(id => params.append('state_id', String(id)))
     }
@@ -278,9 +322,13 @@ export default function Header() {
         params.append('city', cityInput);
       }
     }
+    
+    // Дополнительные параметры
     if (minYear) params.append('year_min', minYear)
     if (maxYear) params.append('year_max', maxYear)
-    if (transmission) params.append('transmission', transmission)
+    
+    // Transmission только для автомобилей
+    if (vehicleType !== 'motorcycle' && transmission) params.append('transmission', transmission)
     if (fuelType) params.append('fuel_type', fuelType)
 
     router.push(`/search-results?${params.toString()}`)
@@ -506,17 +554,89 @@ export default function Header() {
 
         {searchOpen && (
           <div className="w-full max-w-5xl bg-white p-2 md:p-4 rounded shadow mt-2 md:mt-4 flex flex-col md:flex-row md:flex-wrap gap-2 overflow-y-auto md:overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 justify-start md:justify-center max-h-[80vh]">
+            
+            {/* Vehicle Type Selection */}
             <div className="flex flex-col md:flex-row gap-2 w-full">
-              <input type="text" placeholder="Brand" value={brand} onChange={(e) => setBrand(e.target.value)} list="brand-list" className="p-2 border rounded min-w-[120px] text-xs md:text-base flex-1" />
-              <datalist id="brand-list">{brands.map((b) => <option key={b} value={b} />)}</datalist>
-
-              <input type="text" placeholder="Model" value={model} onChange={(e) => setModel(e.target.value)} list="model-list" className="p-2 border rounded min-w-[120px] text-xs md:text-base flex-1" disabled={models.length === 0} />
-              <datalist id="model-list">{models.map((m) => <option key={m} value={m} />)}</datalist>
+              <select 
+                value={vehicleType} 
+                onChange={(e) => {
+                  const newType = e.target.value as 'car' | 'motorcycle' | '';
+                  setVehicleType(newType);
+                  // Сбрасываем зависимые поля при смене типа транспорта
+                  setBrand('');
+                  setModel('');
+                  setTransmission('');
+                  setEngineSizeMin('');
+                  setEngineSizeMax('');
+                }}
+                className="p-2 border rounded min-w-[140px] text-xs md:text-base flex-1 bg-orange-50 border-orange-300"
+              >
+                <option value="">All Vehicles</option>
+                <option value="car">Cars</option>
+                <option value="motorcycle">Motorcycles</option>
+              </select>
             </div>
+
+            {/* Brand and Model */}
+            <div className="flex flex-col md:flex-row gap-2 w-full">
+              <input 
+                type="text" 
+                placeholder={vehicleType === 'motorcycle' ? "Motorcycle Brand" : "Car Brand"} 
+                value={brand} 
+                onChange={(e) => setBrand(e.target.value)} 
+                list="brand-list" 
+                className="p-2 border rounded min-w-[120px] text-xs md:text-base flex-1" 
+              />
+              <datalist id="brand-list">
+                {(vehicleType === 'motorcycle' ? motorcycleBrands : brands).map((b) => 
+                  <option key={b} value={b} />
+                )}
+              </datalist>
+
+              <input 
+                type="text" 
+                placeholder="Model" 
+                value={model} 
+                onChange={(e) => setModel(e.target.value)} 
+                list="model-list" 
+                className="p-2 border rounded min-w-[120px] text-xs md:text-base flex-1" 
+                disabled={models.length === 0 || vehicleType === 'motorcycle'} 
+              />
+              <datalist id="model-list">{models.map((m) => <option key={m} value={m} />)}</datalist>
+              {vehicleType === 'motorcycle' && (
+                <p className="text-xs text-gray-500 mt-1 flex-1">Model field not available for motorcycles</p>
+              )}
+            </div>
+
+            {/* Price Range */}
             <div className="flex flex-col md:flex-row gap-2 w-full">
               <input type="number" placeholder="Min Price" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} className="p-2 border rounded min-w-[100px] text-xs md:text-base flex-1" />
               <input type="number" placeholder="Max Price" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} className="p-2 border rounded min-w-[100px] text-xs md:text-base flex-1" />
             </div>
+
+            {/* Engine Size (show only if vehicle type is selected) */}
+            {vehicleType && (
+              <div className="flex flex-col md:flex-row gap-2 w-full">
+                <input 
+                  type="number" 
+                  placeholder={vehicleType === 'motorcycle' ? "Min CC" : "Min Liters (e.g. 1.5)"} 
+                  value={engineSizeMin} 
+                  onChange={(e) => setEngineSizeMin(e.target.value)} 
+                  className="p-2 border rounded min-w-[120px] text-xs md:text-base flex-1" 
+                  step={vehicleType === 'motorcycle' ? "50" : "0.1"}
+                />
+                <input 
+                  type="number" 
+                  placeholder={vehicleType === 'motorcycle' ? "Max CC" : "Max Liters (e.g. 3.0)"} 
+                  value={engineSizeMax} 
+                  onChange={(e) => setEngineSizeMax(e.target.value)} 
+                  className="p-2 border rounded min-w-[120px] text-xs md:text-base flex-1" 
+                  step={vehicleType === 'motorcycle' ? "50" : "0.1"}
+                />
+              </div>
+            )}
+
+            {/* Location */}
             <div className="flex flex-col md:flex-row gap-2 w-full">
               {/* Дропдаун со штатами */}
               <div className="relative min-w-[160px] flex-1">
@@ -615,19 +735,32 @@ export default function Header() {
               </select>
             </div>
             <div className="flex flex-col md:flex-row gap-2 w-full">
-              <select value={transmission} onChange={(e) => setTransmission(e.target.value)} className="p-2 border rounded min-w-[110px] text-xs md:text-base flex-1">
-                <option value="">Transmission</option>
-                <option value="manual">Manual</option>
-                <option value="automatic">Automatic</option>
-              </select>
+              {/* Transmission только для автомобилей */}
+              {vehicleType !== 'motorcycle' && (
+                <select value={transmission} onChange={(e) => setTransmission(e.target.value)} className="p-2 border rounded min-w-[110px] text-xs md:text-base flex-1">
+                  <option value="">Transmission</option>
+                  <option value="manual">Manual</option>
+                  <option value="automatic">Automatic</option>
+                </select>
+              )}
+              {/* Fuel Type - обновляем опции для мотоциклов */}
               <select value={fuelType} onChange={(e) => setFuelType(e.target.value)} className="p-2 border rounded min-w-[110px] text-xs md:text-base flex-1">
                 <option value="">Fuel Type</option>
-                <option value="gasoline">Gasoline</option>
-                <option value="diesel">Diesel</option>
-                <option value="hybrid">Hybrid</option>
-                <option value="electric">Electric</option>
-                <option value="cng">Compressed Gas</option>
-                <option value="lpg">Liquefied Gas</option>
+                {vehicleType === 'motorcycle' ? (
+                  <>
+                    <option value="gasoline">Gasoline</option>
+                    <option value="electric">Electric</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="gasoline">Gasoline</option>
+                    <option value="diesel">Diesel</option>
+                    <option value="hybrid">Hybrid</option>
+                    <option value="electric">Electric</option>
+                    <option value="cng">Compressed Gas</option>
+                    <option value="lpg">Liquefied Gas</option>
+                  </>
+                )}
               </select>
             </div>
             <button onClick={applyFilters} className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 min-w-[90px] text-xs md:text-base w-full md:w-auto font-medium hover:scale-105">

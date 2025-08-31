@@ -11,10 +11,12 @@ type Listing = {
   title: string
   price: number
   year: number
-  transmission: string
+  transmission: string | null
   fuel_type: string
   model: string | null
   image_url: string | null
+  vehicle_type: 'car' | 'motorcycle' | null
+  engine_size: number | null
   state?: {
     name: string
     code: string
@@ -100,6 +102,8 @@ function SearchResultsPageContent() {
           state_id,
           city_id,
           city_name,
+          vehicle_type,
+          engine_size,
           states (id, name, code, country_code),
           cities (id, name),
           transmission,
@@ -109,6 +113,8 @@ function SearchResultsPageContent() {
         .eq('is_active', true)
         .order(sortField, { ascending: sortOrder === 'asc' })
 
+      // Фильтры
+      if (filters.vehicle_type) query = query.eq('vehicle_type', filters.vehicle_type)
       if (filters.brand) query = query.eq('title', filters.brand)
       if (filters.city_id) {
         query = query.eq('city_id', Number(filters.city_id));
@@ -117,10 +123,28 @@ function SearchResultsPageContent() {
       }
       if (filters.year_min) query = query.gte('year', Number(filters.year_min))
       if (filters.year_max) query = query.lte('year', Number(filters.year_max))
-      if (filters.transmission) query = query.eq('transmission', filters.transmission)
+      if (filters.transmission && filters.vehicle_type !== 'motorcycle') query = query.eq('transmission', filters.transmission)
       if (filters.fuel_type) query = query.eq('fuel_type', filters.fuel_type)
       if (filters.price_min) query = query.gte('price', Number(filters.price_min))
       if (filters.price_max) query = query.lte('price', Number(filters.price_max))
+
+      // Engine size фильтры
+      if (filters.engine_size_min) {
+        let minCC = Number(filters.engine_size_min);
+        // Если это автомобиль и значение меньше 100, предполагаем, что это литры
+        if (filters.vehicle_type === 'car' && minCC < 100) {
+          minCC = minCC * 1000; // Конвертируем литры в cc
+        }
+        query = query.gte('engine_size', minCC);
+      }
+      if (filters.engine_size_max) {
+        let maxCC = Number(filters.engine_size_max);
+        // Если это автомобиль и значение меньше 100, предполагаем, что это литры
+        if (filters.vehicle_type === 'car' && maxCC < 100) {
+          maxCC = maxCC * 1000; // Конвертируем литры в cc
+        }
+        query = query.lte('engine_size', maxCC);
+      }
 
       // Фильтрация по штатам: если выбраны — только выбранные, если нет — все
       const stateIds = searchParams ? searchParams.getAll('state_id').map(Number).filter(Boolean) : [];
@@ -178,6 +202,8 @@ function SearchResultsPageContent() {
               city,
               transmission: item.transmission,
               fuel_type: item.fuel_type,
+              vehicle_type: item.vehicle_type,
+              engine_size: item.engine_size,
               image_url: Array.isArray(item.listing_images) && item.listing_images[0]?.image_url
                 ? item.listing_images[0].image_url
                 : null,
@@ -385,6 +411,14 @@ function SearchResultsPageContent() {
 
                       {/* Compact Details - Single Row */}
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+                        {listing.vehicle_type && (
+                          <div className="flex items-center">
+                            <span className="font-medium text-orange-600">
+                              {listing.vehicle_type === 'motorcycle' ? '🏍️' : '🚗'}
+                            </span>
+                          </div>
+                        )}
+                        
                         <div className="flex items-center">
                           <svg className="h-3 w-3 text-orange-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -392,13 +426,15 @@ function SearchResultsPageContent() {
                           <span className="font-medium">{listing.year}</span>
                         </div>
 
-                        <div className="flex items-center">
-                          <svg className="h-3 w-3 text-orange-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          <span className="capitalize">{listing.transmission}</span>
-                        </div>
+                        {listing.transmission && listing.vehicle_type !== 'motorcycle' && (
+                          <div className="flex items-center">
+                            <svg className="h-3 w-3 text-orange-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span className="capitalize">{listing.transmission}</span>
+                          </div>
+                        )}
 
                         <div className="flex items-center">
                           <svg className="h-3 w-3 text-orange-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -406,6 +442,20 @@ function SearchResultsPageContent() {
                           </svg>
                           <span className="capitalize">{listing.fuel_type}</span>
                         </div>
+
+                        {listing.engine_size && (
+                          <div className="flex items-center">
+                            <svg className="h-3 w-3 text-orange-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            <span>
+                              {listing.vehicle_type === 'motorcycle' 
+                                ? `${listing.engine_size}cc` 
+                                : `${(listing.engine_size / 1000).toFixed(1)}L`
+                              }
+                            </span>
+                          </div>
+                        )}
 
                         {(listing.state || listing.city) && (
                           <div className="flex items-center">

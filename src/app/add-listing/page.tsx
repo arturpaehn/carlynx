@@ -8,7 +8,28 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
 const fuelOptions = ['gasoline', 'diesel', 'hybrid', 'electric', 'cng', 'lpg']
+const motorcycleFuelOptions = ['gasoline', 'electric']
 const transmissionOptions = ['manual', 'automatic']
+const vehicleTypes = [
+  { 
+    value: 'car', 
+    label: 'Car', 
+    icon: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+      </svg>
+    )
+  },
+  { 
+    value: 'motorcycle', 
+    label: 'Motorcycle', 
+    icon: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19.44 9.03L15.41 5H11v2h3.59l2 2H5c-2.8 0-5 2.2-5 5s2.2 5 5 5c2.46 0 4.45-1.69 4.9-4h1.65l.95-.95c.18-.18.46-.28.73-.28.55 0 1.02-.22 1.41-.61.39-.39.61-.86.61-1.41 0-.27-.1-.55-.28-.73L19.44 9.03zM7.82 15H5.18C4.8 15 4.5 14.7 4.5 14.32s.3-.68.68-.68h2.64c.38 0 .68.3.68.68S8.2 15 7.82 15zM19 12c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm-.5 4.5h-1v-1h1v1zm0-2h-1v-1h1v1z"/>
+      </svg>
+    )
+  }
+]
 const currentYear = new Date().getFullYear()
 
 // --- Harmful/abusive content keywords ---
@@ -35,7 +56,12 @@ const dealerKeywords = [
 export default function AddListingPage() {
   const userProfile = useUser();
   const router = useRouter()
+  
+  // Новое состояние для типа транспорта
+  const [vehicleType, setVehicleType] = useState<'car' | 'motorcycle'>('car')
+  
   const [brands, setBrands] = useState<{ id: number; name: string }[]>([])
+  const [motorcycleBrands, setMotorcycleBrands] = useState<{ id: number; name: string }[]>([])
   // States и stateId для выбора штата
   const [states, setStates] = useState<{ id: number; code: string; name: string; country_code: string }[]>([])
   const [stateId, setStateId] = useState('')
@@ -54,6 +80,10 @@ export default function AddListingPage() {
   const [fuelType, setFuelType] = useState('')
   const [mileage, setMileage] = useState('')
   const [year, setYear] = useState('')
+  // Новое поле для мотоциклов - объём двигателя
+  const [engineSize, setEngineSize] = useState('')
+  const [engineSizeWhole, setEngineSizeWhole] = useState('')
+  const [engineSizeDecimal, setEngineSizeDecimal] = useState('')
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [message, setMessage] = useState('')
@@ -73,13 +103,25 @@ export default function AddListingPage() {
       if (!error) setBrands(data)
     }
 
+    const loadMotorcycleBrands = async () => {
+      const { data, error } = await supabase.from('motorcycle_brands').select('id, name')
+      if (!error) setMotorcycleBrands(data)
+    }
+
     // Загружаем список штатов США и Мексики
     const loadStates = async () => {
+      console.log('Loading states...')
       const { data, error } = await supabase.from('states').select('id, code, name, country_code')
-      if (!error) setStates(data)
+      if (!error) {
+        console.log('States loaded:', data?.length)
+        setStates(data)
+      } else {
+        console.error('Error loading states:', error)
+      }
     }
 
     loadBrands()
+    loadMotorcycleBrands()
     loadStates()
   }, [])
 
@@ -91,10 +133,13 @@ export default function AddListingPage() {
       return
     }
     const loadCities = async () => {
+      console.log('Loading cities for state:', stateId)
       const { data, error } = await supabase.from('cities').select('id, name, state_id').eq('state_id', stateId)
       if (!error && data) {
+        console.log('Cities loaded:', data.length)
         setCities(data)
       } else {
+        console.error('Error loading cities:', error)
         setCities([])
       }
       setCityInput('')
@@ -190,14 +235,29 @@ export default function AddListingPage() {
         state_id: stateId,
         city_id: cityIdToSave,
         city_name: cityNameToSave,
-        transmission: transmission || null,
+        transmission: vehicleType === 'car' ? (transmission || null) : null,
         fuel_type: fuelType || null,
         mileage: mileage ? Number(mileage) : null,
         description: description || null,
         contact_by_phone: contactByPhone,
         contact_by_email: contactByEmail,
         is_active: true,
-        views: 0
+        views: 0,
+        vehicle_type: vehicleType,
+        engine_size: (() => {
+          if (vehicleType === 'motorcycle') {
+            return engineSize ? Number(engineSize) : null;
+          } else {
+            // Машины: собираем из двух полей и конвертируем в cc
+            if (engineSizeWhole || engineSizeDecimal) {
+              const whole = engineSizeWhole ? Number(engineSizeWhole) : 0;
+              const decimal = engineSizeDecimal ? Number(engineSizeDecimal) : 0;
+              const totalLiters = whole + (decimal / 10);
+              return Math.round(totalLiters * 1000); // конвертируем в cc
+            }
+            return null;
+          }
+        })()
       }
     ]).select('id').single();
     if (insertError || !insertData?.id) {
@@ -271,10 +331,17 @@ export default function AddListingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Проверки до показа модалки
-    if (!title || !year || !stateId || !price) {
+    if (!title || !year || !stateId || !price || !vehicleType) {
       setMessage('Please fill in all required fields.');
       return;
     }
+    
+    // Vehicle-specific validation
+    if (vehicleType === 'car' && !transmission) {
+      setMessage('Please select transmission for car.');
+      return;
+    }
+    
     if (images.length === 0) {
       setMessage('Please upload at least one image.');
       return;
@@ -287,6 +354,34 @@ export default function AddListingPage() {
     if (isNaN(numericYear) || numericYear < 1900 || numericYear > currentYear) {
       setMessage(`Year must be between 1900 and ${currentYear}.`);
       return;
+    }
+    
+    // Engine size validation (optional but if provided should be valid)
+    if (vehicleType === 'motorcycle') {
+      if (engineSize) {
+        const numericEngineSize = Number(engineSize);
+        if (isNaN(numericEngineSize) || numericEngineSize < 50 || numericEngineSize > 3000) {
+          setMessage('Engine size must be between 50 and 3000 cc for motorcycles.');
+          return;
+        }
+      }
+    } else {
+      // Машины: проверяем отдельные поля
+      if (engineSizeWhole || engineSizeDecimal) {
+        const whole = engineSizeWhole ? Number(engineSizeWhole) : 0;
+        const decimal = engineSizeDecimal ? Number(engineSizeDecimal) : 0;
+        
+        if (isNaN(whole) || isNaN(decimal) || whole < 0 || whole > 9 || decimal < 0 || decimal > 9) {
+          setMessage('Invalid engine size format for cars.');
+          return;
+        }
+        
+        const totalLiters = whole + (decimal / 10);
+        if (totalLiters < 0.5 || totalLiters > 10.0) {
+          setMessage('Engine size must be between 0.5 and 10.0 liters for cars.');
+          return;
+        }
+      }
     }
     // --- Harmful content check ---
     const desc = description.toLowerCase();
@@ -405,10 +500,43 @@ export default function AddListingPage() {
           {/* Form */}
           <div className="bg-white rounded-2xl shadow-xl p-8 backdrop-blur-sm bg-opacity-95 border border-orange-100">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Car Brand */}
+              {/* Vehicle Type Selection */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Vehicle Type <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {vehicleTypes.map((type) => (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => {
+                        setVehicleType(type.value as 'car' | 'motorcycle')
+                        setTitle('')
+                        setModel('')
+                        setTransmission('')
+                        setFuelType('')
+                        setEngineSize('')
+                        setEngineSizeWhole('')
+                        setEngineSizeDecimal('')
+                      }}
+                      className={`p-3 border-2 rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                        vehicleType === type.value
+                          ? 'border-orange-500 bg-orange-50 text-orange-700'
+                          : 'border-gray-300 hover:border-orange-300 hover:bg-orange-25'
+                      }`}
+                    >
+                      <div>{type.icon}</div>
+                      <div className="font-medium">{type.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Brand */}
               <div className="space-y-1">
                 <label htmlFor="brand" className="block text-sm font-medium text-gray-700">
-                  Car Brand <span className="text-red-500">*</span>
+                  {vehicleType === 'car' ? 'Car Brand' : 'Motorcycle Brand'} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -419,15 +547,20 @@ export default function AddListingPage() {
                   <input
                     id="brand"
                     type="text"
-                    placeholder="Select or type car brand"
+                    placeholder={vehicleType === 'car' ? 'Select or type car brand' : 'Select or type motorcycle brand'}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    list="car-brand-list"
+                    list={vehicleType === 'car' ? 'car-brand-list' : 'motorcycle-brand-list'}
                     required
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
                   />
                   <datalist id="car-brand-list">
                     {brands.map((brand) => (
+                      <option key={brand.id} value={brand.name} />
+                    ))}
+                  </datalist>
+                  <datalist id="motorcycle-brand-list">
+                    {motorcycleBrands.map((brand) => (
                       <option key={brand.id} value={brand.name} />
                     ))}
                   </datalist>
@@ -608,32 +741,84 @@ export default function AddListingPage() {
 
               {/* Vehicle Details Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Transmission */}
+                {/* Transmission (Cars only) */}
+                {vehicleType === 'car' && (
+                  <div className="space-y-1">
+                    <label htmlFor="transmission" className="block text-sm font-medium text-gray-700">
+                      Transmission
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <select
+                        id="transmission"
+                        value={transmission}
+                        onChange={(e) => setTransmission(e.target.value)}
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                      >
+                        <option value="">Select transmission</option>
+                        {transmissionOptions.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Engine Size (For all vehicles) */}
                 <div className="space-y-1">
-                  <label htmlFor="transmission" className="block text-sm font-medium text-gray-700">
-                    Transmission
+                  <label htmlFor="engineSize" className="block text-sm font-medium text-gray-700">
+                    Engine Size ({vehicleType === 'motorcycle' ? 'cc' : 'L'})
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <select
-                      id="transmission"
-                      value={transmission}
-                      onChange={(e) => setTransmission(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-                    >
-                      <option value="">Select transmission</option>
-                      {transmissionOptions.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                        </option>
-                      ))}
-                    </select>
+                    {vehicleType === 'motorcycle' ? (
+                      /* Мотоциклы: одно поле в cc */
+                      <input
+                        id="engineSize"
+                        type="number"
+                        step="1"
+                        min="50"
+                        max="3000"
+                        placeholder="e.g. 600"
+                        value={engineSize}
+                        onChange={(e) => setEngineSize(e.target.value)}
+                        className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                      />
+                    ) : (
+                      /* Машины: два поля для литров */
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="9"
+                          placeholder="2"
+                          value={engineSizeWhole}
+                          onChange={(e) => setEngineSizeWhole(e.target.value)}
+                          className="block w-16 px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 text-center"
+                        />
+                        <span className="text-gray-500 font-medium">.</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="9"
+                          placeholder="0"
+                          value={engineSizeDecimal}
+                          onChange={(e) => setEngineSizeDecimal(e.target.value)}
+                          className="block w-16 px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 text-center"
+                        />
+                        <span className="text-gray-500 font-medium ml-2">L</span>
+                      </div>
+                    )}
                   </div>
+                  {vehicleType === 'car' && (
+                    <p className="text-xs text-gray-500 mt-1">Enter engine size (e.g., 2.0L = enter 2 and 0)</p>
+                  )}
                 </div>
 
                 {/* Fuel Type */}
@@ -644,7 +829,7 @@ export default function AddListingPage() {
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                       </svg>
                     </div>
                     <select
@@ -654,7 +839,7 @@ export default function AddListingPage() {
                       className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
                     >
                       <option value="">Select fuel type</option>
-                      {fuelOptions.map((opt) => (
+                      {(vehicleType === 'motorcycle' ? motorcycleFuelOptions : fuelOptions).map((opt) => (
                         <option key={opt} value={opt}>
                           {opt.charAt(0).toUpperCase() + opt.slice(1)}
                         </option>
