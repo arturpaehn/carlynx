@@ -17,8 +17,55 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'CarLynx',
-  description: 'Buy & sell used cars in your area.',
+  title: {
+    template: '%s | CarLynx',
+    default: 'CarLynx - Buy & Sell Used Cars and Motorcycles',
+  },
+  description: 'CarLynx is your trusted marketplace for buying and selling used cars and motorcycles across Texas and nearby states. Find great deals on vehicles or sell your car quickly and safely.',
+  keywords: ['used cars', 'motorcycles', 'buy car', 'sell car', 'Texas cars', 'car marketplace', 'vehicle listing', 'automotive'],
+  authors: [{ name: 'CarLynx' }],
+  creator: 'CarLynx',
+  publisher: 'CarLynx',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://carlynx.us',
+    siteName: 'CarLynx',
+    title: 'CarLynx - Buy & Sell Used Cars and Motorcycles',
+    description: 'Your trusted marketplace for buying and selling used cars and motorcycles across Texas and nearby states.',
+    images: [
+      {
+        url: 'https://carlynx.us/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'CarLynx Logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CarLynx - Buy & Sell Used Cars and Motorcycles',
+    description: 'Your trusted marketplace for buying and selling used cars and motorcycles across Texas and nearby states.',
+    images: ['https://carlynx.us/logo.png'],
+    creator: '@carlynx',
+  },
+  alternates: {
+    canonical: 'https://carlynx.us',
+  },
+  other: {
+    'google-site-verification': 'your-google-verification-code', // Add your actual verification code
+  },
 }
 
 

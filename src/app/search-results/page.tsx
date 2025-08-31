@@ -6,6 +6,64 @@ import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
+// SEO функция для поиска
+function updateSearchSEO(searchParams: URLSearchParams | null) {
+  if (typeof window === 'undefined') return;
+
+  const vehicleType = searchParams?.get('vehicle_type') || '';
+  const city = searchParams?.get('city') || '';
+  const state = searchParams?.get('state') || '';
+  const brand = searchParams?.get('brand') || '';
+  const motorcycleBrand = searchParams?.get('motorcycleBrand') || '';
+  
+  // Создаем динамический title
+  let title = 'Search Results';
+  const titleParts = [];
+  
+  if (vehicleType === 'car') titleParts.push('Cars');
+  else if (vehicleType === 'motorcycle') titleParts.push('Motorcycles');
+  else titleParts.push('Vehicles');
+  
+  if (brand) titleParts.push(brand);
+  if (motorcycleBrand) titleParts.push(motorcycleBrand);
+  if (city) titleParts.push(`in ${city}`);
+  if (state) titleParts.push(`${city ? ', ' : 'in '}${state}`);
+  
+  if (titleParts.length > 0) {
+    title = `${titleParts.join(' ')} for Sale | CarLynx`;
+  } else {
+    title = 'Search Results - Find Your Perfect Vehicle | CarLynx';
+  }
+
+  // Создаем description
+  let description = `Find ${titleParts.length > 0 ? titleParts.join(' ').toLowerCase() : 'used cars and motorcycles'} for sale`;
+  if (city || state) {
+    description += ` in ${city}${state && city ? ', ' : ''}${state}`;
+  }
+  description += '. Browse verified listings, compare prices, and connect with sellers on CarLynx.';
+
+  document.title = title;
+  
+  // Update meta description
+  let metaDesc = document.querySelector('meta[name="description"]');
+  if (!metaDesc) {
+    metaDesc = document.createElement('meta');
+    metaDesc.setAttribute('name', 'description');
+    document.head.appendChild(metaDesc);
+  }
+  metaDesc.setAttribute('content', description);
+
+  // Update canonical URL
+  const canonicalUrl = `https://carlynx.us/search-results${searchParams ? '?' + searchParams.toString() : ''}`;
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement('link');
+    canonical.setAttribute('rel', 'canonical');
+    document.head.appendChild(canonical);
+  }
+  canonical.setAttribute('href', canonicalUrl);
+}
+
 type Listing = {
   id: number
   title: string
@@ -217,6 +275,8 @@ function SearchResultsPageContent() {
     }
 
     fetchListings()
+    // Обновляем SEO теги
+    updateSearchSEO(searchParams)
   }, [searchParams, page, currentSort])
 
   // Обработка изменения поля city (обычный input)

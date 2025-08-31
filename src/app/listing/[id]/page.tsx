@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image';
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { generateListingTitle, generateListingDescription, generateListingKeywords, updateMetaTags } from '@/lib/seoUtils'
 
 type Listing = {
   id: number
@@ -14,16 +15,21 @@ type Listing = {
   year: number
   transmission: string
   fuel_type: string
+  vehicle_type?: string
+  engine_size?: number
   description: string | null
   user_id: string
   contact_by_phone: boolean
   contact_by_email: boolean
   views: number
+  created_at?: string
+  updated_at?: string
   state?: {
     name: string
     code: string
     country_code: string
   } | null
+  brand_name?: string
 }
 
 type ListingImage = {
@@ -76,7 +82,7 @@ export default function ListingDetailPage() {
 
       // Затем получаем объявление с views
       const { data, error } = await supabase
-        .from('listings')
+        .from('listings_with_brands')
         .select(`
           id,
           title,
@@ -85,13 +91,19 @@ export default function ListingDetailPage() {
           year,
           transmission,
           fuel_type,
+          vehicle_type,
+          engine_size,
           description,
           user_id,
           contact_by_phone,
           contact_by_email,
           views,
+          created_at,
+          updated_at,
           state_id,
-          states (id, name, code, country_code)
+          states (id, name, code, country_code),
+          car_brand (name),
+          motorcycle_brand (name)
         `)
         .eq('id', id)
         .eq('is_active', true)
@@ -121,7 +133,30 @@ export default function ListingDetailPage() {
           };
         }
       }
-      setListing({ ...data, state: stateObj });
+
+      // Определяем бренд
+      let brandName: string | undefined = undefined;
+      if (data.car_brand) {
+        if (Array.isArray(data.car_brand) && data.car_brand[0]?.name) {
+          brandName = data.car_brand[0].name;
+        } else if (typeof data.car_brand === 'object' && 'name' in data.car_brand) {
+          brandName = (data.car_brand as { name: string }).name;
+        }
+      } else if (data.motorcycle_brand) {
+        if (Array.isArray(data.motorcycle_brand) && data.motorcycle_brand[0]?.name) {
+          brandName = data.motorcycle_brand[0].name;
+        } else if (typeof data.motorcycle_brand === 'object' && 'name' in data.motorcycle_brand) {
+          brandName = (data.motorcycle_brand as { name: string }).name;
+        }
+      }
+      
+      const formattedListing = { 
+        ...data, 
+        state: stateObj, 
+        brand_name: brandName 
+      } as Listing;
+      
+      setListing(formattedListing);
 
       const { data: imageData } = await supabase
         .from('listing_images')
@@ -170,6 +205,35 @@ useEffect(() => {
 
   fetchOwnerInfo()
 }, [listing])
+
+// SEO мета-теги
+useEffect(() => {
+  if (listing && images) {
+    const seoData = {
+      id: listing.id.toString(),
+      title: listing.title,
+      model: listing.model || undefined,
+      year: listing.year,
+      price: listing.price,
+      description: listing.description || undefined,
+      state: listing.state,
+      image_url: images[0]?.image_url,
+      vehicle_type: listing.vehicle_type,
+      brand_name: listing.brand_name,
+      transmission: listing.transmission,
+      fuel_type: listing.fuel_type,
+      engine_size: listing.engine_size,
+    };
+
+    const title = generateListingTitle(seoData);
+    const description = generateListingDescription(seoData);
+    const keywords = generateListingKeywords(seoData);
+    const canonicalUrl = `https://carlynx.us/listing/${listing.id}`;
+    const imageUrl = images[0]?.image_url || 'https://carlynx.us/logo.png';
+
+    updateMetaTags(title, description, keywords, imageUrl, canonicalUrl);
+  }
+}, [listing, images])
 
 
   if (loading) {
