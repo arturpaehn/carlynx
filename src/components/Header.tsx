@@ -13,7 +13,7 @@ export default function Header() {
   // Green info bar announcements
   const announcements = [
     'CarLynx.us opened its gates in August 2025, bringing a new and trusted way to buy and sell automobiles across Texas and beyond.',
-    'Listing fee is $3.99 per advertisement. Simple and straightforward pricing.',
+    'September 2025: FREE listings! Starting October, listing fee will be $3.99 per advertisement. Simple and straightforward pricing.',
     'Visit our Useful Info section for helpful resources, including VIN checks and vehicle history reports, before making your decision.'
   ];
   const [announcementIndex, setAnnouncementIndex] = useState(0);
@@ -355,9 +355,18 @@ export default function Header() {
           <span
             className={`block transition-all duration-600 ease-in-out ${fade ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
             style={{ transition: 'opacity 0.6s, transform 0.6s' }}
-          >
-            {announcements[announcementIndex]}
-          </span>
+            dangerouslySetInnerHTML={{
+              __html: announcements[announcementIndex]
+                .replace(
+                  'FREE listings!', 
+                  '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">FREE listings!</span>'
+                )
+                .replace(
+                  '$3.99',
+                  '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">$3.99</span>'
+                )
+            }}
+          />
         </span>
       </div>
   <div className="bg-[#ffe6cc] shadow border-b flex flex-col items-center justify-center py-3 md:py-6 space-y-2 md:space-y-4 w-full relative">

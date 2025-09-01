@@ -34,8 +34,6 @@ export default function Footer() {
           <div className="text-sm text-center lg:text-right">
             <p className="mb-1">Contact us:</p>
             <p className="underline">support@carlynx.us</p>
-            <p className="text-xs text-gray-300 mt-2">SYNTARIS DIGITAL OÜ</p>
-            <p className="text-xs text-gray-300">Estonia</p>
           </div>
         </div>
 
