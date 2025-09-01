@@ -80,20 +80,8 @@ export default function RegisterPage() {
       if (signUpError) {
         setError(signUpError.message)
       } else if (signUpData?.user?.id) {
-        // Insert profile row
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert({
-            user_id: signUpData.user.id,
-            name: fullName,
-            phone: phone,
-            email: email,
-          })
-        if (profileError) {
-          setError('Registration succeeded, but failed to save profile: ' + profileError.message)
-        } else {
-          setSuccess(true)
-        }
+        // Profile will be created automatically by database trigger
+        setSuccess(true)
       } else {
         setError('Registration succeeded, but user ID not found.')
       }
