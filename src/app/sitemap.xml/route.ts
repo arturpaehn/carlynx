@@ -25,6 +25,31 @@ async function generateSitemapUrls(): Promise<SitemapUrl[]> {
       lastModified: now,
       changeFrequency: 'hourly',
       priority: 0.8,
+    },
+    // Legal pages
+    {
+      url: `${baseUrl}/terms`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/privacy`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/refunds`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/cookies`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.3,
     }
   );
 

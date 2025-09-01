@@ -77,12 +77,16 @@ export default function ListingDetailPage() {
       setLoading(true)
       setError('')
 
+      console.log('=== DEBUGGING LISTING PAGE ===')
+      console.log('Listing ID:', id)
+      console.log('ID type:', typeof id)
+
       // Сначала увеличиваем views
       await supabase.rpc('increment_listing_views', { listing_id_input: id });
 
-      // Затем получаем объявление с views
+      // Затем получаем объявление
       const { data, error } = await supabase
-        .from('listings_with_brands')
+        .from('listings')
         .select(`
           id,
           title,
@@ -99,17 +103,19 @@ export default function ListingDetailPage() {
           contact_by_email,
           views,
           created_at,
-          updated_at,
           state_id,
-          states (id, name, code, country_code),
-          car_brand (name),
-          motorcycle_brand (name)
+          states (id, name, code, country_code)
         `)
         .eq('id', id)
         .eq('is_active', true)
         .single()
 
+      console.log('Supabase response:')
+      console.log('Data:', data)
+      console.log('Error:', error)
+
       if (error || !data) {
+        console.log('Setting error state')
         setError('Failed to load listing.')
         setLoading(false)
         return
@@ -134,21 +140,8 @@ export default function ListingDetailPage() {
         }
       }
 
-      // Определяем бренд
-      let brandName: string | undefined = undefined;
-      if (data.car_brand) {
-        if (Array.isArray(data.car_brand) && data.car_brand[0]?.name) {
-          brandName = data.car_brand[0].name;
-        } else if (typeof data.car_brand === 'object' && 'name' in data.car_brand) {
-          brandName = (data.car_brand as { name: string }).name;
-        }
-      } else if (data.motorcycle_brand) {
-        if (Array.isArray(data.motorcycle_brand) && data.motorcycle_brand[0]?.name) {
-          brandName = data.motorcycle_brand[0].name;
-        } else if (typeof data.motorcycle_brand === 'object' && 'name' in data.motorcycle_brand) {
-          brandName = (data.motorcycle_brand as { name: string }).name;
-        }
-      }
+      // Берем бренд из первого слова title
+      const brandName = data.title ? data.title.split(' ')[0] : undefined;
       
       const formattedListing = { 
         ...data, 

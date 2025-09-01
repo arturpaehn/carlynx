@@ -4,6 +4,7 @@ import './globals.css'
 import SupabaseProvider from '@/components/SupabaseProvider'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import CookieConsent from '@/components/CookieConsent'
 
 
 const geistSans = Geist({
@@ -83,6 +84,7 @@ export default function RootLayout({
           <Header />
           {children}
           <Footer />
+          <CookieConsent />
         </SupabaseProvider>
       </body>
     </html>
