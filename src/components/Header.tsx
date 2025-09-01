@@ -13,7 +13,7 @@ export default function Header() {
   // Green info bar announcements
   const announcements = [
     'CarLynx.us opened its gates in August 2025, bringing a new and trusted way to buy and sell automobiles across Texas and beyond.',
-    'Throughout September, posting a listing costs only $1.99. Starting October, the regular price will be $5.99.',
+    'Listing fee is $3.99 per advertisement. Simple and straightforward pricing.',
     'Visit our Useful Info section for helpful resources, including VIN checks and vehicle history reports, before making your decision.'
   ];
   const [announcementIndex, setAnnouncementIndex] = useState(0);
