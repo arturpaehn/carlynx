@@ -135,38 +135,81 @@ export default function AddListingPage() {
       setCityInput('')
       return
     }
+    
+    let cancelled = false; // Флаг для предотвращения состояния гонки
+    
     const loadCities = async () => {
-      console.log('Loading cities for state:', stateId)
-      const { data, error } = await supabase.from('cities').select('id, name, state_id').eq('state_id', stateId)
-      if (!error && data) {
-        console.log('Cities loaded:', data.length)
-        setCities(data)
-      } else {
-        console.error('Error loading cities:', error)
+      try {
+        console.log('Loading cities for state:', stateId)
+        const { data, error } = await supabase.from('cities').select('id, name, state_id').eq('state_id', stateId)
+        
+        // Проверяем, не был ли этот запрос отменен
+        if (cancelled) return;
+        
+        if (!error && data) {
+          console.log('Cities loaded:', data.length)
+          setCities(data)
+        } else {
+          console.error('Error loading cities:', error)
+          setCities([])
+        }
+        setCityInput('')
+      } catch (err) {
+        // Проверяем, не был ли этот запрос отменен
+        if (cancelled) return;
+        
+        console.error('Failed to load cities:', err)
         setCities([])
+        setCityInput('')
       }
-      setCityInput('')
     }
+    
     loadCities()
+    
+    // Cleanup функция для предотвращения состояния гонки
+    return () => {
+      cancelled = true;
+    }
   }, [stateId])
 
   useEffect(() => {
     const selected = brands.find((b) => b.name === title)
     if (!selected) return setAvailableModels([])
 
-    const loadModels = async () => {
-      const { data, error } = await supabase
-        .from('car_models')
-        .select('name')
-        .eq('brand_id', selected.id)
+    let cancelled = false; // Флаг для предотвращения состояния гонки
 
-      if (!error) {
-        const unique = Array.from(new Set(data.map((d) => d.name)))
-        setAvailableModels(unique)
+    const loadModels = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('car_models')
+          .select('name')
+          .eq('brand_id', selected.id)
+
+        // Проверяем, не был ли этот запрос отменен
+        if (cancelled) return;
+
+        if (!error && data) {
+          const unique = Array.from(new Set(data.map((d) => d.name)))
+          setAvailableModels(unique)
+        } else {
+          console.error('Error loading models:', error)
+          setAvailableModels([])
+        }
+      } catch (err) {
+        // Проверяем, не был ли этот запрос отменен
+        if (cancelled) return;
+        
+        console.error('Failed to load models:', err)
+        setAvailableModels([])
       }
     }
 
     loadModels()
+    
+    // Cleanup функция для предотвращения состояния гонки
+    return () => {
+      cancelled = true;
+    }
   }, [title, brands])
 
   const MAX_IMAGES = 4;
@@ -294,6 +337,30 @@ export default function AddListingPage() {
     }
     setShowAgreement(false);
     setAgreementChecked(false);
+    
+    // Сброс всех состояний формы для следующего использования
+    setVehicleType('car');
+    setTitle('');
+    setModel('');
+    setAvailableModels([]);
+    setPrice('');
+    setDescription('');
+    setTransmission('');
+    setFuelType('');
+    setMileage('');
+    setYear('');
+    setEngineSize('');
+    setEngineSizeWhole('');
+    setEngineSizeDecimal('');
+    setImages([]);
+    setImagePreviews([]);
+    setStateId('');
+    setCities([]);
+    setCityInput('');
+    setContactByPhone(true);
+    setContactByEmail(false);
+    setMessage('');
+    
     router.push('/my-listings');
     } catch (error) {
       console.error('Error creating listing:', error);
@@ -399,7 +466,6 @@ export default function AddListingPage() {
     }
     setMessage('');
     setShowAgreement(true);
-    setIsSubmitting(false); // Сбрасываем состояние загрузки после открытия модального окна
   };
 
   return (
@@ -485,7 +551,12 @@ export default function AddListingPage() {
                       disabled={!agreementChecked || isSubmitting}
                       onClick={async () => {
                         setIsSubmitting(true); // Устанавливаем загрузку здесь
-                        await realAddListing();
+                        try {
+                          await realAddListing();
+                        } catch (error) {
+                          console.error('Error in Add Listing:', error);
+                          setIsSubmitting(false); // Гарантированно сбрасываем в случае ошибки
+                        }
                       }}
                     >
                       {isSubmitting ? (
