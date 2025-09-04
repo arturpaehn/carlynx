@@ -94,6 +94,9 @@ export default function AddListingPage() {
   // Новые состояния для модального окна
   const [showAgreement, setShowAgreement] = useState(false)
   const [agreementChecked, setAgreementChecked] = useState(false)
+  
+  // Состояние загрузки для предотвращения двойной отправки
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // useUser уже возвращает профиль или null, отдельная проверка не нужна
 
@@ -197,10 +200,10 @@ export default function AddListingPage() {
   // Вынесенная функция для реального добавления объявления (теперь с state_id, city_id/city_name)
   // Основная логика добавления объявления
   const realAddListing = async () => {
-    if (!userProfile || !('user_id' in userProfile) || !userProfile.user_id) {
-      setMessage('Authentication failed.');
-      return;
-    }
+    try {
+      if (!userProfile || !('user_id' in userProfile) || !userProfile.user_id) {
+        throw new Error('Authentication failed.');
+      }
     // Проверка на максимальное количество активных объявлений
     const { data: existingListings } = await supabase
       .from('listings')
@@ -209,10 +212,7 @@ export default function AddListingPage() {
       .eq('is_active', true);
     // Лимит только для не-админов
     if (userProfile.email !== 'admin@carlynx.us' && (existingListings?.length || 0) >= 3) {
-      setMessage('You have reached the maximum number of active listings.');
-      setShowAgreement(false);
-      setAgreementChecked(false);
-      return;
+      throw new Error('You have reached the maximum number of active listings.');
     }
     // Определяем city_id и city_name
     let cityIdToSave = null;
@@ -261,10 +261,7 @@ export default function AddListingPage() {
       }
     ]).select('id').single();
     if (insertError || !insertData?.id) {
-      setMessage('Listing submission failed: ' + (insertError?.message || 'No ID'));
-      setShowAgreement(false);
-      setAgreementChecked(false);
-      return;
+      throw new Error('Listing submission failed: ' + (insertError?.message || 'No ID'));
     }
     const listingId = insertData.id;
     // 2. Загружаем картинки и добавляем записи в listing_images
@@ -275,19 +272,13 @@ export default function AddListingPage() {
       // upload to storage (bucket: 'listing-images')
       const { error: uploadError } = await supabase.storage.from('listing-images').upload(filePath, file);
       if (uploadError) {
-        setMessage('Listing submission failed: ' + uploadError.message);
-        setShowAgreement(false);
-        setAgreementChecked(false);
-        return;
+        throw new Error('Listing submission failed: ' + uploadError.message);
       }
       // get public url
       const { data: publicUrlData } = supabase.storage.from('listing-images').getPublicUrl(filePath);
       const imageUrl = publicUrlData?.publicUrl;
       if (!imageUrl) {
-        setMessage('Listing submission failed: Failed to get image URL');
-        setShowAgreement(false);
-        setAgreementChecked(false);
-        return;
+        throw new Error('Listing submission failed: Failed to get image URL');
       }
       // insert into listing_images
       const { error: imgInsertError } = await supabase.from('listing_images').insert([
@@ -298,15 +289,20 @@ export default function AddListingPage() {
         }
       ]);
       if (imgInsertError) {
-        setMessage('Listing submission failed: ' + imgInsertError.message);
-        setShowAgreement(false);
-        setAgreementChecked(false);
-        return;
+        throw new Error('Listing submission failed: ' + imgInsertError.message);
       }
     }
     setShowAgreement(false);
     setAgreementChecked(false);
     router.push('/my-listings');
+    } catch (error) {
+      console.error('Error creating listing:', error);
+      setMessage(error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.');
+      setShowAgreement(false);
+      setAgreementChecked(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Проверка блокировки пользователя (после всех хуков)
@@ -330,6 +326,7 @@ export default function AddListingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     // Проверки до показа модалки
     if (!title || !year || !stateId || !price || !vehicleType) {
       setMessage('Please fill in all required fields.');
@@ -402,6 +399,7 @@ export default function AddListingPage() {
     }
     setMessage('');
     setShowAgreement(true);
+    setIsSubmitting(false); // Сбрасываем состояние загрузки после открытия модального окна
   };
 
   return (
@@ -477,18 +475,29 @@ export default function AddListingPage() {
                       onClick={() => {
                         setShowAgreement(false);
                         setAgreementChecked(false);
+                        setIsSubmitting(false); // Сбрасываем состояние загрузки при отмене
                       }}
                     >
                       Cancel
                     </button>
                     <button
                       className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg text-sm font-medium hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                      disabled={!agreementChecked}
+                      disabled={!agreementChecked || isSubmitting}
                       onClick={async () => {
+                        setIsSubmitting(true); // Устанавливаем загрузку здесь
                         await realAddListing();
                       }}
                     >
-                      Agree & Submit
+                      {isSubmitting ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Creating...
+                        </>
+                      ) : (
+                        'Agree & Submit'
+                      )}
                     </button>
                   </div>
                 </div>
