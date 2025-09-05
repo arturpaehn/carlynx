@@ -73,6 +73,8 @@ export default function ListingDetailPage() {
   };
 
   useEffect(() => {
+    let cancelled = false; // Флаг для предотвращения состояния гонки
+
     const fetchListing = async () => {
       setLoading(true)
       setError('')
@@ -81,113 +83,157 @@ export default function ListingDetailPage() {
       console.log('Listing ID:', id)
       console.log('ID type:', typeof id)
 
-      // Сначала увеличиваем views
-      await supabase.rpc('increment_listing_views', { listing_id_input: id });
+      try {
+        // Сначала увеличиваем views
+        await supabase.rpc('increment_listing_views', { listing_id_input: id });
 
-      // Затем получаем объявление
-      const { data, error } = await supabase
-        .from('listings')
-        .select(`
-          id,
-          title,
-          model,
-          price,
-          year,
-          transmission,
-          fuel_type,
-          vehicle_type,
-          engine_size,
-          description,
-          user_id,
-          contact_by_phone,
-          contact_by_email,
-          views,
-          created_at,
-          state_id,
-          states (id, name, code, country_code)
-        `)
-        .eq('id', id)
-        .eq('is_active', true)
-        .single()
+        // Проверяем, не был ли запрос отменен
+        if (cancelled) return;
 
-      console.log('Supabase response:')
-      console.log('Data:', data)
-      console.log('Error:', error)
+        // Затем получаем объявление
+        const { data, error } = await supabase
+          .from('listings')
+          .select(`
+            id,
+            title,
+            model,
+            price,
+            year,
+            transmission,
+            fuel_type,
+            vehicle_type,
+            engine_size,
+            description,
+            user_id,
+            contact_by_phone,
+            contact_by_email,
+            views,
+            created_at,
+            state_id,
+            states (id, name, code, country_code)
+          `)
+          .eq('id', id)
+          .eq('is_active', true)
+          .single()
 
-      if (error || !data) {
-        console.log('Setting error state')
+        console.log('Supabase response:')
+        console.log('Data:', data)
+        console.log('Error:', error)
+
+        // Проверяем, не был ли запрос отменен
+        if (cancelled) return;
+
+        if (error || !data) {
+          console.log('Setting error state')
+          setError('Failed to load listing.')
+          setLoading(false)
+          return
+        }
+
+        // Форматируем как на главной
+        let stateObj: { name: string; code: string; country_code: string } | null = null;
+        if (data.states) {
+          if (Array.isArray(data.states) && data.states.length > 0 && typeof data.states[0] === 'object' && 'name' in data.states[0]) {
+            stateObj = {
+              name: data.states[0].name,
+              code: data.states[0].code,
+              country_code: data.states[0].country_code,
+            };
+          } else if (!Array.isArray(data.states) && typeof data.states === 'object' && 'name' in data.states) {
+            const s = data.states as { name: string; code: string; country_code: string };
+            stateObj = {
+              name: s.name,
+              code: s.code,
+              country_code: s.country_code,
+            };
+          }
+        }
+
+        // Берем бренд из первого слова title
+        const brandName = data.title ? data.title.split(' ')[0] : undefined;
+        
+        const formattedListing = { 
+          ...data, 
+          state: stateObj, 
+          brand_name: brandName 
+        } as Listing;
+        
+        setListing(formattedListing);
+
+        // Проверяем, не был ли запрос отменен перед загрузкой изображений
+        if (cancelled) return;
+
+        const { data: imageData } = await supabase
+          .from('listing_images')
+          .select('listing_id, image_url')
+          .eq('listing_id', id)
+
+        // Финальная проверка на отмену
+        if (cancelled) return;
+
+        setImages(imageData || [])
+        setLoading(false)
+      } catch (err) {
+        // Проверяем, не был ли запрос отменен
+        if (cancelled) return;
+        
+        console.error('Failed to load listing:', err)
         setError('Failed to load listing.')
         setLoading(false)
-        return
       }
-
-      // Форматируем как на главной
-      let stateObj: { name: string; code: string; country_code: string } | null = null;
-      if (data.states) {
-        if (Array.isArray(data.states) && data.states.length > 0 && typeof data.states[0] === 'object' && 'name' in data.states[0]) {
-          stateObj = {
-            name: data.states[0].name,
-            code: data.states[0].code,
-            country_code: data.states[0].country_code,
-          };
-        } else if (!Array.isArray(data.states) && typeof data.states === 'object' && 'name' in data.states) {
-          const s = data.states as { name: string; code: string; country_code: string };
-          stateObj = {
-            name: s.name,
-            code: s.code,
-            country_code: s.country_code,
-          };
-        }
-      }
-
-      // Берем бренд из первого слова title
-      const brandName = data.title ? data.title.split(' ')[0] : undefined;
-      
-      const formattedListing = { 
-        ...data, 
-        state: stateObj, 
-        brand_name: brandName 
-      } as Listing;
-      
-      setListing(formattedListing);
-
-      const { data: imageData } = await supabase
-        .from('listing_images')
-        .select('listing_id, image_url')
-        .eq('listing_id', id)
-
-      setImages(imageData || [])
-      setLoading(false)
     }
 
-    if (id) fetchListing()
+    if (id) {
+      fetchListing()
+    }
+
+    // Cleanup функция для предотвращения состояния гонки
+    return () => {
+      cancelled = true;
+    }
   }, [id])
 
 useEffect(() => {
+  let cancelled = false; // Флаг для предотвращения состояния гонки
 
   const fetchOwnerInfo = async () => {
     if (!listing?.user_id) return;
 
-    // Загружаем имя, телефон и email из user_profiles
-    const { data: profileData } = await supabase
-      .from('user_profiles')
-      .select('name, phone, email')
-      .eq('user_id', listing.user_id)
-      .single();
+    try {
+      // Загружаем имя, телефон и email из user_profiles
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('name, phone, email')
+        .eq('user_id', listing.user_id)
+        .single();
 
-    if (profileData) {
-      setOwnerInfo({
-        full_name: profileData.name || '',
-        phone: profileData.phone || '',
-        email: profileData.email || '',
-      });
-    } else if (listing?.user_id === 'e8799652-9d86-4806-8196-a77fdfa1f84a') {
-      setOwnerInfo({
-        full_name: 'Mr Artur Paehn',
-        phone: '55532171',
-        email: '',
-      });
-    } else {
+      // Проверяем, не был ли запрос отменен
+      if (cancelled) return;
+
+      if (profileData) {
+        setOwnerInfo({
+          full_name: profileData.name || '',
+          phone: profileData.phone || '',
+          email: profileData.email || '',
+        });
+      } else if (listing?.user_id === 'e8799652-9d86-4806-8196-a77fdfa1f84a') {
+        setOwnerInfo({
+          full_name: 'Mr Artur Paehn',
+          phone: '55532171',
+          email: '',
+        });
+      } else {
+        setOwnerInfo({
+          full_name: '',
+          phone: '',
+          email: '',
+        });
+      }
+    } catch (err) {
+      // Проверяем, не был ли запрос отменен
+      if (cancelled) return;
+      
+      console.error('Failed to load owner info:', err)
       setOwnerInfo({
         full_name: '',
         phone: '',
@@ -197,6 +243,11 @@ useEffect(() => {
   }
 
   fetchOwnerInfo()
+
+  // Cleanup функция для предотвращения состояния гонки
+  return () => {
+    cancelled = true;
+  }
 }, [listing])
 
 // SEO мета-теги

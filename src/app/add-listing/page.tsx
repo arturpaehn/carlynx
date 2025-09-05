@@ -48,11 +48,6 @@ const harmfulKeywords = [
   'f u c k','s e x','p 0 r n','pr0n','p0rn','h0e','b1tch','d1ck','c* m','c*m','n a z i','k k k','w h o r e','s l u t','r a p e','x x x'
 ];
 
-// --- Dealer keywords (старый массив) ---
-const dealerKeywords = [
-  'dealership','dealer','auto dealer','car dealership','certified dealer','pre-owned center','used car lot','showroom','inventory','fleet','trade-ins accepted','commercial use','financing available','low monthly payments','in-house financing','easy approval','buy here pay here','guaranteed approval','extended warranty','certified pre-owned','vehicle inspection report','all credit welcome','special offer','down payment','zero down','we finance','apply today','no credit check','stock','vin available','ready for test drive','contact our sales team','visit our location','call our office','schedule an appointment','open 7 days a week','ask for','multi-point inspection','financing options','service history available','dealership fees','trade-in value','fleet maintained','carfax available','insurance options'
-];
-
 export default function AddListingPage() {
   const userProfile = useUser();
   const router = useRouter()
@@ -247,16 +242,6 @@ export default function AddListingPage() {
       if (!userProfile || !('user_id' in userProfile) || !userProfile.user_id) {
         throw new Error('Authentication failed.');
       }
-    // Проверка на максимальное количество активных объявлений
-    const { data: existingListings } = await supabase
-      .from('listings')
-      .select('id')
-      .eq('user_id', userProfile.user_id)
-      .eq('is_active', true);
-    // Лимит только для не-админов
-    if (userProfile.email !== 'admin@carlynx.us' && (existingListings?.length || 0) >= 3) {
-      throw new Error('You have reached the maximum number of active listings.');
-    }
     // Определяем city_id и city_name
     let cityIdToSave = null;
     let cityNameToSave = cityInput || null;
@@ -454,14 +439,6 @@ export default function AddListingPage() {
         await supabase.rpc('increment_abuse_attempts', { user_id_param: userProfile.user_id });
       }
       setMessage('🚫 Your listing contains words or phrases that are not allowed on Carlynx (profanity, hate, sexual, or violent content). Please remove any inappropriate language and try again. Repeated attempts may result in account restrictions.');
-      return;
-    }
-    // --- Dealer keyword check ---
-    if (dealerKeywords.some(word => desc.includes(word))) {
-      if (userProfile && 'user_id' in userProfile && userProfile.user_id) {
-        await supabase.rpc('increment_dealer_attempts', { user_id_param: userProfile.user_id });
-      }
-      setMessage('⚠️ Your listing appears to contain language commonly used by dealerships. Carlynx is dedicated exclusively to private sellers. If you are a dealer, please note that listings from dealerships are not permitted. Kindly review and revise your description to ensure it reflects a private sale.');
       return;
     }
     setMessage('');

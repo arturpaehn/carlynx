@@ -10,7 +10,6 @@ interface UserProfile {
   phone?: string;
   email: string;
   is_blocked: boolean;
-  dealer_attempts_count?: number;
   abuse_attempts_count?: number;
 }
 
@@ -19,13 +18,11 @@ export default function UsersPage() {
   const [accessLoading, setAccessLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchEmailInput, setSearchEmailInput] = useState("");
-  const [searchAttemptsInput, setSearchAttemptsInput] = useState("");
   const [searchEmail, setSearchEmail] = useState("");
-  const [searchAttempts, setSearchAttempts] = useState("");
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'dealer_attempts_count' | 'abuse_attempts_count' | 'actions' | null>(null);
+  const [sortBy, setSortBy] = useState<'abuse_attempts_count' | 'actions' | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
   const USERS_PER_PAGE = 25;
@@ -72,13 +69,13 @@ export default function UsersPage() {
     setError(null);
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('user_id, name, phone, email, is_blocked, dealer_attempts_count, abuse_attempts_count');
+      .select('user_id, name, phone, email, is_blocked, abuse_attempts_count');
     if (error) setError(error.message);
     else setUsers(data || []);
     setLoading(false);
   }
 
-  function handleSort(column: 'dealer_attempts_count' | 'abuse_attempts_count' | 'actions') {
+  function handleSort(column: 'abuse_attempts_count' | 'actions') {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -92,20 +89,8 @@ export default function UsersPage() {
     if (searchEmail.trim() !== "") {
       filtered = filtered.filter(u => u.email.toLowerCase().includes(searchEmail.trim().toLowerCase()));
     }
-    if (searchAttempts.trim() !== "") {
-      const attempts = parseInt(searchAttempts, 10);
-      if (!isNaN(attempts)) {
-        filtered = filtered.filter(u => (u.dealer_attempts_count ?? 0) === attempts);
-      }
-    }
     const sorted = [...filtered];
-    if (sortBy === 'dealer_attempts_count') {
-      sorted.sort((a, b) => {
-        const aVal = a.dealer_attempts_count ?? 0;
-        const bVal = b.dealer_attempts_count ?? 0;
-        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
-      });
-    } else if (sortBy === 'abuse_attempts_count') {
+    if (sortBy === 'abuse_attempts_count') {
       sorted.sort((a, b) => {
         const aVal = a.abuse_attempts_count ?? 0;
         const bVal = b.abuse_attempts_count ?? 0;
@@ -160,16 +145,9 @@ export default function UsersPage() {
           onChange={e => setSearchEmailInput(e.target.value)}
           className="border rounded px-2 py-1 sm:px-3 sm:py-2 w-36 sm:w-64 text-xs sm:text-base"
         />
-        <input
-          type="number"
-          placeholder="Search by Dealer Attempts"
-          value={searchAttemptsInput}
-          onChange={e => setSearchAttemptsInput(e.target.value)}
-          className="border rounded px-2 py-1 sm:px-3 sm:py-2 w-36 sm:w-64 text-xs sm:text-base"
-        />
         <button
           className="px-3 py-1 sm:px-4 sm:py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors duration-150 text-xs sm:text-base"
-          onClick={() => { setSearchEmail(searchEmailInput); setSearchAttempts(searchAttemptsInput); setPage(1); }}
+          onClick={() => { setSearchEmail(searchEmailInput); setPage(1); }}
         >
           Apply
         </button>
@@ -181,14 +159,6 @@ export default function UsersPage() {
             <tr className="bg-orange-100">
               <th className="p-2 sm:p-2 border whitespace-nowrap">Email</th>
               <th className="p-2 sm:p-2 border whitespace-nowrap">ID</th>
-              <th
-                className={`p-2 sm:p-2 border cursor-pointer select-none transition-colors duration-150 whitespace-nowrap ${sortBy === 'dealer_attempts_count' ? 'bg-orange-300 text-orange-900 font-bold shadow-inner' : 'hover:bg-orange-200'}`}
-                onClick={() => handleSort('dealer_attempts_count')}
-                title="Sort by dealer attempts"
-              >
-                <span className="hidden sm:inline">Dealer Attempts</span>
-                <span className="inline sm:hidden">Attempts</span> {sortBy === 'dealer_attempts_count' ? (sortOrder === 'asc' ? '▲' : '▼') : <span className="text-gray-400">⇅</span>}
-              </th>
               <th
                 className={`p-2 sm:p-2 border cursor-pointer select-none transition-colors duration-150 whitespace-nowrap ${sortBy === 'abuse_attempts_count' ? 'bg-orange-300 text-orange-900 font-bold shadow-inner' : 'hover:bg-orange-200'}`}
                 onClick={() => handleSort('abuse_attempts_count')}
@@ -218,7 +188,6 @@ export default function UsersPage() {
                 <tr key={user.user_id}>
                   <td className="border p-2 break-all max-w-[120px] sm:max-w-none">{user.email}</td>
                   <td className="border p-2 break-all max-w-[120px] sm:max-w-none">{user.user_id}</td>
-                  <td className="border p-2 text-center">{user.dealer_attempts_count ?? 0}</td>
                   <td className="border p-2 text-center">{user.abuse_attempts_count ?? 0}</td>
                   <td className="border p-2 text-center">{user.is_blocked ? 'Yes' : 'No'}</td>
                   {user.email === 'admin@carlynx.us' ? (
