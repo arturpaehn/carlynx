@@ -33,36 +33,43 @@ type Listing = {
 export default function Home() {
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
-  const user = useUser();
+  // Инициализируем useUser для аутентификации, но не блокируем загрузку данных
+  useUser();
 
   useEffect(() => {
+    let cancelled = false; // Флаг для предотвращения race conditions
+    
     const fetchData = async () => {
-      const { data, error } = await supabase
-        .from('listings')
-        .select(`
-          id,
-          title,
-          model,
-          year,
-          price,
-          state_id,
-          city_id,
-          city_name,
-          states (id, name, code, country_code),
-          cities (id, name),
-          listing_images (
-            image_url
-          )
-        `)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(12)
+      try {
+        const { data, error } = await supabase
+          .from('listings')
+          .select(`
+            id,
+            title,
+            model,
+            year,
+            price,
+            state_id,
+            city_id,
+            city_name,
+            states (id, name, code, country_code),
+            cities (id, name),
+            listing_images (
+              image_url
+            )
+          `)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(12)
 
-      if (error) {
-        console.error('Failed to fetch listings:', error.code, error.hint)
-        setLoading(false)
-        return
-      }
+        // Проверяем, не был ли запрос отменен
+        if (cancelled) return;
+
+        if (error) {
+          console.error('Failed to fetch listings:', error.code, error.hint)
+          setLoading(false)
+          return
+        }
 
       const formatted: Listing[] = Array.isArray(data)
         ? data.map((item) => {
@@ -107,12 +114,26 @@ export default function Home() {
           })
         : []
 
-      setListings(formatted)
-      setLoading(false)
+        // Проверяем, не был ли запрос отменен перед обновлением состояния
+        if (!cancelled) {
+          setListings(formatted)
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Error fetching listings:', error)
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
     }
 
     fetchData()
-  }, [user])
+    
+    // Cleanup function для предотвращения race conditions
+    return () => {
+      cancelled = true;
+    }
+  }, []) // Убираем зависимость от user - загружаем данные сразу
 
 
 

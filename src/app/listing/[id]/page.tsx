@@ -17,6 +17,7 @@ type Listing = {
   fuel_type: string
   vehicle_type?: string
   engine_size?: number
+  mileage?: number | null
   description: string | null
   user_id: string
   contact_by_phone: boolean
@@ -29,6 +30,7 @@ type Listing = {
     code: string
     country_code: string
   } | null
+  city?: string | null
   brand_name?: string
 }
 
@@ -103,6 +105,7 @@ export default function ListingDetailPage() {
             fuel_type,
             vehicle_type,
             engine_size,
+            mileage,
             description,
             user_id,
             contact_by_phone,
@@ -110,7 +113,10 @@ export default function ListingDetailPage() {
             views,
             created_at,
             state_id,
-            states (id, name, code, country_code)
+            city_id,
+            city_name,
+            states (id, name, code, country_code),
+            cities (id, name)
           `)
           .eq('id', id)
           .eq('is_active', true)
@@ -149,16 +155,25 @@ export default function ListingDetailPage() {
           }
         }
 
-        // Берем бренд из первого слова title
+        // Определяем город: если есть city_name (ручной ввод) — берём его, иначе — название из cities
+        let city: string | null = null;
+        if (data.city_name && data.city_name.trim()) {
+          city = data.city_name.trim();
+        } else if (data.cities && Array.isArray(data.cities) && data.cities[0]?.name) {
+          city = data.cities[0].name;
+        } else if (data.cities && typeof data.cities === 'object' && 'name' in data.cities) {
+          city = (data.cities as { name: string }).name;
+        }
+
+        // Берем бренд из первого слова title (простое решение)
         const brandName = data.title ? data.title.split(' ')[0] : undefined;
         
         const formattedListing = { 
           ...data, 
-          state: stateObj, 
-          brand_name: brandName 
-        } as Listing;
-        
-        setListing(formattedListing);
+          state: stateObj,
+          city,
+          brand_name: brandName
+        } as Listing;        setListing(formattedListing);
 
         // Проверяем, не был ли запрос отменен перед загрузкой изображений
         if (cancelled) return;
@@ -376,13 +391,22 @@ useEffect(() => {
                   </svg>
                   <span>{listing.year}</span>
                 </div>
-                {listing.state && (
+                {(listing.state || listing.city) && (
                   <div className="flex items-center">
                     <svg className="h-4 w-4 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span>{listing.state.name} ({listing.state.country_code === 'US' ? 'USA' : listing.state.country_code === 'MX' ? 'Mexico' : listing.state.country_code})</span>
+                    <span>
+                      {listing.city && listing.state 
+                        ? `${listing.city}, ${listing.state.name} (${listing.state.country_code === 'US' ? 'USA' : listing.state.country_code === 'MX' ? 'Mexico' : listing.state.country_code})`
+                        : listing.city 
+                        ? listing.city
+                        : listing.state 
+                        ? `${listing.state.name} (${listing.state.country_code === 'US' ? 'USA' : listing.state.country_code === 'MX' ? 'Mexico' : listing.state.country_code})`
+                        : ''
+                      }
+                    </span>
                   </div>
                 )}
               </div>
@@ -466,6 +490,12 @@ useEffect(() => {
               Specifications
             </h2>
             <div className="space-y-3">
+              {listing.brand_name && (
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Brand</span>
+                  <span className="text-gray-900">{listing.brand_name}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-600 font-medium">Model</span>
                 <span className="text-gray-900">{listing.model || 'N/A'}</span>
@@ -474,14 +504,39 @@ useEffect(() => {
                 <span className="text-gray-600 font-medium">Year</span>
                 <span className="text-gray-900">{listing.year}</span>
               </div>
+              {listing.vehicle_type && (
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Vehicle Type</span>
+                  <span className="text-gray-900 capitalize">{listing.vehicle_type}</span>
+                </div>
+              )}
+              {listing.transmission && (
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Transmission</span>
+                  <span className="text-gray-900 capitalize">{listing.transmission}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600 font-medium">Transmission</span>
-                <span className="text-gray-900 capitalize">{listing.transmission}</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
                 <span className="text-gray-600 font-medium">Fuel Type</span>
                 <span className="text-gray-900 capitalize">{listing.fuel_type}</span>
               </div>
+              {listing.mileage && (
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Mileage</span>
+                  <span className="text-gray-900">{listing.mileage.toLocaleString()} miles</span>
+                </div>
+              )}
+              {listing.engine_size && (
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-gray-600 font-medium">Engine Size</span>
+                  <span className="text-gray-900">
+                    {listing.vehicle_type === 'motorcycle' 
+                      ? `${listing.engine_size} cc` 
+                      : `${(listing.engine_size / 1000).toFixed(1)}L`
+                    }
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -494,40 +549,10 @@ useEffect(() => {
               Seller Information
             </h2>
             <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+              <div className="flex items-center justify-between py-2">
                 <span className="text-gray-600 font-medium">Name</span>
                 <span className="text-gray-900">{ownerInfo?.full_name || 'Not provided'}</span>
               </div>
-              {listing.contact_by_phone && (
-                <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                  <span className="text-gray-600 font-medium flex items-center">
-                    <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                    Phone
-                  </span>
-                  <span className="text-gray-900">{ownerInfo?.phone || 'Not provided'}</span>
-                </div>
-              )}
-              {listing.contact_by_email && (
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-gray-600 font-medium flex items-center">
-                    <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    Email
-                  </span>
-                  <span className="text-gray-900">{ownerInfo?.email || 'Not provided'}</span>
-                </div>
-              )}
-              {!listing.contact_by_phone && !listing.contact_by_email && (
-                <div className="text-center py-4 text-gray-500">
-                  <svg className="h-8 w-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-sm">Contact information not available</p>
-                </div>
-              )}
             </div>
           </div>
         </div>

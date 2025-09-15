@@ -11,10 +11,11 @@ export async function middleware(req: NextRequest) {
   // Обновим сессию, если нужно (refresh token и т.п.)
   await supabase.auth.getSession()
 
-  // Добавляем заголовки для предотвращения кеширования динамического контента
-  res.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+  // Агрессивные no-cache заголовки для решения проблемы подвисания
+  res.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
   res.headers.set('Pragma', 'no-cache')
   res.headers.set('Expires', '0')
+  res.headers.set('Last-Modified', new Date().toUTCString())
 
   return res
 }

@@ -18,11 +18,17 @@ export function useUser() {
   const router = useRouter();
 
   useEffect(() => {
+    let cancelled = false; // Флаг для предотвращения race conditions (нужен let для изменения)
+    
     const getSessionAndProfile = async () => {
+      if (cancelled) return; // Выходим если операция отменена
+      
       setLoading(true)
       setError(null)
       try {
         const { data, error: sessionError } = await supabase.auth.getSession()
+        if (cancelled) return; // Проверяем снова после async операции
+        
         if (sessionError) throw sessionError
         const user = data.session?.user as SupabaseUser | undefined
         if (user) {
@@ -31,19 +37,23 @@ export function useUser() {
             .select('user_id, email, is_blocked')
             .eq('user_id', user.id)
             .single()
+          if (cancelled) return; // Проверяем перед установкой состояния
+          
           if (profileError) throw profileError
           setProfile(profileData)
         } else {
-          setProfile(null)
+          if (!cancelled) setProfile(null)
         }
       } catch (error: unknown) {
+        if (cancelled) return; // Не обрабатываем ошибки отмененных операций
+        
         console.error('Session fetch error:', error)
         setProfile(null)
         setError('Session error. Logging out...')
         await supabase.auth.signOut()
         router.push('/login')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
@@ -51,6 +61,8 @@ export function useUser() {
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, authSession) => {
+        if (cancelled) return; // Не обрабатываем изменения для отмененных компонентов
+        
         try {
           const user = authSession?.user as SupabaseUser | undefined
           if (user) {
@@ -59,12 +71,16 @@ export function useUser() {
               .select('user_id, email, is_blocked')
               .eq('user_id', user.id)
               .single()
+            if (cancelled) return; // Проверяем перед установкой состояния
+            
             if (profileError) throw profileError
             setProfile(profileData)
           } else {
-            setProfile(null)
+            if (!cancelled) setProfile(null)
           }
         } catch (error: unknown) {
+          if (cancelled) return; // Не обрабатываем ошибки отмененных операций
+          
           console.error('Auth state change error:', error)
           setProfile(null)
           setError('Session error. Logging out...')
@@ -75,6 +91,7 @@ export function useUser() {
     )
 
     return () => {
+      cancelled = true; // Отмечаем что компонент размонтирован
       listener.subscription.unsubscribe()
     }
   }, [router])

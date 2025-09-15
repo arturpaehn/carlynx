@@ -14,15 +14,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Заголовки для предотвращения проблем с кешированием после деплоя
+  // Временно возвращаем агрессивные no-cache заголовки для решения проблемы подвисания
   async headers() {
     return [
+      // Полностью отключаем кеширование для всех путей
       {
-        source: '/((?!_next/static|_next/image|favicon.ico).*)',
+        source: '/(.*)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
+            value: 'no-cache, no-store, must-revalidate, max-age=0',
           },
           {
             key: 'Pragma',
@@ -32,15 +33,9 @@ const nextConfig: NextConfig = {
             key: 'Expires',
             value: '0',
           },
-        ],
-      },
-      // Для API routes
-      {
-        source: '/api/:path*',
-        headers: [
           {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
+            key: 'X-Frame-Options',
+            value: 'DENY',
           },
         ],
       },

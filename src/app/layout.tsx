@@ -28,6 +28,12 @@ export const metadata: Metadata = {
   authors: [{ name: 'CarLynx' }],
   creator: 'CarLynx',
   publisher: 'CarLynx',
+  other: {
+    'cache-control': 'no-cache, no-store, must-revalidate',
+    'pragma': 'no-cache',
+    'expires': '0',
+    'google-site-verification': 'your-google-verification-code', // Add your actual verification code
+  },
   robots: {
     index: true,
     follow: true,
@@ -64,9 +70,6 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: 'https://carlynx.us',
-  },
-  other: {
-    'google-site-verification': 'your-google-verification-code', // Add your actual verification code
   },
 }
 
