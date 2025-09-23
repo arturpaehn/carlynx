@@ -265,7 +265,7 @@ export default function Home() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
               {listings.map((item) => (
                 <Link key={item.id} href={`/listing/${item.id}`} className="group">
-                  <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden hover:shadow-xl hover:bg-white/90 transition-all duration-200 transform hover:scale-[1.02] h-full">
+                  <div data-testid="listing-card" className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden hover:shadow-xl hover:bg-white/90 transition-all duration-200 transform hover:scale-[1.02] h-full">
                     {item.image_url && (
                       <div className="relative overflow-hidden">
                         <Image
