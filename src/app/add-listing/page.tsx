@@ -128,7 +128,7 @@ export default function AddListingPage() {
     if (!stateId) {
       setCities([])
       setCityInput('')
-      return
+      return;
     }
     
     let cancelled = false; // Флаг для предотвращения состояния гонки

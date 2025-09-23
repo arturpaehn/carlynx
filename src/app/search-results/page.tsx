@@ -218,7 +218,7 @@ function SearchResultsPageContent() {
       if (listingsError || !listingsData) {
         setError('Failed to load listings.')
         setLoading(false)
-        return
+        return;
       }
 
       // Форматируем данные как на главной

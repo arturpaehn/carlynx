@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
 import { useUser } from '@/hooks/useUser'
+import { monitor, logInfo, logError, logWarn } from '@/lib/monitoring'
 
 // SEO metadata will be handled by layout.tsx for this page
 
@@ -31,16 +32,47 @@ type Listing = {
 }
 
 export default function Home() {
+  logInfo('Home component initialization starting');
+  
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   // Инициализируем useUser для аутентификации, но не блокируем загрузку данных
   useUser();
 
+  // Логируем состояние компонента
+  logInfo('Home component state initialized', {
+    hasListings: listings.length > 0,
+    isLoading: loading
+  });
+  logInfo('home_component_render', {
+    loading,
+    listingsCount: listings.length,
+    timestamp: Date.now()
+  });
+
   useEffect(() => {
     let cancelled = false; // Флаг для предотвращения race conditions
     
     const fetchData = async () => {
+      const startTime = Date.now();
+      const tracker = monitor.trackSupabaseRequest('homepage_listings', startTime);
+      
+      logInfo('homepage_data_fetch_start', {
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
+        connectionType: typeof navigator !== 'undefined' ? (navigator as unknown as { connection?: { effectiveType: string } }).connection?.effectiveType : 'unknown',
+        timestamp: Date.now()
+      });
+
+      logInfo('about_to_call_supabase', { time: Date.now() });
+
       try {
+        const requestStart = Date.now();
+        
+        logInfo('supabase_request_starting', { 
+          startTime: requestStart,
+          timestamp: Date.now()
+        });
+        
         const { data, error } = await supabase
           .from('listings')
           .select(`
@@ -62,13 +94,32 @@ export default function Home() {
           .order('created_at', { ascending: false })
           .limit(12)
 
+        const requestDuration = Date.now() - requestStart;
+        
+        logInfo('supabase_request_completed', {
+          duration: requestDuration,
+          hasError: !!error,
+          dataReceived: !!data,
+          recordCount: data?.length || 0
+        });
+
         // Проверяем, не был ли запрос отменен
-        if (cancelled) return;
+        if (cancelled) {
+          logWarn('homepage_fetch_cancelled', { reason: 'component_unmounted' });
+          return;
+        }
 
         if (error) {
-          console.error('Failed to fetch listings:', error.code, error.hint)
-          setLoading(false)
-          return
+          logError('supabase_fetch_error', {
+            code: error.code,
+            message: error.message,
+            hint: error.hint,
+            details: error.details
+          });
+          tracker.error(error);
+          console.error('Failed to fetch listings:', error.code, error.hint);
+          setLoading(false);
+          return;
         }
 
       const formatted: Listing[] = Array.isArray(data)
@@ -116,10 +167,30 @@ export default function Home() {
 
         // Проверяем, не был ли запрос отменен перед обновлением состояния
         if (!cancelled) {
+          logInfo('homepage_data_processed', {
+            recordsFormatted: formatted.length,
+            processingTime: Date.now() - requestStart
+          });
+          
+          tracker.success(formatted);
           setListings(formatted)
           setLoading(false)
+          
+          logInfo('homepage_render_complete', {
+            totalListings: formatted.length,
+            totalTime: Date.now() - requestStart
+          });
         }
       } catch (error) {
+        const errorDetails = {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          name: error instanceof Error ? error.name : 'UnknownError'
+        };
+        
+        logError('homepage_fetch_exception', errorDetails);
+        tracker.error(error);
+        
         console.error('Error fetching listings:', error)
         if (!cancelled) {
           setLoading(false)

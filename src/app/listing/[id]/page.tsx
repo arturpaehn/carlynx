@@ -133,7 +133,7 @@ export default function ListingDetailPage() {
           console.log('Setting error state')
           setError('Failed to load listing.')
           setLoading(false)
-          return
+          return;
         }
 
         // Форматируем как на главной

@@ -28,22 +28,22 @@ export default function RegisterPage() {
 
     if (!/^[a-zA-Z\s]+$/.test(fullName)) {
       setError('Name can only contain English letters and spaces.')
-      return
+      return;
     }
 
     if (!validateEmail(email)) {
       setError('Invalid email address.')
-      return
+      return;
     }
 
     if (!validatePhone(phone)) {
       setError('Invalid phone number.')
-      return
+      return;
     }
 
     if (password.length < 7) {
       setError('Password must be at least 7 characters.')
-      return
+      return;
     }
 
     setLoading(true)
@@ -62,7 +62,7 @@ export default function RegisterPage() {
       if (data) {
         setError('An account with this email already exists. Try logging in.')
         setLoading(false)
-        return
+        return;
       }
 
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({

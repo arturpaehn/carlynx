@@ -241,7 +241,7 @@ export default function Header() {
     const fetchModels = async () => {
       if (!brand) {
         setModels([])
-        return
+        return;
       }
 
       // Определяем, из какой таблицы искать бренд
@@ -266,14 +266,14 @@ export default function Header() {
 
       if (!brandData) {
         setModels([])
-        return
+        return;
       }
 
       // У мотоциклов пока нет отдельной таблицы моделей, 
       // поэтому оставляем models пустым для мотоциклов
       if (vehicleType === 'motorcycle') {
         setModels([])
-        return
+        return;
       }
 
       // Для автомобилей загружаем модели как раньше

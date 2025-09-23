@@ -40,7 +40,7 @@ export default function MyListingsPage() {
 
       if (!currentUser) {
         router.push('/login')
-        return
+        return;
       }
 
       // Получаем объявления пользователя с state_id
@@ -53,7 +53,7 @@ export default function MyListingsPage() {
       if (listingsError || !userListings) {
         setError('Failed to load listings.')
         setLoading(false)
-        return
+        return;
       }
 
       const listingIds = userListings.map((l) => l.id)

@@ -27,7 +27,7 @@ export default function ProfilePage() {
 
       if (error || !sessionData.session?.user) {
         router.push('/login')
-        return
+        return;
       }
 
       const currentUser = sessionData.session.user
@@ -62,7 +62,7 @@ export default function ProfilePage() {
     if (!user) {
       setError('User not found.')
       setSaving(false)
-      return
+      return;
     }
 
     // ✅ Обновляем user_profiles
@@ -78,7 +78,7 @@ export default function ProfilePage() {
     if (profileError) {
       setError('Error updating profile.')
       setSaving(false)
-      return
+      return;
     }
 
     // ✅ Обновляем пароль, если указан
@@ -90,7 +90,7 @@ export default function ProfilePage() {
       if (passError) {
         setError('Password update failed.')
         setSaving(false)
-        return
+        return;
       }
     }
 

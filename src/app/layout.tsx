@@ -6,6 +6,8 @@ import SupabaseProvider from '@/components/SupabaseProvider'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import CookieConsent from '@/components/CookieConsent'
+import MonitoringStatus from '@/components/MonitoringStatus'
+import '@/lib/debugConsole' // Инициализация мониторинга
 
 
 const geistSans = Geist({
@@ -84,7 +86,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased pt-[224px] min-h-screen bg-[#ffe6cc]`}>
-        {/* Google Ads Global Site Tag */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-17529094861"
           strategy="afterInteractive"
@@ -103,6 +104,7 @@ export default function RootLayout({
           {children}
           <Footer />
           <CookieConsent />
+          <MonitoringStatus />
         </SupabaseProvider>
       </body>
     </html>

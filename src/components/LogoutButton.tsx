@@ -20,17 +20,17 @@ export default function RegisterPage() {
 
     if (!email || !password || !fullName) {
       setError('All fields are required.')
-      return
+      return;
     }
 
     if (!validateName(fullName)) {
       setError('Full name must contain only English letters.')
-      return
+      return;
     }
 
     if (password.length < 7) {
       setError('Password must be at least 7 characters long.')
-      return
+      return;
     }
 
     setLoading(true)

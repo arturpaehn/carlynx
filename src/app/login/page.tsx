@@ -21,19 +21,19 @@ export default function LoginPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!email && !password) {
       setError('Please enter your email and password.')
-      return
+      return;
     }
     if (!email) {
       setError('Please enter your email.')
-      return
+      return;
     }
     if (!emailRegex.test(email)) {
       setError('Please enter a valid email address.')
-      return
+      return;
     }
     if (!password) {
       setError('Please enter your password.')
-      return
+      return;
     }
 
     setLoading(true)
