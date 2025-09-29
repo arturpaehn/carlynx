@@ -13,7 +13,7 @@ export default function Header() {
   // Green info bar announcements
   const announcements = [
     'CarLynx.us opened its gates in August 2025, bringing a new and trusted way to buy and sell automobiles across Texas and beyond.',
-    'September 2025: FREE listings! Starting October, listing fee will be $3.99 per advertisement. Simple and straightforward pricing.',
+    'Currently FREE for all users! Later this year: $5 for private sellers, special dealer packages available. Enjoy zero fees now!',
     'Visit our Useful Info section for helpful resources, including VIN checks and vehicle history reports, before making your decision.'
   ];
   const [announcementIndex, setAnnouncementIndex] = useState(0);
@@ -358,12 +358,16 @@ export default function Header() {
             dangerouslySetInnerHTML={{
               __html: announcements[announcementIndex]
                 .replace(
-                  'FREE listings!', 
-                  '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">FREE listings!</span>'
+                  'Currently FREE', 
+                  '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Currently FREE</span>'
                 )
                 .replace(
-                  '$3.99',
-                  '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">$3.99</span>'
+                  'zero fees',
+                  '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">zero fees</span>'
+                )
+                .replace(
+                  '$5',
+                  '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">$5</span>'
                 )
             }}
           />
