@@ -1,5 +1,7 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import enTranslations from '@/../public/locales/en/common.json';
+import esTranslations from '@/../public/locales/es/common.json';
 
 // Типы для переводов
 type TranslationKey = 
@@ -279,68 +281,47 @@ interface I18nContextType {
   t: (key: TranslationKey) => string;
 }
 
-// Переводы загружаются из JSON файлов
-const translations: Record<string, Translations> = {};
+// Переводы статически импортированы для мгновенной доступности
+const translations: Record<string, Translations> = {
+  en: enTranslations as Translations,
+  es: esTranslations as Translations,
+};
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [currentLanguage, setCurrentLanguage] = useState('en');
-  const [translationsLoaded, setTranslationsLoaded] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState(() => {
+    // Инициализируем язык сразу из localStorage или браузера
+    if (typeof window !== 'undefined') {
+      const savedLang = localStorage.getItem('language');
+      if (savedLang && translations[savedLang]) return savedLang;
+      
+      const browserLang = navigator.language.split('-')[0];
+      if (translations[browserLang]) return browserLang;
+    }
+    return 'en';
+  });
 
   useEffect(() => {
-    // Загружаем переводы из JSON файлов
-    const loadTranslations = async () => {
-      try {
-        // Загружаем английские переводы
-        const enResponse = await fetch('/locales/en/common.json');
-        const enData = await enResponse.json();
-        translations['en'] = enData;
+    // Сохраняем выбранный язык при изменении
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('language', currentLanguage);
+    }
+  }, [currentLanguage]);
 
-        // Загружаем испанские переводы
-        const esResponse = await fetch('/locales/es/common.json');
-        const esData = await esResponse.json();
-        translations['es'] = esData;
-
-        setTranslationsLoaded(true);
-
-        // Определяем язык браузера или используем сохраненный
-        const savedLang = localStorage.getItem('language');
-        const browserLang = navigator.language.split('-')[0];
-        const lang = savedLang || (translations[browserLang] ? browserLang : 'en');
-        setCurrentLanguage(lang);
-      } catch (error) {
-        console.error('Failed to load translations:', error);
-        setTranslationsLoaded(true); // Продолжаем с английским по умолчанию
+  const setLanguage = useCallback((lang: string) => {
+    if (translations[lang]) {
+      setCurrentLanguage(lang);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('language', lang);
       }
-    };
-
-    loadTranslations();
+    }
   }, []);
 
-  const setLanguage = (lang: string) => {
-    setCurrentLanguage(lang);
-    localStorage.setItem('language', lang);
-  };
-
-  const t = (key: TranslationKey): string => {
-    // Fallback значения для критичных переводов
-    const fallbacks: Partial<Record<TranslationKey, string>> = {
-      'nameOnlyLettersAndSpaces': 'Name can only contain English letters and spaces.',
-      'invalidPhoneNumber': 'Invalid phone number.',
-      'invalidEmailAddress': 'Invalid email address.',
-      'passwordMinLength': 'Password must be at least 6 characters long.',
-      'pleaseEnterEmailAndPassword': 'Please enter your email and password.',
-      'pleaseEnterEmail': 'Please enter your email.',
-      'pleaseEnterValidEmail': 'Please enter a valid email address.',
-      'pleaseEnterPassword': 'Please enter your password.',
-    };
-
-    if (!translationsLoaded) {
-      return fallbacks[key] || key; // Используем fallback или ключ
-    }
-    return translations[currentLanguage]?.[key] || translations['en']?.[key] || fallbacks[key] || key;
-  };
+  const t = useCallback((key: TranslationKey): string => {
+    // Переводы доступны мгновенно через статический импорт
+    return translations[currentLanguage]?.[key] || translations['en']?.[key] || key;
+  }, [currentLanguage]);
 
   return (
     <I18nContext.Provider value={{ currentLanguage, setLanguage, t }}>

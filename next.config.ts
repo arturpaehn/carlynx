@@ -14,24 +14,44 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Временно возвращаем агрессивные no-cache заголовки для решения проблемы подвисания
+  // Умное кеширование: статика кешируется, динамика обновляется
   async headers() {
     return [
-      // Полностью отключаем кеширование для всех путей
+      // Статические ресурсы - агрессивное кеширование (1 год)
       {
-        source: '/(.*)',
+        source: '/locales/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate, max-age=0',
+            value: 'public, max-age=31536000, immutable',
           },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
           {
-            key: 'Pragma',
-            value: 'no-cache',
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
+        ],
+      },
+      {
+        source: '/favicon.ico',
+        headers: [
           {
-            key: 'Expires',
-            value: '0',
+            key: 'Cache-Control',
+            value: 'public, max-age=86400', // 1 день
+          },
+        ],
+      },
+      // HTML страницы - короткое кеширование с ревалидацией
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate, stale-while-revalidate=60',
           },
           {
             key: 'X-Frame-Options',

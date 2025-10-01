@@ -191,14 +191,31 @@ export default function Header() {
       // Выйти из Supabase
       await supabase.auth.signOut()
       
-      // Простой редирект без конфликтов
-      router.push('/')
+      // Полная очистка всех данных для избежания зависаний
+      if (typeof window !== 'undefined') {
+        // Сохраняем только язык
+        const language = localStorage.getItem('language');
+        
+        // Очищаем весь localStorage
+        localStorage.clear();
+        
+        // Восстанавливаем язык
+        if (language) {
+          localStorage.setItem('language', language);
+        }
+        
+        // Очищаем sessionStorage
+        sessionStorage.clear();
+      }
+      
+      // Принудительный редирект с полной перезагрузкой для очистки состояния
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error)
-      // В случае ошибки просто перенаправляем
-      router.push('/')
-    } finally {
-      setLoading(false)
+      // В случае ошибки все равно принудительно перезагружаем
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     }
   }
 

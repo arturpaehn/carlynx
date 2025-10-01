@@ -11,11 +11,18 @@ export async function middleware(req: NextRequest) {
   // Обновим сессию, если нужно (refresh token и т.п.)
   await supabase.auth.getSession()
 
-  // Агрессивные no-cache заголовки для решения проблемы подвисания
-  res.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
-  res.headers.set('Pragma', 'no-cache')
-  res.headers.set('Expires', '0')
-  res.headers.set('Last-Modified', new Date().toUTCString())
+  // Умные заголовки кеширования: позволяем кешировать с ревалидацией
+  // stale-while-revalidate позволяет показывать старую версию пока загружается новая
+  const pathname = req.nextUrl.pathname;
+  
+  // Для API и динамических данных - минимальное кеширование
+  if (pathname.startsWith('/api/') || pathname.includes('/listing/') || pathname.includes('/search-')) {
+    res.headers.set('Cache-Control', 'public, max-age=0, must-revalidate, stale-while-revalidate=30')
+  } 
+  // Для статических страниц - умеренное кеширование
+  else {
+    res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
+  }
 
   return res
 }
