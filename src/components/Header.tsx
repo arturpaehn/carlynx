@@ -4,17 +4,18 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
+import { useTranslation } from '@/components/I18nProvider'
 // Админ email-ы (как в admin/page.tsx)
 const adminEmails = ["admin@carlynx.us"];
 
 export default function Header() {
+  const { t, currentLanguage, setLanguage } = useTranslation();
   const headerRef = useRef<HTMLElement>(null);
-  // i18n удалён
   // Green info bar announcements
   const announcements = [
-    'CarLynx.us opened its gates in August 2025, bringing a new and trusted way to buy and sell automobiles across Texas and beyond.',
-    'Currently FREE for all users! Later this year: $5 for private sellers, special dealer packages available. Enjoy zero fees now!',
-    'Visit our Useful Info section for helpful resources, including VIN checks and vehicle history reports, before making your decision.'
+    t('announcement1'),
+    t('announcement2'),
+    t('announcement3')
   ];
   const [announcementIndex, setAnnouncementIndex] = useState(0);
   const [fade, setFade] = useState(true);
@@ -374,6 +375,88 @@ export default function Header() {
         </span>
       </div>
   <div className="bg-[#ffe6cc] shadow border-b flex flex-col items-center justify-center py-3 md:py-6 space-y-2 md:space-y-4 w-full relative">
+        {/* Language switcher - positioned absolutely in top left corner */}
+        <div className="absolute top-2 left-2 md:top-4 md:left-4 flex gap-1 z-10">
+          <button
+            onClick={() => setLanguage('en')}
+            className={`w-10 h-6 md:w-12 md:h-8 flex items-center justify-center rounded border-2 transition-all duration-300 shadow-md hover:shadow-lg overflow-hidden ${
+              currentLanguage === 'en' 
+                ? 'border-orange-500 scale-110' 
+                : 'border-gray-300 hover:border-orange-300'
+            }`}
+            title="English"
+          >
+            {/* US Flag SVG */}
+            <svg viewBox="0 0 60 30" className="w-full h-full">
+              <defs>
+                <pattern id="stripes" patternUnits="userSpaceOnUse" width="60" height="2.31">
+                  <rect width="60" height="1.15" fill="#B22234"/>
+                  <rect width="60" height="1.15" y="1.15" fill="#FFFFFF"/>
+                </pattern>
+              </defs>
+              <rect width="60" height="30" fill="url(#stripes)"/>
+              <rect width="24" height="17" fill="#3C3B6E"/>
+              <g fill="#FFFFFF">
+                <circle cx="3" cy="2" r="0.5"/>
+                <circle cx="7" cy="2" r="0.5"/>
+                <circle cx="11" cy="2" r="0.5"/>
+                <circle cx="15" cy="2" r="0.5"/>
+                <circle cx="19" cy="2" r="0.5"/>
+                <circle cx="5" cy="4" r="0.5"/>
+                <circle cx="9" cy="4" r="0.5"/>
+                <circle cx="13" cy="4" r="0.5"/>
+                <circle cx="17" cy="4" r="0.5"/>
+                <circle cx="21" cy="4" r="0.5"/>
+                <circle cx="3" cy="6" r="0.5"/>
+                <circle cx="7" cy="6" r="0.5"/>
+                <circle cx="11" cy="6" r="0.5"/>
+                <circle cx="15" cy="6" r="0.5"/>
+                <circle cx="19" cy="6" r="0.5"/>
+                <circle cx="5" cy="8" r="0.5"/>
+                <circle cx="9" cy="8" r="0.5"/>
+                <circle cx="13" cy="8" r="0.5"/>
+                <circle cx="17" cy="8" r="0.5"/>
+                <circle cx="21" cy="8" r="0.5"/>
+                <circle cx="3" cy="10" r="0.5"/>
+                <circle cx="7" cy="10" r="0.5"/>
+                <circle cx="11" cy="10" r="0.5"/>
+                <circle cx="15" cy="10" r="0.5"/>
+                <circle cx="19" cy="10" r="0.5"/>
+                <circle cx="5" cy="12" r="0.5"/>
+                <circle cx="9" cy="12" r="0.5"/>
+                <circle cx="13" cy="12" r="0.5"/>
+                <circle cx="17" cy="12" r="0.5"/>
+                <circle cx="21" cy="12" r="0.5"/>
+                <circle cx="3" cy="14" r="0.5"/>
+                <circle cx="7" cy="14" r="0.5"/>
+                <circle cx="11" cy="14" r="0.5"/>
+                <circle cx="15" cy="14" r="0.5"/>
+                <circle cx="19" cy="14" r="0.5"/>
+              </g>
+            </svg>
+          </button>
+          <button
+            onClick={() => setLanguage('es')}
+            className={`w-10 h-6 md:w-12 md:h-8 flex items-center justify-center rounded border-2 transition-all duration-300 shadow-md hover:shadow-lg overflow-hidden ${
+              currentLanguage === 'es' 
+                ? 'border-orange-500 scale-110' 
+                : 'border-gray-300 hover:border-orange-300'
+            }`}
+            title="Español"
+          >
+            {/* Mexico Flag SVG */}
+            <svg viewBox="0 0 60 30" className="w-full h-full">
+              <rect width="20" height="30" fill="#006847"/>
+              <rect x="20" width="20" height="30" fill="#FFFFFF"/>
+              <rect x="40" width="20" height="30" fill="#CE1126"/>
+              <g transform="translate(30,15)">
+                <circle r="4" fill="#8B4513"/>
+                <path d="M-2,-2 L2,-2 L1,2 L-1,2 Z" fill="#228B22"/>
+                <circle r="1" fill="#FFD700"/>
+              </g>
+            </svg>
+          </button>
+        </div>
         {/* Facebook floating button - positioned absolutely in top right corner */}
         <a 
           href="https://www.facebook.com/profile.php?id=61579875194260" 
@@ -399,7 +482,7 @@ export default function Header() {
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
               </svg>
-              Useful Info
+              {t('usefulInformation')}
             </span>
           </Link>
           <button
@@ -410,7 +493,7 @@ export default function Header() {
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              Search
+              {t('search')}
             </span>
           </button>
 
@@ -424,7 +507,7 @@ export default function Header() {
                     </svg>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs text-orange-600 font-medium">Welcome back</span>
+                    <span className="text-xs text-orange-600 font-medium">{t('welcomeBack')}</span>
                     <span className="text-sm md:text-base font-bold bg-gradient-to-r from-orange-700 via-yellow-600 to-orange-800 bg-clip-text text-transparent leading-tight">
                       {fullName}
                     </span>
@@ -441,7 +524,7 @@ export default function Header() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      Admin
+                      {t('admin')}
                     </span>
                   </Link>
                 )}
@@ -450,7 +533,7 @@ export default function Header() {
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    My Profile
+                    {t('myProfile')}
                   </span>
                 </Link>
                 <Link href="/add-listing" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
@@ -458,7 +541,7 @@ export default function Header() {
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    Add Listing
+                    {t('addListing')}
                   </span>
                 </Link>
                 <Link href="/my-listings" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
@@ -466,7 +549,7 @@ export default function Header() {
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                     </svg>
-                    My Listings
+                    {t('myListings')}
                   </span>
                 </Link>
                 <button
@@ -478,7 +561,7 @@ export default function Header() {
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    {loading ? 'Logging out...' : 'Log out'}
+                    {loading ? t('loggingOut') : t('logOut')}
                   </span>
                 </button>
               </div>
@@ -501,26 +584,26 @@ export default function Header() {
                   <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow z-50 flex flex-col">
                     {isAdmin && (
                       <Link href="/admin" className="px-4 py-2 hover:bg-blue-100 text-blue-700 font-semibold" onClick={() => setShowMenu(false)}>
-                        Admin
+                        {t('admin')}
                       </Link>
                     )}
                     <Link href="/profile" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
-                      My Profile
+                      {t('myProfile')}
                     </Link>
                     <Link href="/add-listing" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
-                      Add Listing
+                      {t('addListing')}
                     </Link>
                     <Link href="/my-listings" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
-                      My Listings
+                      {t('myListings')}
                     </Link>
                     <Link href="/info" className="px-4 py-2 hover:bg-green-100 text-green-700 font-semibold" onClick={() => setShowMenu(false)}>
-                      Useful Info
+                      {t('usefulInformation')}
                     </Link>
                     <button
                       onClick={() => { setShowMenu(false); handleLogout(); }}
                       className="px-4 py-2 text-left hover:bg-orange-100"
                     >
-                      {loading ? 'Logging out...' : 'Log out'}
+                      {loading ? t('loggingOut') : t('logOut')}
                     </button>
                   </div>
                 )}
@@ -534,7 +617,7 @@ export default function Header() {
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                     </svg>
-                    Login
+                    {t('login')}
                   </span>
                 </Link>
                 <Link href="/register" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
@@ -542,7 +625,7 @@ export default function Header() {
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>
-                    Register
+                    {t('register')}
                   </span>
                 </Link>
               </div>
@@ -562,13 +645,13 @@ export default function Header() {
                 {showMenu && (
                   <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow z-50 flex flex-col">
                     <Link href="/login" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
-                      Login
+                      {t('login')}
                     </Link>
                     <Link href="/register" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
-                      Register
+                      {t('register')}
                     </Link>
                     <Link href="/info" className="px-4 py-2 hover:bg-green-100 text-green-700 font-semibold" onClick={() => setShowMenu(false)}>
-                      Useful Info
+                      {t('usefulInformation')}
                     </Link>
                   </div>
                 )}
@@ -596,9 +679,9 @@ export default function Header() {
                 }}
                 className="p-2 border rounded min-w-[140px] text-xs md:text-base flex-1 bg-orange-50 border-orange-300"
               >
-                <option value="">All Vehicles</option>
-                <option value="car">Cars</option>
-                <option value="motorcycle">Motorcycles</option>
+                <option value="">{t('allVehicles')}</option>
+                <option value="car">{t('cars')}</option>
+                <option value="motorcycle">{t('motorcycles')}</option>
               </select>
             </div>
 
@@ -606,7 +689,7 @@ export default function Header() {
             <div className="flex flex-col md:flex-row gap-2 w-full">
               <input 
                 type="text" 
-                placeholder={vehicleType === 'motorcycle' ? "Motorcycle Brand" : "Car Brand"} 
+                placeholder={vehicleType === 'motorcycle' ? t('motorcycleBrand') : t('carBrand')} 
                 value={brand} 
                 onChange={(e) => setBrand(e.target.value)} 
                 list="brand-list" 
@@ -620,7 +703,7 @@ export default function Header() {
 
               <input 
                 type="text" 
-                placeholder="Model" 
+                placeholder={t('model')} 
                 value={model} 
                 onChange={(e) => setModel(e.target.value)} 
                 list="model-list" 
@@ -629,14 +712,14 @@ export default function Header() {
               />
               <datalist id="model-list">{models.map((m) => <option key={m} value={m} />)}</datalist>
               {vehicleType === 'motorcycle' && (
-                <p className="text-xs text-gray-500 mt-1 flex-1">Model field not available for motorcycles</p>
+                <p className="text-xs text-gray-500 mt-1 flex-1">{t('modelNotAvailableMotorcycles')}</p>
               )}
             </div>
 
             {/* Price Range */}
             <div className="flex flex-col md:flex-row gap-2 w-full">
-              <input type="number" placeholder="Min Price" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} className="p-2 border rounded min-w-[100px] text-xs md:text-base flex-1" />
-              <input type="number" placeholder="Max Price" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} className="p-2 border rounded min-w-[100px] text-xs md:text-base flex-1" />
+              <input type="number" placeholder={t('minPrice')} value={priceMin} onChange={(e) => setPriceMin(e.target.value)} className="p-2 border rounded min-w-[100px] text-xs md:text-base flex-1" />
+              <input type="number" placeholder={t('maxPrice')} value={priceMax} onChange={(e) => setPriceMax(e.target.value)} className="p-2 border rounded min-w-[100px] text-xs md:text-base flex-1" />
             </div>
 
             {/* Engine Size (show only if vehicle type is selected) */}
@@ -644,7 +727,7 @@ export default function Header() {
               <div className="flex flex-col md:flex-row gap-2 w-full">
                 <input 
                   type="number" 
-                  placeholder={vehicleType === 'motorcycle' ? "Min CC" : "Min Liters (e.g. 1.5)"} 
+                  placeholder={vehicleType === 'motorcycle' ? t('minCC') : t('minLiters')} 
                   value={engineSizeMin} 
                   onChange={(e) => setEngineSizeMin(e.target.value)} 
                   className="p-2 border rounded min-w-[120px] text-xs md:text-base flex-1" 
@@ -652,7 +735,7 @@ export default function Header() {
                 />
                 <input 
                   type="number" 
-                  placeholder={vehicleType === 'motorcycle' ? "Max CC" : "Max Liters (e.g. 3.0)"} 
+                  placeholder={vehicleType === 'motorcycle' ? t('maxCC') : t('maxLiters')} 
                   value={engineSizeMax} 
                   onChange={(e) => setEngineSizeMax(e.target.value)} 
                   className="p-2 border rounded min-w-[120px] text-xs md:text-base flex-1" 
@@ -673,7 +756,7 @@ export default function Header() {
                 >
                   <span>
                     {selectedStates.length === 0
-                      ? 'Select state(s)'
+                      ? t('selectStates')
                       : states
                           .filter(s => selectedStates.includes(s.id))
                           .map(s => `${s.name} (${s.country_code === 'US' ? 'USA' : s.country_code === 'MX' ? 'Mexico' : s.country_code})`)
@@ -693,7 +776,7 @@ export default function Header() {
                     }}
                   >
                     <div className="flex justify-between items-center mb-2 px-2 pt-2">
-                      <span className="font-semibold text-base">Select state(s)</span>
+                      <span className="font-semibold text-base">{t('selectStates')}</span>
                       <button onClick={() => setShowStatesDropdown(false)} className="text-gray-500 hover:text-red-600 text-xl font-bold">×</button>
                     </div>
                     {states.map((state) => (
@@ -720,7 +803,7 @@ export default function Header() {
                         <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
-                        Apply
+                        {t('apply')}
                       </span>
                     </button>
                   </div>
@@ -731,7 +814,7 @@ export default function Header() {
                 <div className="flex-1 min-w-[140px]">
                   <input
                     type="text"
-                    placeholder="City (optional)"
+                    placeholder={t('cityOptional')}
                     value={cityInput}
                     onChange={e => {
                       setCityInput(e.target.value);
@@ -747,15 +830,15 @@ export default function Header() {
                       <option key={city.id} value={city.name} />
                     ))}
                   </datalist>
-                  <p className="text-xs text-gray-500 mt-1">Start typing to choose a city</p>
+                  <p className="text-xs text-gray-500 mt-1">{t('startTypingCity')}</p>
                 </div>
               )}
               <select value={minYear} onChange={e => setMinYear(e.target.value)} className="p-2 border rounded min-w-[90px] text-xs md:text-base flex-1">
-                <option value="">Year from</option>
+                <option value="">{t('yearFrom')}</option>
                 {years.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
               <select value={maxYear} onChange={e => setMaxYear(e.target.value)} className="p-2 border rounded min-w-[90px] text-xs md:text-base flex-1">
-                <option value="">Year to</option>
+                <option value="">{t('yearTo')}</option>
                 {years.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
@@ -763,27 +846,27 @@ export default function Header() {
               {/* Transmission только для автомобилей */}
               {vehicleType !== 'motorcycle' && (
                 <select value={transmission} onChange={(e) => setTransmission(e.target.value)} className="p-2 border rounded min-w-[110px] text-xs md:text-base flex-1">
-                  <option value="">Transmission</option>
-                  <option value="manual">Manual</option>
-                  <option value="automatic">Automatic</option>
+                  <option value="">{t('transmission')}</option>
+                  <option value="manual">{t('manual')}</option>
+                  <option value="automatic">{t('automatic')}</option>
                 </select>
               )}
               {/* Fuel Type - обновляем опции для мотоциклов */}
               <select value={fuelType} onChange={(e) => setFuelType(e.target.value)} className="p-2 border rounded min-w-[110px] text-xs md:text-base flex-1">
-                <option value="">Fuel Type</option>
+                <option value="">{t('fuelType')}</option>
                 {vehicleType === 'motorcycle' ? (
                   <>
-                    <option value="gasoline">Gasoline</option>
-                    <option value="electric">Electric</option>
+                    <option value="gasoline">{t('gasoline')}</option>
+                    <option value="electric">{t('electric')}</option>
                   </>
                 ) : (
                   <>
-                    <option value="gasoline">Gasoline</option>
-                    <option value="diesel">Diesel</option>
-                    <option value="hybrid">Hybrid</option>
-                    <option value="electric">Electric</option>
-                    <option value="cng">Compressed Gas</option>
-                    <option value="lpg">Liquefied Gas</option>
+                    <option value="gasoline">{t('gasoline')}</option>
+                    <option value="diesel">{t('diesel')}</option>
+                    <option value="hybrid">{t('hybrid')}</option>
+                    <option value="electric">{t('electric')}</option>
+                    <option value="cng">{t('compressedGas')}</option>
+                    <option value="lpg">{t('liquefiedGas')}</option>
                   </>
                 )}
               </select>
@@ -793,7 +876,7 @@ export default function Header() {
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                Apply
+                {t('apply')}
               </span>
             </button>
           </div>

@@ -1,7 +1,11 @@
 
+'use client'
+
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
+import { useTranslation } from '@/components/I18nProvider';
+import { useEffect, useState } from 'react';
 
 interface Article {
   id: number;
@@ -15,16 +19,40 @@ interface ArticlePageProps {
   params: Promise<{ id: string }>
 }
 
-export default async function ArticlePage({ params }: ArticlePageProps) {
-  const { id } = await params;
-  const { data, error } = await supabase
-    .from('articles')
-    .select('id, title, summary, content, created_at')
-    .eq('id', id)
-    .single();
+export default function ArticlePage({ params }: ArticlePageProps) {
+  const { t } = useTranslation();
+  const [article, setArticle] = useState<Article | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (error || !data) return notFound();
-  const article = data as Article;
+  useEffect(() => {
+    const fetchArticle = async () => {
+      const { id } = await params;
+      const { data, error } = await supabase
+        .from('articles')
+        .select('id, title, summary, content, created_at')
+        .eq('id', id)
+        .single();
+
+      if (error || !data) {
+        setArticle(null);
+      } else {
+        setArticle(data as Article);
+      }
+      setLoading(false);
+    };
+
+    fetchArticle();
+  }, [params]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  if (!article) return notFound();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-100 relative overflow-hidden">
@@ -54,7 +82,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             <svg className="w-4 h-4 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-            Back to articles list
+            {t('backToArticlesList')}
           </Link>
         </div>
       </div>

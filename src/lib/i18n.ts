@@ -8,10 +8,11 @@ if (!i18n.isInitialized) {
     .use(initReactI18next)
     .init({
       resources: {
-        en: { translation: en },
-        es: { translation: es },
+        en: { common: en },
+        es: { common: es },
       },
       fallbackLng: 'en',
+      defaultNS: 'common',
       interpolation: { escapeValue: false },
     });
 }

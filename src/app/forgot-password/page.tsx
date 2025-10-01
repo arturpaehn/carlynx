@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
+import { useTranslation } from '@/components/I18nProvider'
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -23,7 +25,7 @@ export default function ForgotPasswordPage() {
     if (error) {
       setError(error.message)
     } else {
-      setMessage('Check your email for the password reset link (including spam).')
+      setMessage(t('checkEmailForReset'))
     }
 
     setLoading(false)
@@ -47,8 +49,8 @@ export default function ForgotPasswordPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m0 0a2 2 0 012 2m-2-2a2 2 0 00-2 2m0 0a2 2 0 01-2 2m2-2h-2m2 0a2 2 0 012-2m-2 0a2 2 0 00-2-2" />
               </svg>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Reset your password</h2>
-            <p className="text-sm text-gray-600">Enter your email and we&apos;ll send you a reset link</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('resetPassword')}</h2>
+            <p className="text-sm text-gray-600">{t('enterEmailForReset')}</p>
           </div>
 
           {/* Form */}
@@ -60,11 +62,11 @@ export default function ForgotPasswordPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900">Check your email</h3>
+                <h3 className="text-lg font-medium text-gray-900">{t('checkEmailForReset')}</h3>
                 <p className="text-gray-600">{message}</p>
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <Link href="/login" className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200">
-                    Back to Login
+                    {t('backToLogin')}
                   </Link>
                   <button
                     onClick={() => {
@@ -73,7 +75,7 @@ export default function ForgotPasswordPage() {
                     }}
                     className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors duration-200"
                   >
-                    Send Another
+                    {t('sendResetLink')}
                   </button>
                 </div>
               </div>
@@ -82,7 +84,7 @@ export default function ForgotPasswordPage() {
                 {/* Email */}
                 <div className="space-y-1">
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email Address
+                    {t('email')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -96,11 +98,11 @@ export default function ForgotPasswordPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-                      placeholder="Enter your email address"
+                      placeholder={t('emailPlaceholder')}
                       required
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">We&apos;ll send a password reset link to this email</p>
+                  <p className="text-xs text-gray-500 mt-1">{t('sendResetEmailInfo')}</p>
                 </div>
 
                 {/* Error Message */}
@@ -131,14 +133,14 @@ export default function ForgotPasswordPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Sending reset link...
+                      {t('sending')}
                     </>
                   ) : (
                     <>
                       <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
-                      Send Reset Link
+                      {t('sendResetLink')}
                     </>
                   )}
                 </button>
@@ -146,9 +148,9 @@ export default function ForgotPasswordPage() {
                 {/* Back to Login Link */}
                 <div className="text-center pt-4">
                   <p className="text-sm text-gray-600">
-                    Remember your password?{' '}
+                    {t('rememberPassword')}{' '}
                     <Link href="/login" className="font-medium text-orange-600 hover:text-orange-500 transition-colors duration-200">
-                      Back to login
+                      {t('backToLogin')}
                     </Link>
                   </p>
                 </div>

@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs'
 import Link from 'next/link'
+import { useTranslation } from '@/components/I18nProvider'
 
 export default function RegisterPage() {
+  const { t } = useTranslation()
   const supabase = createPagesBrowserClient()
 
   const [email, setEmail] = useState('')
@@ -27,22 +29,22 @@ export default function RegisterPage() {
     setError(null)
 
     if (!/^[a-zA-Z\s]+$/.test(fullName)) {
-      setError('Name can only contain English letters and spaces.')
+      setError(t('nameOnlyLettersAndSpaces'))
       return;
     }
 
     if (!validateEmail(email)) {
-      setError('Invalid email address.')
+      setError(t('invalidEmailAddress'))
       return;
     }
 
     if (!validatePhone(phone)) {
-      setError('Invalid phone number.')
+      setError(t('invalidPhoneNumber'))
       return;
     }
 
     if (password.length < 7) {
-      setError('Password must be at least 7 characters.')
+      setError(t('passwordMinLength'))
       return;
     }
 
@@ -60,7 +62,7 @@ export default function RegisterPage() {
       }
 
       if (data) {
-        setError('An account with this email already exists. Try logging in.')
+        setError(t('accountExistsLogin'))
         setLoading(false)
         return;
       }
@@ -83,10 +85,10 @@ export default function RegisterPage() {
         // Profile will be created automatically by database trigger
         setSuccess(true)
       } else {
-        setError('Registration succeeded, but user ID not found.')
+        setError(t('registrationSuccessNoId'))
       }
     } catch {
-      setError('Unexpected error occurred. Please try again later.')
+      setError(t('unexpectedError'))
     }
 
     setLoading(false)
@@ -110,8 +112,8 @@ export default function RegisterPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h2>
-            <p className="text-sm text-gray-600">Join CarLynx to buy and sell cars with ease</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('createYourAccount')}</h2>
+            <p className="text-sm text-gray-600">{t('joinCarLynx')}</p>
           </div>
 
           {/* Form */}
@@ -123,10 +125,10 @@ export default function RegisterPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900">Check your email</h3>
-                <p className="text-gray-600">We&apos;ve sent a confirmation link to your email address. Please click the link to activate your account.</p>
+                <h3 className="text-lg font-medium text-gray-900">{t('checkYourEmail')}</h3>
+                <p className="text-gray-600">{t('confirmationEmailSent')}</p>
                 <Link href="/login" className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors duration-200">
-                  Go to Login
+                  {t('goToLogin')}
                 </Link>
               </div>
             ) : (
@@ -134,7 +136,7 @@ export default function RegisterPage() {
                 {/* Full Name */}
                 <div className="space-y-1">
                   <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                    Full Name
+                    {t('fullName')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -148,7 +150,7 @@ export default function RegisterPage() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-                      placeholder="Enter your full name"
+                      placeholder={t('enterFullName')}
                       required
                     />
                   </div>
@@ -157,7 +159,7 @@ export default function RegisterPage() {
                 {/* Phone */}
                 <div className="space-y-1">
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                    Phone Number
+                    {t('phoneNumber')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -180,7 +182,7 @@ export default function RegisterPage() {
                 {/* Email */}
                 <div className="space-y-1">
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email Address
+                    {t('emailAddress')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -194,7 +196,7 @@ export default function RegisterPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-                      placeholder="Enter your email"
+                      placeholder={t('enterYourEmail')}
                       required
                     />
                   </div>
@@ -203,7 +205,7 @@ export default function RegisterPage() {
                 {/* Password */}
                 <div className="space-y-1">
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                    Password
+                    {t('password')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -217,7 +219,7 @@ export default function RegisterPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-                      placeholder="Create a password"
+                      placeholder={t('createPassword')}
                       required
                     />
                     <button
@@ -237,7 +239,7 @@ export default function RegisterPage() {
                       )}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Minimum 7 characters</p>
+                  <p className="text-xs text-gray-500 mt-1">{t('minimumCharacters')}</p>
                 </div>
 
                 {/* Error Message */}
@@ -268,14 +270,14 @@ export default function RegisterPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Creating account...
+                      {t('creatingAccount')}
                     </>
                   ) : (
                     <>
                       <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                       </svg>
-                      Create Account
+                      {t('createAccount')}
                     </>
                   )}
                 </button>
@@ -283,9 +285,9 @@ export default function RegisterPage() {
                 {/* Login Link */}
                 <div className="text-center pt-4">
                   <p className="text-sm text-gray-600">
-                    Already have an account?{' '}
+                    {t('alreadyHaveAccount')}{' '}
                     <Link href="/login" className="font-medium text-orange-600 hover:text-orange-500 transition-colors duration-200">
-                      Sign in here
+                      {t('signInHere')}
                     </Link>
                   </p>
                 </div>

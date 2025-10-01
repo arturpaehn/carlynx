@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
+import { useTranslation } from "./I18nProvider";
 
 export default function ContactModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -15,7 +17,7 @@ export default function ContactModal({ open, onClose }: { open: boolean; onClose
     e.preventDefault();
     setError("");
     if (!email.trim() || !subject.trim() || !message.trim()) {
-      setError("All fields are required.");
+      setError(t('allFieldsRequired'));
       return;
     }
     setLoading(true);
@@ -28,7 +30,7 @@ export default function ContactModal({ open, onClose }: { open: boolean; onClose
     if (res.ok) {
       setSuccess(true);
     } else {
-      setError("Failed to send. Please try again later.");
+      setError(t('sendFailed'));
     }
   };
 
@@ -37,47 +39,47 @@ export default function ContactModal({ open, onClose }: { open: boolean; onClose
       <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative animate-fade-in">
         {success ? (
           <div className="text-center">
-            <h2 className="text-xl font-bold mb-4 text-green-700">Message sent!</h2>
+            <h2 className="text-xl font-bold mb-4 text-green-700">{t('messageSent')}</h2>
             <button
               className="mt-4 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
               onClick={() => { setSuccess(false); setEmail(""); setSubject(""); setMessage(""); onClose(); }}
             >
-              Back to Home
+              {t('backToHome')}
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <h2 className="text-xl font-bold text-orange-700 mb-2 text-center">Contact CarLynx</h2>
+            <h2 className="text-xl font-bold text-orange-700 mb-2 text-center">{t('contactCarLynx')}</h2>
             <div>
-              <label htmlFor="contact-email" className="block text-sm font-semibold mb-1 text-gray-700">Your email</label>
+              <label htmlFor="contact-email" className="block text-sm font-semibold mb-1 text-gray-700">{t('yourEmail')}</label>
               <input
                 id="contact-email"
                 type="email"
                 className="w-full border-2 border-orange-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 placeholder-gray-400"
-                placeholder="example@email.com"
+                placeholder={t('emailExample')}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
               />
             </div>
             <div>
-              <label htmlFor="contact-subject" className="block text-sm font-semibold mb-1 text-gray-700">Subject</label>
+              <label htmlFor="contact-subject" className="block text-sm font-semibold mb-1 text-gray-700">{t('subject')}</label>
               <input
                 id="contact-subject"
                 type="text"
                 className="w-full border-2 border-orange-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 placeholder-gray-400"
-                placeholder="Message subject"
+                placeholder={t('subjectPlaceholder')}
                 value={subject}
                 onChange={e => setSubject(e.target.value)}
                 required
               />
             </div>
             <div>
-              <label htmlFor="contact-message" className="block text-sm font-semibold mb-1 text-gray-700">Message</label>
+              <label htmlFor="contact-message" className="block text-sm font-semibold mb-1 text-gray-700">{t('messageLabel')}</label>
               <textarea
                 id="contact-message"
                 className="w-full border-2 border-orange-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 placeholder-gray-400"
-                placeholder="Type your message here..."
+                placeholder={t('messagePlaceholder')}
                 rows={5}
                 value={message}
                 onChange={e => setMessage(e.target.value)}
@@ -92,14 +94,14 @@ export default function ContactModal({ open, onClose }: { open: boolean; onClose
                 onClick={onClose}
                 disabled={loading}
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
                 disabled={loading}
               >
-                {loading ? "Sending..." : "Send"}
+                {loading ? t('sending') : t('send')}
               </button>
             </div>
           </form>

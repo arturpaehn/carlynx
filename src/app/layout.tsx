@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import SupabaseProvider from '@/components/SupabaseProvider'
+import { I18nProvider } from '@/components/I18nProvider'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import CookieConsent from '@/components/CookieConsent'
@@ -100,11 +101,13 @@ export default function RootLayout({
         </Script>
         
         <SupabaseProvider>
-          <Header />
-          {children}
-          <Footer />
-          <CookieConsent />
-          <MonitoringStatus />
+          <I18nProvider>
+            <Header />
+            {children}
+            <Footer />
+            <CookieConsent />
+            <MonitoringStatus />
+          </I18nProvider>
         </SupabaseProvider>
       </body>
     </html>

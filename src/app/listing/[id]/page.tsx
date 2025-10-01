@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { generateListingTitle, generateListingDescription, generateListingKeywords, updateMetaTags } from '@/lib/seoUtils'
+import { useTranslation } from '@/components/I18nProvider'
 
 type Listing = {
   id: number
@@ -46,6 +47,7 @@ type UserInfo = {
 }
 
 export default function ListingDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const id = params && typeof params === 'object' && 'id' in params ? String((params as Record<string, string | string[]>).id) : '';
   const router = useRouter();
@@ -308,7 +310,7 @@ useEffect(() => {
         <div className="max-w-4xl mx-auto relative">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-12 text-center">
             <div className="animate-spin h-12 w-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 font-medium">Loading listing details...</p>
+            <p className="text-gray-600 font-medium">{t('loadingListingDetails')}</p>
           </div>
         </div>
       </div>
@@ -334,14 +336,14 @@ useEffect(() => {
                 </svg>
               </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 text-center mb-2">Listing Not Found</h3>
-            <p className="text-center text-red-600">{error || 'This listing is no longer available.'}</p>
+            <h3 className="text-lg font-semibold text-gray-800 text-center mb-2">{t('listingNotFound')}</h3>
+            <p className="text-center text-red-600">{error || t('listingNoLongerAvailable')}</p>
             <div className="mt-6 text-center">
               <button
                 onClick={handleBack}
                 className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-6 py-3 rounded-lg font-medium hover:from-orange-600 hover:to-amber-600 transition-all duration-200 transform hover:scale-105"
               >
-                ← Go Back
+                {t('goBack')}
               </button>
             </div>
           </div>
@@ -369,7 +371,7 @@ useEffect(() => {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            {cameFromMy ? 'Back to My Listings' : cameFromSearch ? 'Back to Search Results' : 'Back to Home'}
+            {cameFromMy ? t('backToMyListings') : cameFromSearch ? t('backToSearchResults') : t('backToHome')}
           </button>
         </div>
 
@@ -426,7 +428,7 @@ useEffect(() => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                {listing.views} views
+                {listing.views} {t('views')}
               </div>
             </div>
           </div>
@@ -438,7 +440,7 @@ useEffect(() => {
             <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            Photos
+            {t('photos')}
           </h2>
           
           {images.length > 0 ? (
@@ -473,8 +475,8 @@ useEffect(() => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <p className="text-gray-500 font-medium">No photos available</p>
-              <p className="text-gray-400 text-sm">The seller hasn&apos;t uploaded any photos for this listing</p>
+              <p className="text-gray-500 font-medium">{t('noPhotosAvailable')}</p>
+              <p className="text-gray-400 text-sm">{t('sellerNoPhotos')}</p>
             </div>
           )}
         </div>
@@ -487,48 +489,48 @@ useEffect(() => {
               <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Specifications
+              {t('specifications')}
             </h2>
             <div className="space-y-3">
               {listing.brand_name && (
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                  <span className="text-gray-600 font-medium">Brand</span>
+                  <span className="text-gray-600 font-medium">{t('brand')}</span>
                   <span className="text-gray-900">{listing.brand_name}</span>
                 </div>
               )}
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600 font-medium">Model</span>
+                <span className="text-gray-600 font-medium">{t('model')}</span>
                 <span className="text-gray-900">{listing.model || 'N/A'}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600 font-medium">Year</span>
+                <span className="text-gray-600 font-medium">{t('year')}</span>
                 <span className="text-gray-900">{listing.year}</span>
               </div>
               {listing.vehicle_type && (
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                  <span className="text-gray-600 font-medium">Vehicle Type</span>
+                  <span className="text-gray-600 font-medium">{t('vehicleType')}</span>
                   <span className="text-gray-900 capitalize">{listing.vehicle_type}</span>
                 </div>
               )}
               {listing.transmission && (
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                  <span className="text-gray-600 font-medium">Transmission</span>
+                  <span className="text-gray-600 font-medium">{t('transmission')}</span>
                   <span className="text-gray-900 capitalize">{listing.transmission}</span>
                 </div>
               )}
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600 font-medium">Fuel Type</span>
+                <span className="text-gray-600 font-medium">{t('fuelType')}</span>
                 <span className="text-gray-900 capitalize">{listing.fuel_type}</span>
               </div>
               {listing.mileage && (
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                  <span className="text-gray-600 font-medium">Mileage</span>
+                  <span className="text-gray-600 font-medium">{t('mileage')}</span>
                   <span className="text-gray-900">{listing.mileage.toLocaleString()} miles</span>
                 </div>
               )}
               {listing.engine_size && (
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-gray-600 font-medium">Engine Size</span>
+                  <span className="text-gray-600 font-medium">{t('engineSize')}</span>
                   <span className="text-gray-900">
                     {listing.vehicle_type === 'motorcycle' 
                       ? `${listing.engine_size} cc` 
@@ -546,12 +548,12 @@ useEffect(() => {
               <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              Seller Information
+              {t('sellerInformation')}
             </h2>
             <div className="space-y-3">
               <div className="flex items-center justify-between py-2">
-                <span className="text-gray-600 font-medium">Name</span>
-                <span className="text-gray-900">{ownerInfo?.full_name || 'Not provided'}</span>
+                <span className="text-gray-600 font-medium">{t('name')}</span>
+                <span className="text-gray-900">{ownerInfo?.full_name || t('notProvided')}</span>
               </div>
             </div>
           </div>
@@ -564,7 +566,7 @@ useEffect(() => {
               <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
               </svg>
-              Description
+              {t('description')}
             </h2>
             <div className="prose prose-gray max-w-none">
               <p className="text-gray-700 leading-relaxed">{listing.description}</p>
@@ -579,7 +581,7 @@ useEffect(() => {
               <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              Contact Information
+              {t('contactInformation')}
             </h2>
             <div className="space-y-3">
               {listing.contact_by_phone && ownerInfo?.phone && (
@@ -591,7 +593,7 @@ useEffect(() => {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-gray-700 font-medium">Phone</p>
+                      <p className="text-gray-700 font-medium">{t('phone')}</p>
                       <p className="text-gray-900 font-semibold">{ownerInfo.phone}</p>
                     </div>
                   </div>
@@ -606,7 +608,7 @@ useEffect(() => {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-gray-700 font-medium">Email</p>
+                      <p className="text-gray-700 font-medium">{t('contactEmail')}</p>
                       <p className="text-gray-900 font-semibold">{ownerInfo.email}</p>
                     </div>
                   </div>

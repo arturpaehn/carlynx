@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { useTranslation } from '@/components/I18nProvider'
 
 type Listing = {
   id: number
@@ -27,6 +28,7 @@ type State = {
 }
 
 export default function MyListingsPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const [listings, setListings] = useState<Listing[]>([])
   const [states, setStates] = useState<State[]>([])
@@ -106,16 +108,16 @@ export default function MyListingsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-gray-800">My Listings</h1>
+            <h1 className="text-3xl font-bold text-gray-800">{t('myListingsTitle')}</h1>
           </div>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Manage your car listings and track their performance
+            {t('manageYourListings')}
           </p>
         </div>
         {loading ? (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-12 text-center">
             <div className="animate-spin h-12 w-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 font-medium">Loading your listings...</p>
+            <p className="text-gray-600 font-medium">{t('loadingYourListings')}</p>
           </div>
         ) : error ? (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8">
@@ -126,7 +128,7 @@ export default function MyListingsPage() {
                 </svg>
               </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 text-center mb-2">Error Loading Listings</h3>
+            <h3 className="text-lg font-semibold text-gray-800 text-center mb-2">{t('errorLoadingListings')}</h3>
             <p className="text-center text-red-600">{error}</p>
           </div>
         ) : listings.length === 0 ? (
@@ -136,13 +138,13 @@ export default function MyListingsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-3">No Listings Found</h3>
-            <p className="text-gray-600 mb-6">You haven&apos;t created any listings yet. Start by adding your first car!</p>
+            <h3 className="text-xl font-semibold text-gray-800 mb-3">{t('noListingsYet')}</h3>
+            <p className="text-gray-600 mb-6">{t('createFirstListing')}</p>
             <button
               onClick={() => router.push('/add-listing')}
               className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-6 py-3 rounded-lg font-medium hover:from-orange-600 hover:to-amber-600 transition-all duration-200 transform hover:scale-105"
             >
-              Create Your First Listing
+              {t('createFirstListing')}
             </button>
           </div>
         ) : (
@@ -180,7 +182,7 @@ export default function MyListingsPage() {
                             />
                             <div className="absolute top-1 left-1">
                               <span className="bg-green-500 text-white text-xs font-medium px-1 sm:px-2 py-1 rounded-full">
-                                Active
+                                {t('active')}
                               </span>
                             </div>
                           </div>
@@ -254,7 +256,7 @@ export default function MyListingsPage() {
                             <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
-                            Edit
+                            {t('edit')}
                           </button>
                         </div>
                       </div>
@@ -269,10 +271,10 @@ export default function MyListingsPage() {
                 <div className="text-center py-8">
                   <div className="flex items-center justify-center mb-3">
                     <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1 max-w-32"></div>
-                    <span className="px-4 text-gray-500 font-medium">Inactive Listings</span>
+                    <span className="px-4 text-gray-500 font-medium">{t('inactive')} {t('myListingsTitle')}</span>
                     <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1 max-w-32"></div>
                   </div>
-                  <p className="text-sm text-gray-500">These listings are currently not visible to buyers</p>
+                  <p className="text-sm text-gray-500">{t('inactiveListingsNote')}</p>
                 </div>
                 
                 <div className="space-y-4">
@@ -303,7 +305,7 @@ export default function MyListingsPage() {
                                 />
                                 <div className="absolute top-1 left-1">
                                   <span className="bg-red-500 text-white text-xs font-medium px-1 sm:px-2 py-1 rounded-full">
-                                    Inactive
+                                    {t('inactive')}
                                   </span>
                                 </div>
                               </div>
@@ -324,7 +326,7 @@ export default function MyListingsPage() {
                             <div className="mb-2 sm:mb-3">
                               <h2 className="text-sm sm:text-lg font-bold text-gray-600 mb-1 truncate">
                                 {listing.title}
-                                <span className="text-xs sm:text-sm text-red-500 font-medium ml-2">(Inactive)</span>
+                                <span className="text-xs sm:text-sm text-red-500 font-medium ml-2">({t('inactive')})</span>
                               </h2>
                               <div className="flex flex-wrap gap-2 sm:gap-3 text-sm text-gray-500">
                                 <div className="flex items-center">

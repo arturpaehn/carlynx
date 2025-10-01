@@ -6,6 +6,7 @@ import { useUser } from '@/hooks/useUser'
 import Image from 'next/image';
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { useTranslation } from '@/components/I18nProvider'
 
 const fuelOptions = ['gasoline', 'diesel', 'hybrid', 'electric', 'cng', 'lpg']
 const motorcycleFuelOptions = ['gasoline', 'electric']
@@ -13,7 +14,7 @@ const transmissionOptions = ['manual', 'automatic']
 const vehicleTypes = [
   { 
     value: 'car', 
-    label: 'Car', 
+    labelKey: 'carLabel' as const, 
     icon: (
       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
         <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
@@ -22,7 +23,7 @@ const vehicleTypes = [
   },
   { 
     value: 'motorcycle', 
-    label: 'Motorcycle', 
+    labelKey: 'motorcycleLabel' as const, 
     icon: (
       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
         <path d="M19.44 9.03L15.41 5H11v2h3.59l2 2H5c-2.8 0-5 2.2-5 5s2.2 5 5 5c2.46 0 4.45-1.69 4.9-4h1.65l.95-.95c.18-.18.46-.28.73-.28.55 0 1.02-.22 1.41-.61.39-.39.61-.86.61-1.41 0-.27-.1-.55-.28-.73L19.44 9.03zM7.82 15H5.18C4.8 15 4.5 14.7 4.5 14.32s.3-.68.68-.68h2.64c.38 0 .68.3.68.68S8.2 15 7.82 15zM19 12c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm-.5 4.5h-1v-1h1v1zm0-2h-1v-1h1v1z"/>
@@ -51,6 +52,7 @@ const harmfulKeywords = [
 export default function AddListingPage() {
   const userProfile = useUser();
   const router = useRouter()
+  const { t } = useTranslation();
   
   // Новое состояние для типа транспорта
   const [vehicleType, setVehicleType] = useState<'car' | 'motorcycle'>('car')
@@ -387,7 +389,7 @@ export default function AddListingPage() {
     
     // Vehicle-specific validation
     if (vehicleType === 'car' && !transmission) {
-      setMessage('Please select transmission for car.');
+      setMessage(t('pleaseSelectTransmission'));
       return;
     }
     
@@ -396,12 +398,12 @@ export default function AddListingPage() {
       return;
     }
     if (!contactByPhone && !contactByEmail) {
-      setMessage('Please select at least one contact method.');
+      setMessage(t('pleaseSelectContact'));
       return;
     }
     const numericYear = Number(year);
     if (isNaN(numericYear) || numericYear < 1900 || numericYear > currentYear) {
-      setMessage(`Year must be between 1900 and ${currentYear}.`);
+      setMessage(`${t('yearRange')} ${currentYear}.`);
       return;
     }
     
@@ -410,7 +412,7 @@ export default function AddListingPage() {
       if (engineSize) {
         const numericEngineSize = Number(engineSize);
         if (isNaN(numericEngineSize) || numericEngineSize < 50 || numericEngineSize > 3000) {
-          setMessage('Engine size must be between 50 and 3000 cc for motorcycles.');
+          setMessage(t('engineSizeMotorcycle'));
           return;
         }
       }
@@ -421,13 +423,13 @@ export default function AddListingPage() {
         const decimal = engineSizeDecimal ? Number(engineSizeDecimal) : 0;
         
         if (isNaN(whole) || isNaN(decimal) || whole < 0 || whole > 9 || decimal < 0 || decimal > 9) {
-          setMessage('Invalid engine size format for cars.');
+          setMessage(t('invalidEngineSize'));
           return;
         }
         
         const totalLiters = whole + (decimal / 10);
         if (totalLiters < 0.5 || totalLiters > 10.0) {
-          setMessage('Engine size must be between 0.5 and 10.0 liters for cars.');
+          setMessage(t('engineSizeCars'));
           return;
         }
       }
@@ -463,8 +465,8 @@ export default function AddListingPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Add New Listing</h2>
-            <p className="text-sm text-gray-600">Sell your car to thousands of potential buyers</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('addListingTitle')}</h2>
+            <p className="text-sm text-gray-600">{t('sellYourCarDescription')}</p>
           </div>
 
           {/* Modal Agreement */}
@@ -476,30 +478,30 @@ export default function AddListingPage() {
                     <svg className="h-6 w-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Terms and Conditions
+                    {t('termsAndConditions')}
                   </h3>
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="text-gray-700 text-sm">
-                    <p className="mb-3">By submitting your listing, you agree that:</p>
+                    <p className="mb-3">{t('agreementIntro')}</p>
                     <ul className="space-y-2 text-sm">
                       <li className="flex items-start">
                         <svg className="h-4 w-4 text-orange-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
-                        Your listing will be visible to all users
+                        {t('agreementVisible')}
                       </li>
                       <li className="flex items-start">
                         <svg className="h-4 w-4 text-orange-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
-                        You are responsible for the accuracy of information
+                        {t('agreementAccuracy')}
                       </li>
                       <li className="flex items-start">
                         <svg className="h-4 w-4 text-orange-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
-                        Inappropriate listings will be removed
+                        {t('agreementRemoval')}
                       </li>
                     </ul>
                   </div>
@@ -510,7 +512,7 @@ export default function AddListingPage() {
                       onChange={e => setAgreementChecked(e.target.checked)}
                       className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
                     />
-                    <span className="ml-3 text-sm font-medium text-gray-900">I accept the terms and conditions</span>
+                    <span className="ml-3 text-sm font-medium text-gray-900">{t('acceptTerms')}</span>
                   </label>
                   <div className="flex gap-3 pt-4">
                     <button
@@ -521,7 +523,7 @@ export default function AddListingPage() {
                         setIsSubmitting(false); // Сбрасываем состояние загрузки при отмене
                       }}
                     >
-                      Cancel
+                      {t('cancel')}
                     </button>
                     <button
                       className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg text-sm font-medium hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
@@ -541,10 +543,10 @@ export default function AddListingPage() {
                           <svg className="animate-spin h-4 w-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                           </svg>
-                          Creating...
+                          {t('creating')}
                         </>
                       ) : (
-                        'Agree & Submit'
+                        t('agreeSubmit')
                       )}
                     </button>
                   </div>
@@ -560,7 +562,7 @@ export default function AddListingPage() {
               {/* Vehicle Type Selection */}
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">
-                  Vehicle Type <span className="text-red-500">*</span>
+                  {t('vehicleType')} <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   {vehicleTypes.map((type) => (
@@ -584,7 +586,7 @@ export default function AddListingPage() {
                       }`}
                     >
                       <div>{type.icon}</div>
-                      <div className="font-medium">{type.label}</div>
+                      <div className="font-medium">{t(type.labelKey)}</div>
                     </button>
                   ))}
                 </div>
@@ -593,7 +595,7 @@ export default function AddListingPage() {
               {/* Brand */}
               <div className="space-y-1">
                 <label htmlFor="brand" className="block text-sm font-medium text-gray-700">
-                  {vehicleType === 'car' ? 'Car Brand' : 'Motorcycle Brand'} <span className="text-red-500">*</span>
+                  {vehicleType === 'car' ? t('carBrand') : t('motorcycleBrand')} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -604,7 +606,7 @@ export default function AddListingPage() {
                   <input
                     id="brand"
                     type="text"
-                    placeholder={vehicleType === 'car' ? 'Select or type car brand' : 'Select or type motorcycle brand'}
+                    placeholder={vehicleType === 'car' ? t('selectCarBrand') : t('selectMotorcycleBrand')}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     list={vehicleType === 'car' ? 'car-brand-list' : 'motorcycle-brand-list'}
@@ -628,7 +630,7 @@ export default function AddListingPage() {
               {availableModels.length > 0 && (
                 <div className="space-y-1">
                   <label htmlFor="model" className="block text-sm font-medium text-gray-700">
-                    Model <span className="text-gray-500 text-sm">(optional)</span>
+                    {t('model')} <span className="text-gray-500 text-sm">({t('optional')})</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -639,7 +641,7 @@ export default function AddListingPage() {
                     <input
                       id="model"
                       type="text"
-                      placeholder="Select or type model"
+                      placeholder={t('selectModel')}
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
                       list="model-list"
@@ -659,7 +661,7 @@ export default function AddListingPage() {
                 {/* Price */}
                 <div className="space-y-1">
                   <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                    Price <span className="text-red-500">*</span>
+                    {t('price')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -668,7 +670,7 @@ export default function AddListingPage() {
                     <input
                       id="price"
                       type="number"
-                      placeholder="Enter price"
+                      placeholder={t('enterPrice')}
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       required
@@ -680,7 +682,7 @@ export default function AddListingPage() {
                 {/* Year */}
                 <div className="space-y-1">
                   <label htmlFor="year" className="block text-sm font-medium text-gray-700">
-                    Year <span className="text-red-500">*</span>
+                    {t('year')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -691,7 +693,7 @@ export default function AddListingPage() {
                     <input
                       id="year"
                       type="number"
-                      placeholder="Enter year"
+                      placeholder={t('enterYear')}
                       value={year}
                       onChange={(e) => setYear(e.target.value)}
                       list="year-list"
@@ -710,7 +712,7 @@ export default function AddListingPage() {
               {/* Mileage */}
               <div className="space-y-1">
                 <label htmlFor="mileage" className="block text-sm font-medium text-gray-700">
-                  Mileage <span className="text-gray-500 text-sm">(miles)</span>
+                  {t('mileage')} <span className="text-gray-500 text-sm">{t('miles')}</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -721,7 +723,7 @@ export default function AddListingPage() {
                   <input
                     id="mileage"
                     type="number"
-                    placeholder="Enter mileage"
+                    placeholder={t('enterMileage')}
                     value={mileage}
                     onChange={(e) => {
                       const val = e.target.value
@@ -737,7 +739,7 @@ export default function AddListingPage() {
                 {/* State */}
                 <div className="space-y-1">
                   <label htmlFor="state" className="block text-sm font-medium text-gray-700">
-                    State <span className="text-red-500">*</span>
+                    {t('state')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -753,7 +755,7 @@ export default function AddListingPage() {
                       required
                       className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
                     >
-                      <option value="">Select state</option>
+                      <option value="">{t('selectState')}</option>
                       {states.map((state) => (
                         <option key={state.id} value={state.id}>
                           {state.name} ({state.country_code === 'US' ? 'USA' : state.country_code === 'MX' ? 'Mexico' : state.country_code})
@@ -767,7 +769,7 @@ export default function AddListingPage() {
                 {stateId && (
                   <div className="space-y-1">
                     <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                      City <span className="text-gray-500 text-sm">(optional)</span>
+                      {t('city')} <span className="text-gray-500 text-sm">({t('optional')})</span>
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -778,7 +780,7 @@ export default function AddListingPage() {
                       <input
                         id="city"
                         type="text"
-                        placeholder="Start typing city name"
+                        placeholder={t('startTypingCity')}
                         value={cityInput}
                         onChange={e => setCityInput(e.target.value)}
                         list="city-list"
@@ -791,7 +793,7 @@ export default function AddListingPage() {
                         ))}
                       </datalist>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Start typing to choose from available cities</p>
+                    <p className="text-xs text-gray-500 mt-1">{t('startTypingInstructions')}</p>
                   </div>
                 )}
               </div>
@@ -802,7 +804,7 @@ export default function AddListingPage() {
                 {vehicleType === 'car' && (
                   <div className="space-y-1">
                     <label htmlFor="transmission" className="block text-sm font-medium text-gray-700">
-                      Transmission
+                      {t('transmission')}
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -817,10 +819,10 @@ export default function AddListingPage() {
                         onChange={(e) => setTransmission(e.target.value)}
                         className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
                       >
-                        <option value="">Select transmission</option>
+                        <option value="">{t('selectTransmission')}</option>
                         {transmissionOptions.map((opt) => (
                           <option key={opt} value={opt}>
-                            {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                            {opt === 'manual' ? t('manual') : t('automatic')}
                           </option>
                         ))}
                       </select>
@@ -831,7 +833,7 @@ export default function AddListingPage() {
                 {/* Engine Size (For all vehicles) */}
                 <div className="space-y-1">
                   <label htmlFor="engineSize" className="block text-sm font-medium text-gray-700">
-                    Engine Size ({vehicleType === 'motorcycle' ? 'cc' : 'L'})
+                    {t('engineSize')} ({vehicleType === 'motorcycle' ? 'cc' : 'L'})
                   </label>
                   <div className="relative">
                     {vehicleType === 'motorcycle' ? (
@@ -842,7 +844,7 @@ export default function AddListingPage() {
                         step="1"
                         min="50"
                         max="3000"
-                        placeholder="e.g. 600"
+                        placeholder={t('engineSizePlaceholderMotorcycle')}
                         value={engineSize}
                         onChange={(e) => setEngineSize(e.target.value)}
                         className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
@@ -854,7 +856,7 @@ export default function AddListingPage() {
                           type="number"
                           min="0"
                           max="9"
-                          placeholder="2"
+                          placeholder={t('engineSizePlaceholderCarWhole')}
                           value={engineSizeWhole}
                           onChange={(e) => setEngineSizeWhole(e.target.value)}
                           className="block w-16 px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 text-center"
@@ -864,7 +866,7 @@ export default function AddListingPage() {
                           type="number"
                           min="0"
                           max="9"
-                          placeholder="0"
+                          placeholder={t('engineSizePlaceholderCarDecimal')}
                           value={engineSizeDecimal}
                           onChange={(e) => setEngineSizeDecimal(e.target.value)}
                           className="block w-16 px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 text-center"
@@ -874,14 +876,14 @@ export default function AddListingPage() {
                     )}
                   </div>
                   {vehicleType === 'car' && (
-                    <p className="text-xs text-gray-500 mt-1">Enter engine size (e.g., 2.0L = enter 2 and 0)</p>
+                    <p className="text-xs text-gray-500 mt-1">{t('engineSizeInstructions')}</p>
                   )}
                 </div>
 
                 {/* Fuel Type */}
                 <div className="space-y-1">
                   <label htmlFor="fuel" className="block text-sm font-medium text-gray-700">
-                    Fuel Type
+                    {t('fuelType')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -895,7 +897,7 @@ export default function AddListingPage() {
                       onChange={(e) => setFuelType(e.target.value)}
                       className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
                     >
-                      <option value="">Select fuel type</option>
+                      <option value="">{t('selectFuelType')}</option>
                       {(vehicleType === 'motorcycle' ? motorcycleFuelOptions : fuelOptions).map((opt) => (
                         <option key={opt} value={opt}>
                           {opt.charAt(0).toUpperCase() + opt.slice(1)}
@@ -909,27 +911,27 @@ export default function AddListingPage() {
               {/* Description */}
               <div className="space-y-1">
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                  Description
+                  {t('description')}
                 </label>
                 <textarea
                   id="description"
-                  placeholder="Describe your car's condition, features, history, etc."
+                  placeholder={t('descriptionPlaceholder')}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                   className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 resize-vertical"
                 />
-                <p className="text-xs text-gray-500 mt-1">Tell buyers what makes your car special</p>
+                <p className="text-xs text-gray-500 mt-1">{t('tellBuyersSpecial')}</p>
               </div>
 
               {/* Images Upload */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <label className="block text-sm font-medium text-gray-700">
-                    Photos <span className="text-red-500">*</span>
+                    {t('photos')} <span className="text-red-500">*</span>
                   </label>
                   <span className="text-xs text-gray-500">
-                    {images.length}/4 images
+                    {images.length}/4 {t('photosUploadLimit')}
                   </span>
                 </div>
                 
@@ -952,8 +954,8 @@ export default function AddListingPage() {
                       </svg>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-orange-600">Upload photos</span>
-                      <p className="text-xs text-gray-500">JPG, PNG or WEBP up to 500KB each</p>
+                      <span className="text-sm font-medium text-orange-600">{t('uploadPhotos')}</span>
+                      <p className="text-xs text-gray-500">{t('imageFormatsInfo')}</p>
                     </div>
                   </label>
                 </div>
@@ -964,7 +966,7 @@ export default function AddListingPage() {
                       <div key={idx} className="relative group">
                         <Image
                           src={src}
-                          alt={`Preview ${idx + 1}`}
+                          alt={`${t('preview')} ${idx + 1}`}
                           width={200}
                           height={150}
                           className="w-full h-32 object-cover rounded-lg border border-gray-200 group-hover:opacity-75 transition-opacity duration-200"
@@ -985,7 +987,7 @@ export default function AddListingPage() {
               {/* Contact Preferences */}
               <div className="space-y-4">
                 <label className="block text-sm font-medium text-gray-700">
-                  Contact Preferences <span className="text-red-500">*</span>
+                  {t('contactPreferences')} <span className="text-red-500">*</span>
                 </label>
                 <div className="space-y-3">
                   <label className="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200">
@@ -999,7 +1001,7 @@ export default function AddListingPage() {
                       <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
-                      <span className="text-sm font-medium text-gray-900">Allow phone contact</span>
+                      <span className="text-sm font-medium text-gray-900">{t('allowPhoneContact')}</span>
                     </div>
                   </label>
 
@@ -1014,11 +1016,11 @@ export default function AddListingPage() {
                       <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
-                      <span className="text-sm font-medium text-gray-900">Allow email contact</span>
+                      <span className="text-sm font-medium text-gray-900">{t('allowEmailContact')}</span>
                     </div>
                   </label>
                 </div>
-                <p className="text-xs text-gray-500">Select at least one contact method</p>
+                <p className="text-xs text-gray-500">{t('selectContactMethod')}</p>
               </div>
 
               {/* Error Message */}
@@ -1046,7 +1048,7 @@ export default function AddListingPage() {
                   <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  Create Listing
+                  {t('createListing')}
                 </button>
               </div>
             </form>

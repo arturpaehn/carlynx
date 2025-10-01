@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import UsefulInfoVinLinks from '@/components/UsefulInfoVinLinks';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
+import { useTranslation } from '@/components/I18nProvider';
 
 interface Article {
   id: number;
@@ -12,6 +13,7 @@ interface Article {
 }
 
 export default function InfoPage() {
+  const { t } = useTranslation();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,7 +44,7 @@ export default function InfoPage() {
               <svg className="w-6 h-6 mr-2 text-orange-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
               </svg>
-              Useful Information
+              {t('usefulInformation')}
             </span>
           </h1>
         </div>
@@ -54,11 +56,11 @@ export default function InfoPage() {
         {loading ? (
           <div className="flex justify-center items-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-            <span className="ml-3 text-gray-600">Загрузка...</span>
+            <span className="ml-3 text-gray-600">{t('loading')}</span>
           </div>
         ) : articles.length === 0 ? (
           <div className="text-center py-8">
-            <div className="text-gray-500">No articles yet.</div>
+            <div className="text-gray-500">{t('noArticlesYet')}</div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -79,7 +81,7 @@ export default function InfoPage() {
                     </div>
                     <p className="text-gray-700 text-sm leading-relaxed mb-3">{article.summary}</p>
                     <div className="flex items-center text-orange-600 font-medium text-sm group-hover:text-orange-700">
-                      Read more
+                      {t('readMore')}
                       <svg className="w-3 h-3 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>

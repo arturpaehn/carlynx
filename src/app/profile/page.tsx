@@ -5,8 +5,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import type { User } from '@supabase/supabase-js'
+import { useTranslation } from '@/components/I18nProvider'
 
 export default function ProfilePage() {
+  const { t } = useTranslation()
   const supabase = useSupabaseClient()
   const router = useRouter()
 
@@ -60,7 +62,7 @@ export default function ProfilePage() {
     setError('')
 
     if (!user) {
-      setError('User not found.')
+      setError(t('userNotFound'))
       setSaving(false)
       return;
     }
@@ -76,7 +78,7 @@ export default function ProfilePage() {
       .eq('user_id', user.id)
 
     if (profileError) {
-      setError('Error updating profile.')
+      setError(t('errorUpdatingProfile'))
       setSaving(false)
       return;
     }
@@ -88,13 +90,13 @@ export default function ProfilePage() {
       })
 
       if (passError) {
-        setError('Password update failed.')
+        setError(t('passwordUpdateFailed'))
         setSaving(false)
         return;
       }
     }
 
-    setMessage('Profile updated successfully!')
+    setMessage(t('profileUpdatedSuccessfully'))
     setSaving(false)
     
     // Очищаем поле пароля после успешного обновления
@@ -111,7 +113,7 @@ export default function ProfilePage() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p className="text-gray-600">Loading profile...</p>
+          <p className="text-gray-600">{t('loadingProfile')}</p>
         </div>
       </div>
     )
@@ -135,8 +137,8 @@ export default function ProfilePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Profile</h2>
-            <p className="text-sm text-gray-600">Manage your personal information and account settings</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('yourProfile')}</h2>
+            <p className="text-sm text-gray-600">{t('managePersonalInfo')}</p>
           </div>
 
           {/* Form */}
@@ -145,7 +147,7 @@ export default function ProfilePage() {
               {/* Email */}
               <div className="space-y-1">
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email Address
+                  {t('emailAddress')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -159,7 +161,7 @@ export default function ProfilePage() {
                     value={profileEmail}
                     onChange={e => setProfileEmail(e.target.value)}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-                    placeholder="Enter your email"
+                    placeholder={t('enterYourEmail')}
                   />
                 </div>
               </div>
@@ -167,7 +169,7 @@ export default function ProfilePage() {
               {/* Name */}
               <div className="space-y-1">
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Full Name
+                  {t('fullName')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -181,7 +183,7 @@ export default function ProfilePage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-                    placeholder="Enter your full name"
+                    placeholder={t('enterFullName')}
                   />
                 </div>
               </div>
@@ -189,7 +191,7 @@ export default function ProfilePage() {
               {/* Phone */}
               <div className="space-y-1">
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                  Phone Number
+                  {t('phoneNumber')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -203,7 +205,7 @@ export default function ProfilePage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-                    placeholder="Enter your phone number"
+                    placeholder={t('enterYourPhone')}
                   />
                 </div>
               </div>
@@ -211,7 +213,7 @@ export default function ProfilePage() {
               {/* Password */}
               <div className="space-y-1">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  New Password <span className="text-gray-500 font-normal">(optional)</span>
+                  {t('newPassword')} <span className="text-gray-500 font-normal">({t('optional')})</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -225,7 +227,7 @@ export default function ProfilePage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-                    placeholder="Enter new password"
+                    placeholder={t('enterNewPassword')}
                   />
                   <button
                     type="button"
@@ -244,7 +246,7 @@ export default function ProfilePage() {
                     )}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Leave empty to keep current password</p>
+                <p className="text-xs text-gray-500 mt-1">{t('leaveEmptyKeepPassword')}</p>
               </div>
 
               {/* Success Message */}
@@ -292,14 +294,14 @@ export default function ProfilePage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Saving changes...
+                      {t('savingChanges')}
                     </>
                   ) : (
                     <>
                       <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      Save Changes
+                      {t('saveChanges')}
                     </>
                   )}
                 </button>

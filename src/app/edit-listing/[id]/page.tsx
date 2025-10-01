@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import type { User } from '@supabase/supabase-js'
+import { useTranslation } from '@/components/I18nProvider'
 
 const fuelOptions = ['gasoline', 'diesel', 'hybrid', 'electric', 'cng', 'lpg']
 const motorcycleFuelOptions = ['gasoline', 'electric']
@@ -32,6 +33,7 @@ const vehicleTypes = [
 ]
 
 export default function EditListingPage() {
+  const { t } = useTranslation();
   // Массив ключевых слов для дилеров (как в add-listing)
   const dealerKeywords = [
     'dealership',
@@ -152,7 +154,7 @@ export default function EditListingPage() {
         .single();
 
       if (error || !data) {
-        setError('Failed to load listing.');
+        setError(t('failedToLoadListing'));
         setLoading(false);
         return;
       }
@@ -206,7 +208,7 @@ export default function EditListingPage() {
       setLoading(false);
     };
     loadUserAndListing();
-  }, [id, router]);
+  }, [id, router, t]);
 
   // Загрузка городов при выборе штата
   useEffect(() => {
@@ -253,16 +255,14 @@ export default function EditListingPage() {
 
     // Проверка на количество
     if (existingImages.length + newImages.length + selected.length > MAX_IMAGES) {
-      setMessage(`Maximum ${MAX_IMAGES} images allowed.`);
+      setMessage(`${t('maximumImagesAllowed')} ${MAX_IMAGES} ${t('imagesAllowed')}`);
       return;
     }
 
     // Проверка на размер
     const tooLarge = selected.find((file) => file.size > MAX_IMAGE_SIZE);
     if (tooLarge) {
-      setMessage(
-        `One or more images are too large (max 500 KB each). Please resize or compress your photo.\n\nYou can use free tools like:\n- https://www.iloveimg.com/compress-image\n- https://www.img2go.com/compress-image\n- https://www.photopea.com/ (File > Export As > JPG/PNG, set quality/size)`
-      );
+      setMessage(t('onOrMoreImagesTooLarge'));
       return;
     }
 
@@ -295,12 +295,12 @@ export default function EditListingPage() {
 
     // Проверка: хотя бы одна картинка (существующая или новая)
     if (existingImages.length + newImages.length === 0) {
-      setMessage('Please upload at least one image to save changes.');
+      setMessage(t('pleaseUploadAtLeastOneImage'));
       return;
     }
 
     if (existingImages.length + newImages.length > MAX_IMAGES) {
-      setMessage(`You cannot have more than ${MAX_IMAGES} images.`);
+      setMessage(`${t('cannotHaveMoreThanImages')} ${MAX_IMAGES} ${t('images')}.`);
       return;
     }
 
@@ -311,9 +311,7 @@ export default function EditListingPage() {
       if (user?.id) {
         await supabase.rpc('increment_dealer_attempts', { user_id_param: user.id });
       }
-      setMessage(
-        '⚠️ Your listing appears to contain language commonly used by dealerships. Carlynx is dedicated exclusively to private sellers. If you are a dealer, please note that listings from dealerships are not permitted. Kindly review and revise your description to ensure it reflects a private sale.'
-      );
+      setMessage(t('listingAppearsToBeDealership'));
       return;
     }
 
@@ -329,7 +327,7 @@ export default function EditListingPage() {
 
     // Валидация полей
     if (!vehicleType) {
-      setMessage('Please select a vehicle type.');
+      setMessage(t('pleaseSelectVehicleType'));
       return;
     }
 
@@ -337,7 +335,7 @@ export default function EditListingPage() {
     let engineSizeInCC = null;
     if (vehicleType === 'motorcycle') {
       if (!engineSize || Number(engineSize) < 50) {
-        setMessage('Please enter a valid engine size for motorcycles (50cc or more).');
+        setMessage(t('enterValidEngineSizeMotorcycle'));
         return;
       }
       engineSizeInCC = Number(engineSize);
@@ -371,7 +369,7 @@ export default function EditListingPage() {
       .eq('id', id);
 
     if (updateError) {
-      setMessage('Failed to update listing.');
+      setMessage(t('failedToUpdateListing'));
       return;
     }
 
@@ -390,7 +388,7 @@ export default function EditListingPage() {
           .upload(fileName, image);
 
         if (uploadResult.error) {
-          setMessage(`Image upload failed: ${uploadResult.error.message}`);
+          setMessage(`${t('imageUploadFailedError')} ${uploadResult.error.message}`);
           return;
         }
 
@@ -425,7 +423,7 @@ export default function EditListingPage() {
     if (!error) {
       router.push('/my-listings')
     } else {
-      setMessage('Failed to deactivate the listing.')
+      setMessage(t('failedToDeactivateListing'))
     }
   }
 
@@ -437,7 +435,7 @@ export default function EditListingPage() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p className="text-gray-600">Loading listing...</p>
+          <p className="text-gray-600">{t('loadingListing')}</p>
         </div>
       </div>
     )
@@ -473,8 +471,8 @@ export default function EditListingPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Edit Your Listing</h2>
-            <p className="text-gray-600">Update your car listing details</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('editYourListing')}</h2>
+            <p className="text-gray-600">{t('updateCarListingDetails')}</p>
           </div>
 
         <form onSubmit={handleUpdate} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 space-y-6">
@@ -482,7 +480,7 @@ export default function EditListingPage() {
           {/* Brand field depending on vehicle type */}
           <div className="space-y-1">
             <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-              {vehicleType === 'motorcycle' ? 'Motorcycle Brand' : 'Car Brand'} <span className="text-red-500">*</span>
+              {vehicleType === 'motorcycle' ? t('motorcycleBrand') : t('carBrand')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -498,7 +496,7 @@ export default function EditListingPage() {
                   required
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 bg-white"
                 >
-                  <option value="">Select motorcycle brand</option>
+                  <option value="">{t('selectMotorcycleBrandOption')}</option>
                   {motorcycleBrands.map((brand) => (
                     <option key={brand.id} value={brand.name}>
                       {brand.name}
@@ -509,7 +507,7 @@ export default function EditListingPage() {
                 <input
                   id="title"
                   type="text"
-                  placeholder="Toyota, Honda, BMW..."
+                  placeholder={t('toyotaHondaBmw')}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
@@ -522,7 +520,7 @@ export default function EditListingPage() {
           {/* Model */}
           <div className="space-y-1">
             <label htmlFor="model" className="block text-sm font-medium text-gray-700">
-              Model (optional)
+              {t('model')} ({t('optional')})
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -533,7 +531,7 @@ export default function EditListingPage() {
               <input
                 id="model"
                 type="text"
-                placeholder="Camry, Civic, X5..."
+                placeholder={t('camryCivicX5')}
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
@@ -546,7 +544,7 @@ export default function EditListingPage() {
             {/* Price */}
             <div className="space-y-1">
               <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                Price *
+                {t('price')} *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -567,7 +565,7 @@ export default function EditListingPage() {
             {/* Year */}
             <div className="space-y-1">
               <label htmlFor="year" className="block text-sm font-medium text-gray-700">
-                Year *
+                {t('year')} *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -591,7 +589,7 @@ export default function EditListingPage() {
           {/* Mileage */}
           <div className="space-y-1">
             <label htmlFor="mileage" className="block text-sm font-medium text-gray-700">
-              Mileage (optional)
+              {t('mileage')} ({t('optional')})
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -608,14 +606,14 @@ export default function EditListingPage() {
                 className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <span className="text-gray-400 text-sm">miles</span>
+                <span className="text-gray-400 text-sm">{t('miles')}</span>
               </div>
             </div>
           </div>
           {/* State */}
           <div className="space-y-1">
             <label htmlFor="state" className="block text-sm font-medium text-gray-700">
-              State *
+              {t('state')} *
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -631,7 +629,7 @@ export default function EditListingPage() {
                 required
                 className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 bg-white"
               >
-                <option value="">Select State</option>
+                <option value="">{t('selectState')}</option>
                 {states.map((state) => (
                   <option key={state.id} value={state.id}>
                     {state.name} ({state.country_code === 'US' ? 'USA' : state.country_code === 'MX' ? 'Mexico' : state.country_code})
@@ -645,7 +643,7 @@ export default function EditListingPage() {
           {stateId && (
             <div className="space-y-1">
               <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                City (optional)
+                {t('city')} ({t('optional')})
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -656,7 +654,7 @@ export default function EditListingPage() {
                 <input
                   id="city"
                   type="text"
-                  placeholder="Choose from dropdown or type manually"
+                  placeholder={t('chooseFromDropdownOrType')}
                   value={cityInput}
                   onChange={e => setCityInput(e.target.value)}
                   list="city-list"
@@ -669,14 +667,14 @@ export default function EditListingPage() {
                   ))}
                 </datalist>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Start typing to choose from available cities</p>
+              <p className="text-xs text-gray-500 mt-1">{t('startTypingInstructions')}</p>
             </div>
           )}
 
           {/* Vehicle Type Selection */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">
-              Vehicle Type <span className="text-red-500">*</span>
+              {t('vehicleType')} <span className="text-red-500">*</span>
             </label>
             <div className="grid grid-cols-2 gap-3">
               {vehicleTypes.map((type) => (
@@ -714,7 +712,7 @@ export default function EditListingPage() {
             {vehicleType === 'car' && (
               <div className="space-y-1">
                 <label htmlFor="transmission" className="block text-sm font-medium text-gray-700">
-                  Transmission
+                  {t('transmission')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -729,7 +727,7 @@ export default function EditListingPage() {
                     onChange={(e) => setTransmission(e.target.value)}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 bg-white"
                   >
-                    <option value="">Select transmission</option>
+                    <option value="">{t('selectTransmission')}</option>
                     {transmissionOptions.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt.charAt(0).toUpperCase() + opt.slice(1)}
@@ -743,7 +741,7 @@ export default function EditListingPage() {
             {/* Engine Size (For all vehicles) */}
             <div className="space-y-1">
               <label htmlFor="engineSize" className="block text-sm font-medium text-gray-700">
-                Engine Size ({vehicleType === 'motorcycle' ? 'cc' : 'L'})
+                {t('engineSize')} ({vehicleType === 'motorcycle' ? 'cc' : 'L'})
               </label>
               <div className="relative">
                 {vehicleType === 'motorcycle' ? (
@@ -754,7 +752,7 @@ export default function EditListingPage() {
                     step="1"
                     min="50"
                     max="3000"
-                    placeholder="e.g. 600"
+                    placeholder={t('engineSizePlaceholderMotorcycle')}
                     value={engineSize}
                     onChange={(e) => setEngineSize(e.target.value)}
                     className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
@@ -766,7 +764,7 @@ export default function EditListingPage() {
                       type="number"
                       min="0"
                       max="9"
-                      placeholder="2"
+                      placeholder={t('engineSizePlaceholderCarWhole')}
                       value={engineSizeWhole}
                       onChange={(e) => setEngineSizeWhole(e.target.value)}
                       className="block w-16 px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 text-center"
@@ -776,7 +774,7 @@ export default function EditListingPage() {
                       type="number"
                       min="0"
                       max="9"
-                      placeholder="0"
+                      placeholder={t('engineSizePlaceholderCarDecimal')}
                       value={engineSizeDecimal}
                       onChange={(e) => setEngineSizeDecimal(e.target.value)}
                       className="block w-16 px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 text-center"
@@ -786,14 +784,14 @@ export default function EditListingPage() {
                 )}
               </div>
               {vehicleType === 'car' && (
-                <p className="text-xs text-gray-500 mt-1">Enter engine size (e.g., 2.0L = enter 2 and 0)</p>
+                <p className="text-xs text-gray-500 mt-1">{t('engineSizeInstructions')}</p>
               )}
             </div>
 
           {/* Fuel Type */}
           <div className="space-y-1">
             <label htmlFor="fuel" className="block text-sm font-medium text-gray-700">
-              Fuel Type
+              {t('fuelType')}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -807,7 +805,7 @@ export default function EditListingPage() {
                 onChange={(e) => setFuelType(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 bg-white"
               >
-                <option value="">Select fuel type</option>
+                <option value="">{t('selectFuelType')}</option>
                 {(vehicleType === 'motorcycle' ? motorcycleFuelOptions : fuelOptions).map((opt) => (
                   <option key={opt} value={opt}>
                     {opt.charAt(0).toUpperCase() + opt.slice(1)}
@@ -821,26 +819,26 @@ export default function EditListingPage() {
           {/* Description */}
           <div className="space-y-1">
             <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-              Description (optional)
+              {t('description')} ({t('optional')})
             </label>
             <div className="relative">
               <textarea
                 id="description"
-                placeholder="Tell buyers what makes your car special"
+                placeholder={t('tellBuyersSpecial')}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 className="block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 resize-none"
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">Tell buyers what makes your car special</p>
+            <p className="text-xs text-gray-500 mt-1">{t('tellBuyersSpecial')}</p>
           </div>
 
           {/* Images Section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-sm font-medium text-gray-700">
-                Images (max 4, .jpg, .png, .webp, max 500 KB each)
+                {t('images')} ({t('maxImages')} 4, .jpg, .png, .webp, {t('max')} 500 KB {t('each')})
               </label>
               <span className="text-sm text-gray-500">{existingImages.length + newImages.length}/4</span>
             </div>
@@ -855,9 +853,9 @@ export default function EditListingPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                   <p className="mb-2 text-sm text-gray-500">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
+                    <span className="font-semibold">{t('clickToUpload')}</span> {t('dragAndDrop')}
                   </p>
-                  <p className="text-xs text-gray-500">PNG, JPG, WEBP up to 500KB each</p>
+                  <p className="text-xs text-gray-500">{t('pngJpgWebp')}</p>
                 </div>
                 <input
                   id="image-upload"
@@ -871,7 +869,7 @@ export default function EditListingPage() {
             </div>
             
             <p className="text-sm text-gray-600">
-              You can upload up to 4 images (.jpg, .png, .webp, max 500 KB each)
+              {t('youCanUploadImages')}
             </p>
             
             {(existingImages.length > 0 || newPreviews.length > 0) && (
@@ -915,7 +913,7 @@ export default function EditListingPage() {
                       ×
                     </button>
                     <div className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                      New
+                      {t('newImageLabel')}
                     </div>
                   </div>
                 ))}
@@ -933,7 +931,7 @@ export default function EditListingPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-              Cancel
+              {t('cancel')}
             </button>
             
             <button
@@ -943,7 +941,7 @@ export default function EditListingPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Save Changes
+              {t('saveChanges')}
             </button>
           </div>
 
@@ -957,10 +955,10 @@ export default function EditListingPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
-              Deactivate Listing
+              {t('deactivateListing')}
             </button>
             <p className="mt-2 text-sm text-gray-500">
-              This will permanently remove your listing from the site
+              {t('permanentlyRemoveFromSite')}
             </p>
           </div>
         </form>
@@ -974,9 +972,9 @@ export default function EditListingPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold mb-2 text-gray-900">Delete Listing?</h2>
+                <h2 className="text-2xl font-bold mb-2 text-gray-900">{t('deleteListingQuestion')}</h2>
                 <p className="text-gray-600 leading-relaxed">
-                  This action cannot be undone. Your listing will be permanently removed from the site and will no longer be visible to potential buyers.
+                  {t('actionCannotBeUndone')}
                 </p>
               </div>
               
@@ -985,13 +983,13 @@ export default function EditListingPage() {
                   onClick={() => setShowConfirm(false)}
                   className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl border border-gray-300 transition-colors duration-200"
                 >
-                  Keep Listing
+                  {t('keepListing')}
                 </button>
                 <button
                   onClick={handleDeactivate}
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl shadow-lg transition-all duration-200"
                 >
-                  Delete Forever
+                  {t('deleteForever')}
                 </button>
               </div>
             </div>

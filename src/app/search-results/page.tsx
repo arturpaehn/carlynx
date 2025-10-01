@@ -5,6 +5,7 @@ import { useEffect, useState, Suspense } from 'react'
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { useTranslation } from '@/components/I18nProvider'
 
 // SEO функция для поиска
 function updateSearchSEO(searchParams: URLSearchParams | null) {
@@ -108,6 +109,7 @@ export default function SearchResultsPage() {
 }
 
 function SearchResultsPageContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
@@ -320,10 +322,10 @@ function SearchResultsPageContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-gray-800">Search Results</h1>
+            <h1 className="text-3xl font-bold text-gray-800">{t('searchResults')}</h1>
           </div>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Discover the perfect car from our selection of listings
+            {t('discoverPerfectCar')}
           </p>
         </div>
 
@@ -337,7 +339,7 @@ function SearchResultsPageContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                City:
+                {t('city')}:
               </label>
               <div className="relative">
                 <input
@@ -345,7 +347,7 @@ function SearchResultsPageContent() {
                   value={cityInput}
                   onChange={handleCityChange}
                   className="w-48 pl-3 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-                  placeholder="Enter city name"
+                  placeholder={t('enterCityName')}
                   autoComplete="off"
                 />
               </div>
@@ -357,7 +359,7 @@ function SearchResultsPageContent() {
                 <svg className="h-4 w-4 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
                 </svg>
-                Sort by:
+                {t('sortBy')}:
               </label>
               <div className="relative">
                 <select
@@ -365,11 +367,11 @@ function SearchResultsPageContent() {
                   onChange={handleSortChange}
                   className="w-52 pl-3 pr-8 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 appearance-none bg-white"
                 >
-                  <option value="">Default (Newest First)</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                  <option value="year-asc">Year: Old to New</option>
-                  <option value="year-desc">Year: New to Old</option>
+                  <option value="">{t('defaultNewestFirst')}</option>
+                  <option value="price-asc">{t('priceLowToHigh')}</option>
+                  <option value="price-desc">{t('priceHighToLow')}</option>
+                  <option value="year-asc">{t('yearOldToNew')}</option>
+                  <option value="year-desc">{t('yearNewToOld')}</option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                   <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -384,7 +386,7 @@ function SearchResultsPageContent() {
         {loading ? (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-12 text-center">
             <div className="animate-spin h-12 w-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 font-medium">Searching for cars...</p>
+            <p className="text-gray-600 font-medium">{t('searchingForCars')}</p>
           </div>
         ) : error ? (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 text-center">
@@ -393,7 +395,7 @@ function SearchResultsPageContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Search Error</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">{t('searchError')}</h3>
             <p className="text-red-600">{error}</p>
           </div>
         ) : listings.length === 0 ? (
@@ -403,8 +405,8 @@ function SearchResultsPageContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-3">No Results Found</h3>
-            <p className="text-gray-600 mb-6">We couldn&apos;t find any cars matching your search criteria.</p>
+            <h3 className="text-xl font-semibold text-gray-800 mb-3">{t('noResultsFound')}</h3>
+            <p className="text-gray-600 mb-6">{t('noResultsDescription')}</p>
             <button
               onClick={() => window.location.href = '/'}
               className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all duration-200"
@@ -412,15 +414,15 @@ function SearchResultsPageContent() {
               <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
-              Back to Home
+              {t('backToHome')}
             </button>
           </div>
         ) : (
           <div className="space-y-2">{/* Reduced spacing for more compact display */}
             <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 mb-4">
               <p className="text-sm text-gray-600 font-medium">
-                Found {listings.length} result{listings.length !== 1 ? 's' : ''} 
-                {totalPages > 1 && ` (Page ${page} of ${totalPages})`}
+                {t('foundResults')} {listings.length} {listings.length !== 1 ? t('results') : t('result')}
+                {totalPages > 1 && ` (${t('page')} ${page} ${t('of')} ${totalPages})`}
               </p>
             </div>
 
@@ -587,7 +589,7 @@ function SearchResultsPageContent() {
                 
                 <div className="text-center mt-4">
                   <p className="text-sm text-gray-600">
-                    Page {page} of {totalPages} • Showing {listings.length} result{listings.length !== 1 ? 's' : ''}
+                    {t('page')} {page} {t('of')} {totalPages} • {t('showing')} {listings.length} {listings.length !== 1 ? t('results') : t('result')}
                   </p>
                 </div>
               </div>
