@@ -91,6 +91,47 @@ export default function MyListingsPage() {
     router.push(`/edit-listing/${id}`)
   }
 
+  const handleCompletePayment = async (listingId: number, listingTitle: string) => {
+    try {
+      // Get user data
+      const { data: userData } = await supabase.auth.getUser()
+      const currentUser = userData?.user
+
+      if (!currentUser) {
+        alert('Please log in to complete payment')
+        return
+      }
+
+      // Create Stripe checkout session
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 500, // $5.00 in cents
+          listingTitle: listingTitle,
+          userId: currentUser.id,
+          userEmail: currentUser.email,
+          listingId: listingId.toString(),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session')
+      }
+
+      const { url } = await response.json()
+
+      if (url) {
+        window.location.href = url // Redirect to Stripe Checkout
+      } else {
+        throw new Error('No checkout URL returned')
+      }
+    } catch (error) {
+      console.error('Error completing payment:', error)
+      alert('Failed to start payment. Please try again.')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 pt-header px-2 sm:px-4 lg:px-8 relative overflow-hidden">
       {/* Animated Background Blobs */}
@@ -383,13 +424,27 @@ export default function MyListingsPage() {
                                   <span className="text-xs">{listing.transmission}</span>
                                 </div>
                               </div>
-                              <div className="flex items-center text-xs sm:text-sm w-full sm:w-auto justify-center sm:justify-end">
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                 {listing.payment_status === 'pending' ? (
                                   <>
-                                    <svg className="h-4 w-4 mr-1 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span className="text-amber-600 font-medium">Pending Payment - Complete payment to activate</span>
+                                    <div className="flex items-center text-xs sm:text-sm justify-center sm:justify-start">
+                                      <svg className="h-4 w-4 mr-1 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      <span className="text-amber-600 font-medium">Pending Payment</span>
+                                    </div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleCompletePayment(listing.id, listing.title)
+                                      }}
+                                      className="flex items-center justify-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-medium hover:from-green-600 hover:to-emerald-600 transition-all duration-200 transform hover:scale-105 shadow-md"
+                                    >
+                                      <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                      </svg>
+                                      Complete Payment ($5)
+                                    </button>
                                   </>
                                 ) : (
                                   <>
