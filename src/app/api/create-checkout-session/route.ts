@@ -13,8 +13,10 @@ function getStripe() {
 }
 
 export async function POST(request: NextRequest) {
-  const stripe = getStripe();
   try {
+    // Initialize Stripe inside try-catch to handle missing env var gracefully
+    const stripe = getStripe();
+    
     const body = await request.json();
     const { amount, listingTitle, userId, userEmail, listingId } = body;
 
