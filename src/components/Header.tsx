@@ -11,15 +11,24 @@ const adminEmails = ["admin@carlynx.us"];
 export default function Header() {
   const { t, currentLanguage, setLanguage } = useTranslation();
   const headerRef = useRef<HTMLElement>(null);
-  // Green info bar announcements
-  const announcements = [
+  
+  // Prevent hydration mismatch - only render translations after mount
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Green info bar announcements - use useMemo to prevent recreation
+  const announcements = mounted ? [
     t('announcement1'),
     t('announcement2'),
     t('announcement3')
-  ];
+  ] : ['', '', ''];
+  
   const [announcementIndex, setAnnouncementIndex] = useState(0);
   const [fade, setFade] = useState(true);
   useEffect(() => {
+    if (!mounted) return;
     const interval = setInterval(() => {
       setFade(false);
       setTimeout(() => {
@@ -28,7 +37,7 @@ export default function Header() {
       }, 400); // fade out duration
     }, 5000);
     return () => clearInterval(interval);
-  }, [announcements.length]);
+  }, [announcements.length, mounted]);
   const [showMenu, setShowMenu] = useState(false)
   const router = useRouter()
   const session = useSession()
@@ -356,41 +365,43 @@ export default function Header() {
   return (
     <header ref={headerRef} className="relative top-0 left-0 w-full z-50">
       {/* Эффектная зелёная инфо-секция с анимацией */}
-      <div
-        className="w-full flex items-center justify-center px-2 py-2 md:py-3"
-        style={{
-          background: 'linear-gradient(90deg, #2e7d32 0%, #388e3c 100%)',
-          borderRadius: '0 0 20px 20px',
-          boxShadow: '0 6px 24px 0 rgba(46,125,50,0.18)',
-          minHeight: '3.2em',
-        }}
-      >
-  <span className="flex items-center gap-3 w-full max-w-3xl mx-auto text-white text-center text-base md:text-lg font-semibold tracking-wide select-none justify-center">
-          <svg className="w-6 h-6 md:w-7 md:h-7 flex-shrink-0 opacity-95" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="2.2" fill="#388e3c" />
-            <path stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01" />
-          </svg>
-          <span
-            className={`block transition-all duration-600 ease-in-out ${fade ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
-            style={{ transition: 'opacity 0.6s, transform 0.6s' }}
-            dangerouslySetInnerHTML={{
-              __html: announcements[announcementIndex]
-                .replace(
-                  'Currently FREE', 
-                  '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Currently FREE</span>'
-                )
-                .replace(
-                  'zero fees',
-                  '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">zero fees</span>'
-                )
-                .replace(
-                  '$5',
-                  '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">$5</span>'
-                )
-            }}
-          />
-        </span>
-      </div>
+      {mounted && (
+        <div
+          className="w-full flex items-center justify-center px-2 py-2 md:py-3"
+          style={{
+            background: 'linear-gradient(90deg, #2e7d32 0%, #388e3c 100%)',
+            borderRadius: '0 0 20px 20px',
+            boxShadow: '0 6px 24px 0 rgba(46,125,50,0.18)',
+            minHeight: '3.2em',
+          }}
+        >
+          <span className="flex items-center gap-3 w-full max-w-3xl mx-auto text-white text-center text-base md:text-lg font-semibold tracking-wide select-none justify-center">
+            <svg className="w-6 h-6 md:w-7 md:h-7 flex-shrink-0 opacity-95" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="2.2" fill="#388e3c" />
+              <path stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01" />
+            </svg>
+            <span
+              className={`block transition-all duration-600 ease-in-out ${fade ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
+              style={{ transition: 'opacity 0.6s, transform 0.6s' }}
+              dangerouslySetInnerHTML={{
+                __html: announcements[announcementIndex]
+                  .replace(
+                    'Currently FREE', 
+                    '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Currently FREE</span>'
+                  )
+                  .replace(
+                    'zero fees',
+                    '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">zero fees</span>'
+                  )
+                  .replace(
+                    '$5',
+                    '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">$5</span>'
+                  )
+              }}
+            />
+          </span>
+        </div>
+      )}
   <div className="bg-[#ffe6cc] shadow border-b flex flex-col items-center justify-center py-3 md:py-6 space-y-2 md:space-y-4 w-full relative">
         {/* Language switcher - positioned absolutely in top left corner */}
         <div className="absolute top-2 left-2 md:top-4 md:left-4 flex gap-1 z-10">
@@ -494,27 +505,31 @@ export default function Header() {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 w-full px-1 md:px-0 mt-2">
           {/* Useful Info link always last */}
-          <Link href="/info" className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium whitespace-nowrap min-w-0 max-w-[160px] text-center order-last hidden sm:inline-block hover:scale-105">
-            <span className="inline-flex items-center">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
-              </svg>
-              {t('usefulInformation')}
-            </span>
-          </Link>
-          <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105"
-          >
-            <span className="inline-flex items-center">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              {t('search')}
-            </span>
-          </button>
+          {mounted && (
+            <Link href="/info" className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium whitespace-nowrap min-w-0 max-w-[160px] text-center order-last hidden sm:inline-block hover:scale-105">
+              <span className="inline-flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
+                </svg>
+                {t('usefulInformation')}
+              </span>
+            </Link>
+          )}
+          {mounted && (
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105"
+            >
+              <span className="inline-flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {t('search')}
+              </span>
+            </button>
+          )}
 
-          {user ? (
+          {mounted && user ? (
             <>
               <div className="flex items-center bg-gradient-to-r from-orange-100/80 via-yellow-50/80 to-orange-200/80 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-lg border border-orange-200/50">
                 <div className="flex items-center space-x-2">
@@ -626,7 +641,7 @@ export default function Header() {
                 )}
               </div>
             </>
-          ) : (
+          ) : mounted ? (
             <>
               <div className="hidden sm:flex gap-2">
                 <Link href="/login" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
@@ -674,7 +689,7 @@ export default function Header() {
                 )}
               </div>
             </>
-          )}
+          ) : null}
         </div>
 
         {searchOpen && (

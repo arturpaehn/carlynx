@@ -17,6 +17,7 @@ type Listing = {
   transmission: string
   fuel_type: string
   is_active: boolean
+  payment_status: string | null
   image_url: string | null
 }
 
@@ -304,8 +305,12 @@ export default function MyListingsPage() {
                                   className="w-full h-12 sm:h-24 object-cover grayscale"
                                 />
                                 <div className="absolute top-1 left-1">
-                                  <span className="bg-red-500 text-white text-xs font-medium px-1 sm:px-2 py-1 rounded-full">
-                                    {t('inactive')}
+                                  <span className={`text-white text-xs font-medium px-1 sm:px-2 py-1 rounded-full ${
+                                    listing.payment_status === 'pending' 
+                                      ? 'bg-amber-500' 
+                                      : 'bg-red-500'
+                                  }`}>
+                                    {listing.payment_status === 'pending' ? 'Pending' : t('inactive')}
                                   </span>
                                 </div>
                               </div>
@@ -326,7 +331,13 @@ export default function MyListingsPage() {
                             <div className="mb-2 sm:mb-3">
                               <h2 className="text-sm sm:text-lg font-bold text-gray-600 mb-1 truncate">
                                 {listing.title}
-                                <span className="text-xs sm:text-sm text-red-500 font-medium ml-2">({t('inactive')})</span>
+                                <span className={`text-xs sm:text-sm font-medium ml-2 ${
+                                  listing.payment_status === 'pending' 
+                                    ? 'text-amber-500' 
+                                    : 'text-red-500'
+                                }`}>
+                                  ({listing.payment_status === 'pending' ? 'Pending Payment' : t('inactive')})
+                                </span>
                               </h2>
                               <div className="flex flex-wrap gap-2 sm:gap-3 text-sm text-gray-500">
                                 <div className="flex items-center">
@@ -372,11 +383,22 @@ export default function MyListingsPage() {
                                   <span className="text-xs">{listing.transmission}</span>
                                 </div>
                               </div>
-                              <div className="flex items-center text-xs sm:text-sm text-gray-500 w-full sm:w-auto justify-center sm:justify-end">
-                                <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span>Contact admin to reactivate</span>
+                              <div className="flex items-center text-xs sm:text-sm w-full sm:w-auto justify-center sm:justify-end">
+                                {listing.payment_status === 'pending' ? (
+                                  <>
+                                    <svg className="h-4 w-4 mr-1 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-amber-600 font-medium">Pending Payment - Complete payment to activate</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="h-4 w-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-gray-500">Contact admin to reactivate</span>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>

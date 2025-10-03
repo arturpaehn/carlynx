@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import ActiveListingsCount from './ActiveListingsCount';
@@ -8,6 +9,22 @@ import { useTranslation } from './I18nProvider';
 
 export default function Footer() {
   const { t } = useTranslation()
+  
+  // Prevent hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  if (!mounted) {
+    return (
+      <footer className="bg-[#4b0082] text-white mt-10">
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="text-center">Loading...</div>
+        </div>
+      </footer>
+    );
+  }
   
   return (
     <footer className="bg-[#4b0082] text-white mt-10">

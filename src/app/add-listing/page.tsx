@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useTranslation } from '@/components/I18nProvider'
+import PaymentConfirmModal from '@/components/individual/PaymentConfirmModal'
 
 const fuelOptions = ['gasoline', 'diesel', 'hybrid', 'electric', 'cng', 'lpg']
 const motorcycleFuelOptions = ['gasoline', 'electric']
@@ -92,6 +93,9 @@ export default function AddListingPage() {
   const [showAgreement, setShowAgreement] = useState(false)
   const [agreementChecked, setAgreementChecked] = useState(false)
   
+  // Состояние для payment modal
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  
   // Состояние загрузки для предотвращения двойной отправки
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -138,7 +142,7 @@ export default function AddListingPage() {
     const loadCities = async () => {
       try {
         console.log('Loading cities for state:', stateId)
-        const { data, error } = await supabase.from('cities').select('id, name, state_id').eq('state_id', stateId)
+        const { data, error } = await supabase.from('cities').select('id, name, state_id').eq('state_id', parseInt(stateId))
         
         // Проверяем, не был ли этот запрос отменен
         if (cancelled) return;
@@ -254,7 +258,33 @@ export default function AddListingPage() {
         cityNameToSave = match.name;
       }
     }
-    // 1. Создаём объявление
+    
+    // 1. Создаём payment запись (free trial)
+    const { data: paymentData, error: paymentError } = await supabase
+      .from('individual_payments')
+      .insert([
+        {
+          user_id: userProfile.user_id,
+          amount: 10.00,
+          currency: 'USD',
+          payment_status: 'free_trial',
+          payment_method: 'free_trial',
+          metadata: {
+            listing_title: title,
+            trial_info: 'Launch period - free listing',
+          },
+        },
+      ])
+      .select('payment_id')
+      .single();
+
+    if (paymentError || !paymentData?.payment_id) {
+      throw new Error('Payment record creation failed: ' + (paymentError?.message || 'No payment ID'));
+    }
+
+    const paymentId = paymentData.payment_id;
+    
+    // 2. Создаём объявление с payment информацией
     const { data: insertData, error: insertError } = await supabase.from('listings').insert([
       {
         user_id: userProfile.user_id,
@@ -262,7 +292,7 @@ export default function AddListingPage() {
         model: model || null,
         price: Number(price),
         year: Number(year),
-        state_id: stateId,
+        state_id: parseInt(stateId),
         city_id: cityIdToSave,
         city_name: cityNameToSave,
         transmission: vehicleType === 'car' ? (transmission || null) : null,
@@ -274,6 +304,9 @@ export default function AddListingPage() {
         is_active: true,
         views: 0,
         vehicle_type: vehicleType,
+        payment_status: 'free_trial',
+        payment_id: paymentId,
+        created_by_type: 'individual',
         engine_size: (() => {
           if (vehicleType === 'motorcycle') {
             return engineSize ? Number(engineSize) : null;
@@ -294,7 +327,19 @@ export default function AddListingPage() {
       throw new Error('Listing submission failed: ' + (insertError?.message || 'No ID'));
     }
     const listingId = insertData.id;
-    // 2. Загружаем картинки и добавляем записи в listing_images
+    
+    // 3. Обновляем payment запись с listing_id
+    const { error: updatePaymentError } = await supabase
+      .from('individual_payments')
+      .update({ listing_id: listingId })
+      .eq('payment_id', paymentId);
+
+    if (updatePaymentError) {
+      console.error('Warning: Failed to update payment with listing_id:', updatePaymentError.message);
+      // Не критично, listing уже создан
+    }
+    
+    // 4. Загружаем картинки и добавляем записи в listing_images
     for (let i = 0; i < images.length; i++) {
       const file = images[i];
       const fileExt = file.name.split('.').pop();
@@ -378,6 +423,144 @@ export default function AddListingPage() {
     );
   }
 
+  const handleAgreementAccept = () => {
+    // Закрываем agreement и показываем payment modal
+    setShowAgreement(false);
+    setShowPaymentModal(true);
+  };
+
+  const handleConfirmListing = async () => {
+    // Это вызывается из Payment Modal после подтверждения (FREE TRIAL только)
+    setShowPaymentModal(false);
+    try {
+      await realAddListing();
+    } catch (error) {
+      console.error('Error in handleConfirmListing:', error);
+      setMessage(error instanceof Error ? error.message : 'Failed to create listing. Please try again.');
+    }
+  };
+
+  // Create pending listing for paid flow (before Stripe redirect)
+  const createPendingListing = async (): Promise<string> => {
+    if (!userProfile || !('user_id' in userProfile) || !userProfile.user_id) {
+      throw new Error('Authentication failed.');
+    }
+
+    // Determine city_id and city_name
+    let cityIdToSave = null;
+    let cityNameToSave = cityInput || null;
+    if (cityInput && cities.length > 0) {
+      const match = cities.find(city => city.name === cityInput);
+      if (match) {
+        cityIdToSave = match.id;
+        cityNameToSave = match.name;
+      }
+    }
+
+    // 1. Create payment record with pending status
+    const { data: paymentData, error: paymentError } = await supabase
+      .from('individual_payments')
+      .insert([{
+        user_id: userProfile.user_id,
+        amount: 5.00,
+        currency: 'USD',
+        payment_status: 'pending',
+        payment_method: 'card', // Changed from 'stripe' to 'card' to match DB constraint
+        metadata: {
+          listing_title: title,
+        },
+      }])
+      .select('payment_id')
+      .single();
+
+    if (paymentError || !paymentData?.payment_id) {
+      throw new Error('Payment record creation failed: ' + (paymentError?.message || 'No payment ID'));
+    }
+
+    const paymentId = paymentData.payment_id;
+
+    // 2. Create listing with PENDING status and is_active=FALSE
+    const { data: insertData, error: insertError } = await supabase.from('listings').insert([{
+      user_id: userProfile.user_id,
+      title: title,
+      model: model || null,
+      price: Number(price),
+      year: Number(year),
+      state_id: parseInt(stateId),
+      city_id: cityIdToSave,
+      city_name: cityNameToSave,
+      transmission: vehicleType === 'car' ? (transmission || null) : null,
+      fuel_type: fuelType || null,
+      mileage: mileage ? Number(mileage) : null,
+      description: description || null,
+      contact_by_phone: contactByPhone,
+      contact_by_email: contactByEmail,
+      is_active: false, // NOT ACTIVE until payment succeeds
+      views: 0,
+      vehicle_type: vehicleType,
+      payment_status: 'pending',
+      payment_id: paymentId,
+      created_by_type: 'individual',
+      engine_size: (() => {
+        if (vehicleType === 'motorcycle') {
+          return engineSize ? Number(engineSize) : null;
+        } else {
+          if (engineSizeWhole || engineSizeDecimal) {
+            const whole = engineSizeWhole ? Number(engineSizeWhole) : 0;
+            const decimal = engineSizeDecimal ? Number(engineSizeDecimal) : 0;
+            const totalLiters = whole + (decimal / 10);
+            return Math.round(totalLiters * 1000);
+          }
+          return null;
+        }
+      })()
+    }]).select('id').single();
+
+    if (insertError || !insertData?.id) {
+      throw new Error('Listing creation failed: ' + (insertError?.message || 'No ID'));
+    }
+
+    const listingId = insertData.id;
+
+    // 3. Update payment with listing_id
+    await supabase
+      .from('individual_payments')
+      .update({ listing_id: listingId })
+      .eq('payment_id', paymentId);
+
+    // 4. Upload images
+    for (let i = 0; i < images.length; i++) {
+      const file = images[i];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `listing_${listingId}_${Date.now()}_${i}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('listing-images')
+        .upload(filePath, file);
+      
+      if (uploadError) {
+        throw new Error('Image upload failed: ' + uploadError.message);
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('listing-images')
+        .getPublicUrl(filePath);
+      
+      const imageUrl = publicUrlData?.publicUrl;
+      if (!imageUrl) {
+        throw new Error('Failed to get image URL');
+      }
+
+      await supabase.from('listing_images').insert([{
+        listing_id: listingId,
+        image_url: imageUrl,
+        user_id: userProfile.user_id
+      }]);
+    }
+
+    return listingId; // Return for Stripe metadata
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -388,10 +571,7 @@ export default function AddListingPage() {
     }
     
     // Vehicle-specific validation
-    if (vehicleType === 'car' && !transmission) {
-      setMessage(t('pleaseSelectTransmission'));
-      return;
-    }
+    // Transmission is now optional for cars
     
     if (images.length === 0) {
       setMessage('Please upload at least one image.');
@@ -444,6 +624,7 @@ export default function AddListingPage() {
       return;
     }
     setMessage('');
+    // Показываем agreement сначала
     setShowAgreement(true);
   };
 
@@ -468,6 +649,27 @@ export default function AddListingPage() {
             <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('addListingTitle')}</h2>
             <p className="text-sm text-gray-600">{t('sellYourCarDescription')}</p>
           </div>
+
+          {/* Payment Confirmation Modal */}
+          <PaymentConfirmModal
+            isOpen={showPaymentModal}
+            onClose={() => setShowPaymentModal(false)}
+            onConfirm={handleConfirmListing}
+            onCreatePendingListing={createPendingListing}
+            userId={(userProfile && 'user_id' in userProfile && userProfile.user_id) || ''}
+            userEmail={(userProfile && 'email' in userProfile && userProfile.email) || undefined}
+            listingDetails={{
+              title: title,
+              make: vehicleType === 'car' 
+                ? (brands.find(b => b.name === title.split(' ')[0])?.name || title.split(' ')[0])
+                : (motorcycleBrands.find(b => b.name === title.split(' ')[0])?.name || title.split(' ')[0]),
+              model: model,
+              year: Number(year),
+              price: Number(price),
+              mileage: mileage ? `${Number(mileage).toLocaleString()} miles` : 'Not provided',
+              images: images,
+            }}
+          />
 
           {/* Modal Agreement */}
           {showAgreement && (
@@ -528,14 +730,9 @@ export default function AddListingPage() {
                     <button
                       className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg text-sm font-medium hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                       disabled={!agreementChecked || isSubmitting}
-                      onClick={async () => {
-                        setIsSubmitting(true); // Устанавливаем загрузку здесь
-                        try {
-                          await realAddListing();
-                        } catch (error) {
-                          console.error('Error in Add Listing:', error);
-                          setIsSubmitting(false); // Гарантированно сбрасываем в случае ошибки
-                        }
+                      onClick={() => {
+                        handleAgreementAccept();
+                        setAgreementChecked(false); // Сбрасываем чекбокс для следующего раза
                       }}
                     >
                       {isSubmitting ? (
@@ -751,13 +948,16 @@ export default function AddListingPage() {
                     <select
                       id="state"
                       value={stateId}
-                      onChange={e => setStateId(e.target.value)}
+                      onChange={e => {
+                        console.log('State selected:', e.target.value);
+                        setStateId(e.target.value);
+                      }}
                       required
                       className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
                     >
                       <option value="">{t('selectState')}</option>
                       {states.map((state) => (
-                        <option key={state.id} value={state.id}>
+                        <option key={state.id} value={String(state.id)}>
                           {state.name} ({state.country_code === 'US' ? 'USA' : state.country_code === 'MX' ? 'Mexico' : state.country_code})
                         </option>
                       ))}
@@ -804,7 +1004,7 @@ export default function AddListingPage() {
                 {vehicleType === 'car' && (
                   <div className="space-y-1">
                     <label htmlFor="transmission" className="block text-sm font-medium text-gray-700">
-                      {t('transmission')}
+                      {t('transmission')} <span className="text-gray-500 text-sm">({t('optional')})</span>
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -888,7 +1088,7 @@ export default function AddListingPage() {
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1 -4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                       </svg>
                     </div>
                     <select

@@ -269,7 +269,12 @@ type TranslationKey =
   | 'imagesAllowed' | 'onOrMoreImagesTooLarge' | 'images' | 'maxImages' | 'max' | 'each'
   | 'createYourAccount' | 'enterYourEmail' | 'createPassword' | 'minimumCharacters' | 'signInHere'
   | 'email' | 'emailPlaceholder' | 'rememberPassword'
-  | 'loadingListing' | 'deactivateListing';
+  | 'loadingListing' | 'deactivateListing'
+  | 'confirmListingFree' | 'confirmListingPayment' | 'close' | 'limitedTimeOffer' | 'freeTrialDescription'
+  | 'listingTitle' | 'title' | 'vehicle' | 'vehiclePrice' | 'uploaded' | 'includedFeatures'
+  | 'feature30DaysFree' | 'feature30Days' | 'featureUnlimitedViews' | 'featureDirectContact'
+  | 'featureEditAnytime' | 'featureHighQualityPhotos' | 'total' | 'oneTimePayment'
+  | 'addForFree' | 'proceedToPayment' | 'processing' | 'byConfirmingYouAgree' | 'errorCreatingListing';
 
 interface Translations {
   [key: string]: string;
