@@ -442,6 +442,8 @@ export default function AddListingPage() {
 
   // Create pending listing for paid flow (before Stripe redirect)
   const createPendingListing = async (): Promise<string> => {
+    console.log('🚀 Starting createPendingListing...');
+    
     if (!userProfile || !('user_id' in userProfile) || !userProfile.user_id) {
       throw new Error('Authentication failed.');
     }
@@ -458,6 +460,7 @@ export default function AddListingPage() {
     }
 
     // 1. Create payment record with pending status
+    console.log('📝 Creating payment record...');
     const { data: paymentData, error: paymentError } = await supabase
       .from('individual_payments')
       .insert([{
@@ -474,12 +477,15 @@ export default function AddListingPage() {
       .single();
 
     if (paymentError || !paymentData?.payment_id) {
+      console.error('❌ Payment creation error:', paymentError);
       throw new Error('Payment record creation failed: ' + (paymentError?.message || 'No payment ID'));
     }
 
     const paymentId = paymentData.payment_id;
+    console.log('✅ Payment record created:', paymentId);
 
     // 2. Create listing with PENDING status and is_active=FALSE
+    console.log('📝 Creating listing...');
     const { data: insertData, error: insertError } = await supabase.from('listings').insert([{
       user_id: userProfile.user_id,
       title: title,
@@ -517,10 +523,12 @@ export default function AddListingPage() {
     }]).select('id').single();
 
     if (insertError || !insertData?.id) {
+      console.error('❌ Listing creation error:', insertError);
       throw new Error('Listing creation failed: ' + (insertError?.message || 'No ID'));
     }
 
     const listingId = insertData.id;
+    console.log('✅ Listing created:', listingId);
 
     // 3. Update payment with listing_id
     await supabase
@@ -529,18 +537,21 @@ export default function AddListingPage() {
       .eq('payment_id', paymentId);
 
     // 4. Upload images
+    console.log('📸 Uploading images...', images.length);
     for (let i = 0; i < images.length; i++) {
       const file = images[i];
-      const fileExt = file.name.split('.').pop();
-      const filePath = `listing_${listingId}_${Date.now()}_${i}.${fileExt}`;
+      const filePath = `${listingId}/${Date.now()}_${file.name}`;
       
+      console.log(`📤 Uploading image ${i+1}/${images.length}:`, filePath);
       const { error: uploadError } = await supabase.storage
         .from('listing-images')
         .upload(filePath, file);
       
       if (uploadError) {
+        console.error('❌ Image upload error:', uploadError);
         throw new Error('Image upload failed: ' + uploadError.message);
       }
+      console.log(`✅ Image uploaded: ${filePath}`);
 
       const { data: publicUrlData } = supabase.storage
         .from('listing-images')
@@ -551,13 +562,20 @@ export default function AddListingPage() {
         throw new Error('Failed to get image URL');
       }
 
-      await supabase.from('listing_images').insert([{
+      const { error: imgInsertError } = await supabase.from('listing_images').insert([{
         listing_id: listingId,
         image_url: imageUrl,
         user_id: userProfile.user_id
       }]);
+      
+      if (imgInsertError) {
+        console.error('❌ Image record insert error:', imgInsertError);
+        throw new Error('Failed to save image record: ' + imgInsertError.message);
+      }
+      console.log(`✅ Image record saved for ${filePath}`);
     }
 
+    console.log('🎉 createPendingListing completed successfully!');
     return listingId; // Return for Stripe metadata
   };
 
