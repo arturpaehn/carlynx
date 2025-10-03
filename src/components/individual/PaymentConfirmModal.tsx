@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useTranslation } from '@/components/I18nProvider';
 
 // Free trial flag - set to false when Stripe is ready
-const IS_FREE_TRIAL = false;
+const IS_FREE_TRIAL = true; // ← БЕСПЛАТНЫЙ РЕЖИМ (FREE TRIAL)
 
 interface ListingDetails {
   title: string;

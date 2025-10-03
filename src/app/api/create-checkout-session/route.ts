@@ -14,13 +14,20 @@ function getStripe() {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🚀 create-checkout-session called');
+    console.log('📝 Environment check:', {
+      hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+      keyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 7),
+    });
+    
     // Initialize Stripe inside try-catch to handle missing env var gracefully
     const stripe = getStripe();
+    console.log('✅ Stripe initialized');
     
     const body = await request.json();
     const { amount, listingTitle, userId, userEmail, listingId } = body;
 
-    console.log('Received checkout request:', { amount, listingTitle, userId, userEmail, listingId });
+    console.log('📦 Received checkout request:', { amount, listingTitle, userId, userEmail, listingId });
 
     // Validate input
     if (!amount || !listingTitle || !userId || !listingId) {
@@ -32,6 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Stripe Checkout Session
+    console.log('💳 Creating Stripe session...');
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -59,14 +67,23 @@ export async function POST(request: NextRequest) {
       customer_email: userEmail,
     });
 
+    console.log('✅ Stripe session created:', session.id);
     return NextResponse.json({ 
       sessionId: session.id,
       url: session.url // Return URL for redirect
     });
   } catch (error) {
-    console.error('Error creating checkout session:', error);
+    console.error('❌ Error creating checkout session:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      type: error instanceof Error ? error.constructor.name : typeof error,
+    });
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { 
+        error: 'Failed to create checkout session',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
