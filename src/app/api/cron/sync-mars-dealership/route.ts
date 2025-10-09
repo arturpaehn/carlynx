@@ -18,7 +18,13 @@ export async function GET(request: Request) {
   try {
     console.log('🕐 Cron job triggered: Mars Dealership sync');
     
-    await syncMarsDealer();
+    // Pass credentials explicitly to avoid env variable issues
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    console.log(`🔑 Env check: url=${!!supabaseUrl}, key=${!!supabaseKey}`);
+    
+    await syncMarsDealer(supabaseUrl, supabaseKey);
     
     return NextResponse.json({ 
       success: true, 

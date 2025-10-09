@@ -1,14 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import * as cheerio from 'cheerio';
-import * as dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config({ path: '.env.local' });
-
-function getSupabase() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(supabaseUrl, supabaseServiceKey);
+function getSupabase(supabaseUrl?: string, supabaseKey?: string) {
+  const url = supabaseUrl || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = supabaseKey || process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  
+  if (!url || !key) {
+    throw new Error(`Supabase credentials missing: url=${!!url}, key=${!!key}`);
+  }
+  
+  return createClient(url, key);
 }
 
 interface ScrapedListing {
@@ -334,10 +335,11 @@ async function syncListings(listings: ScrapedListing[]) {
 }
 
 // Main execution
-export async function syncMarsDealer() {
+export async function syncMarsDealer(supabaseUrl?: string, supabaseKey?: string) {
   try {
     console.log('🚀 Starting Mars Dealership sync...');
     console.log(`⏰ Time: ${new Date().toLocaleString('en-US', { timeZone: 'Europe/Tallinn' })} (Estonian Time)`);
+    console.log(`🔑 Credentials check: url=${!!supabaseUrl || !!process.env.NEXT_PUBLIC_SUPABASE_URL}, key=${!!supabaseKey || !!process.env.SUPABASE_SERVICE_ROLE_KEY}`);
     
     const listings = await fetchListings();
     
