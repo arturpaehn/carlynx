@@ -76,15 +76,57 @@ npx tsx scripts/parsers/marsDealershipParser.ts
 }
 ```
 
-### Environment Variables
-Add to Vercel Dashboard:
-```
-CRON_SECRET=<your-random-secret-here>
+### Environment Variables Required
+
+⚠️ **CRITICAL:** Add these to Vercel Dashboard (Production environment):
+
+1. **CRON_SECRET** - Generate with hex (not base64):
+   ```bash
+   # PowerShell (Windows):
+   $bytes = New-Object byte[] 32 ; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes) ; -join ($bytes | ForEach-Object { $_.ToString("x2") })
+   
+   # Linux/Mac:
+   openssl rand -hex 32
+   ```
+   
+   ⚠️ **Important:** Use hex format (no `+` or `=` symbols) to avoid HTTP header issues!
+
+2. **NEXT_PUBLIC_SUPABASE_URL**
+   ```
+   https://your-project.supabase.co
+   ```
+
+3. **SUPABASE_SERVICE_ROLE_KEY** (⚠️ NOT anon key!)
+   ```
+   eyJhbGci... (long JWT token starting with eyJ)
+   ```
+   
+   Get from: Supabase Dashboard → Settings → API → service_role key
+
+### Authentication Method
+
+**Custom Header:** `x-cron-secret`
+
+Why not `Authorization` header? Vercel proxy filters `Authorization` headers, so we use custom header instead.
+
+**API Endpoint Protection:**
+```typescript
+const cronSecret = request.headers.get('x-cron-secret');
+if (cronSecret !== CRON_SECRET) {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+}
 ```
 
-Generate secret:
+### Manual Trigger
+
+PowerShell:
+```powershell
+Invoke-RestMethod -Uri "https://carlynx.us/api/cron/sync-mars-dealership" -Method Get -Headers @{"x-cron-secret"="YOUR_SECRET_HERE"}
+```
+
+Bash/curl:
 ```bash
-openssl rand -base64 32
+curl -H "x-cron-secret: YOUR_SECRET_HERE" https://carlynx.us/api/cron/sync-mars-dealership
 ```
 
 ## 🔍 Frontend Integration
@@ -128,13 +170,78 @@ Verifies: State (Texas), City (Dallas) are correctly stored
 
 ## 🚀 Deployment Checklist
 
-1. ✅ Apply database migration to Supabase
-2. ✅ Test parser locally: `npx tsx scripts/parsers/marsDealershipParser.ts`
-3. ✅ Commit code changes
-4. ✅ Push to GitHub → Vercel auto-deploys
-5. ✅ Add `CRON_SECRET` to Vercel Environment Variables
-6. ✅ Verify cron job in Vercel Dashboard
-7. ✅ Test search functionality on live site
+### 1. Database Setup
+- ✅ Apply migration: `supabase/migrations/20250108_create_external_listings.sql`
+- ✅ Verify `external_listings` table exists
+- ✅ Verify `external-listing-images` storage bucket created
+
+### 2. Local Testing
+```bash
+npx tsx scripts/parsers/marsDealershipParser.ts
+```
+Expected output: "✅ Synced 44 listings"
+
+### 3. Code Deployment
+```bash
+git add .
+git commit -m "Add Mars Dealership integration"
+git push origin main
+```
+Vercel auto-deploys from GitHub
+
+### 4. Vercel Environment Variables Setup
+
+⚠️ **Common Issues & Solutions:**
+
+**Problem:** `supabaseKey is required` error
+**Solution:** Ensure ALL these variables exist in Vercel with **Production** environment:
+
+Go to: https://vercel.com/[your-team]/carlynx/settings/environment-variables
+
+Add these **3 variables**:
+
+| Variable Name | Value | Environment | Notes |
+|--------------|-------|-------------|-------|
+| `CRON_SECRET` | hex string (64 chars) | Production | Use hex generator (see above) |
+| `NEXT_PUBLIC_SUPABASE_URL` | https://xxx.supabase.co | Production | From Supabase Dashboard |
+| `SUPABASE_SERVICE_ROLE_KEY` | eyJhbGci... | Production | **service_role** key (NOT anon!) |
+
+**Problem:** Variables added but still not working
+**Solution:** After adding variables, you MUST redeploy:
+```bash
+git commit --allow-empty -m "Trigger redeploy"
+git push origin main
+```
+OR click "Redeploy" in Vercel Dashboard (without build cache)
+
+**Problem:** `Authorization` header not working (401 Unauthorized)
+**Solution:** We use `x-cron-secret` header instead due to Vercel proxy filtering
+
+### 5. Test Cron Endpoint Manually
+
+```powershell
+# Replace YOUR_SECRET with actual CRON_SECRET value
+Invoke-RestMethod -Uri "https://carlynx.us/api/cron/sync-mars-dealership" -Method Get -Headers @{"x-cron-secret"="YOUR_SECRET"}
+```
+
+Expected response:
+```json
+{
+  "success": true,
+  "message": "Mars Dealership sync completed",
+  "timestamp": "2025-10-09T12:19:53.974Z"
+}
+```
+
+Expected duration: 30-60 seconds
+
+### 6. Verify on Live Site
+- ✅ Open https://carlynx.us/
+- ✅ See listings with ⭐ **Partner** badge
+- ✅ Count increased by ~44 listings
+- ✅ Click Partner listing → opens marsdealership.com in new tab
+- ✅ Footer shows correct total count (includes external listings)
+- ✅ Search filters work with external listings
 
 ## 📝 Key Implementation Details
 
@@ -156,26 +263,105 @@ Listings not seen during sync (`last_seen_at < current_sync_time`) are automatic
 - Filename: `{external_id}-{timestamp}.jpg`
 - Public access enabled
 
+### Lazy Initialization Pattern
+
+⚠️ **Important:** Supabase/Stripe clients must use lazy initialization to avoid build-time errors:
+
+**❌ Wrong (causes "supabaseKey is required" at build time):**
+```typescript
+const supabase = createClient(url, key); // Runs at import time
+
+export function myFunction() {
+  supabase.from('table')... // Uses pre-initialized client
+}
+```
+
+**✅ Correct (initialization happens at runtime):**
+```typescript
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
+
+export function myFunction() {
+  const supabase = getSupabase(); // Creates client when needed
+  supabase.from('table')...
+}
+```
+
+This pattern is used in:
+- `scripts/parsers/marsDealershipParser.ts`
+- `src/app/api/dealer/**/*.ts`
+- `src/app/api/cron/sync-mars-dealership/route.ts`
+
+### Explicit Credentials Passing
+
+Parser receives credentials explicitly from API endpoint to ensure environment variables are accessible:
+
+```typescript
+// API endpoint passes credentials
+await syncMarsDealer(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// Parser accepts optional credentials
+export async function syncMarsDealer(url?: string, key?: string) {
+  const supabase = getSupabase(url, key); // Uses passed values or falls back to env
+  // ...
+}
+```
+
 ## 🔧 Maintenance
 
 ### Monitor Sync
-Check Vercel Cron Logs for:
-- Execution time (should be < 5 min)
-- Number of listings processed
-- Any errors
+
+**Check Logs in Vercel:**
+1. Go to: https://vercel.com/[your-team]/carlynx/deployments
+2. Click latest deployment
+3. Click "Logs" tab → "Runtime Logs"
+4. Search for: `/api/cron/sync-mars-dealership`
+
+**What to look for:**
+- ✅ Execution time: 30-90 seconds (normal)
+- ✅ Status: 200 OK
+- ✅ Console logs: "🎉 Sync complete! Processed X listings"
+- ❌ Status: 500 → Check error message
+- ❌ Status: 401 → CRON_SECRET mismatch
+- ❌ "supabaseKey is required" → Environment variables missing
+
+**Common Issues:**
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `401 Unauthorized` | Wrong/missing CRON_SECRET | Regenerate secret, update Vercel variable |
+| `500: supabaseKey is required` | Missing SUPABASE_SERVICE_ROLE_KEY | Add to Vercel, redeploy |
+| `500: Supabase credentials missing: url=true, key=false` | SERVICE_ROLE_KEY not in Production | Check environment checkbox, redeploy |
+| Timeout (>300s) | Mars Dealership slow/down | Increase `maxDuration` in route.ts |
+| `404: listings not found` | Mars Dealership changed URL | Update `BASE_URL` in parser |
 
 ### Update Parser
 If Mars Dealership changes HTML structure:
 1. Run `npx tsx scripts/inspect-html.ts` to analyze new structure
 2. Update selectors in `marsDealershipParser.ts`
-3. Test locally before deploying
+3. Test locally: `npx tsx scripts/parsers/marsDealershipParser.ts`
+4. Deploy and test on production
 
 ### Add New Source
 To add another dealership:
-1. Create new parser in `scripts/parsers/`
-2. Use same `external_listings` table (change `source` field)
-3. Add new cron job in `vercel.json`
-4. Update frontend filters if needed
+1. Create new parser in `scripts/parsers/` (copy `marsDealershipParser.ts` as template)
+2. Use same `external_listings` table (change `source` field value)
+3. Add new cron job in `vercel.json`:
+   ```json
+   {
+     "path": "/api/cron/sync-new-dealer",
+     "schedule": "0 15 * * *"
+   }
+   ```
+4. Create API route: `src/app/api/cron/sync-new-dealer/route.ts`
+5. Update frontend filters if needed (e.g., filter by source)
 
 ## 📦 Dependencies
 - `cheerio` - HTML parsing
