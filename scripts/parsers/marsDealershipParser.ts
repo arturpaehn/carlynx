@@ -5,10 +5,11 @@ import * as dotenv from 'dotenv';
 // Load environment variables
 dotenv.config({ path: '.env.local' });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 interface ScrapedListing {
   externalId: string;
@@ -158,6 +159,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
 
 // Download image and upload to Supabase Storage
 async function downloadAndUploadImage(imageUrl: string, externalId: string): Promise<string | null> {
+  const supabase = getSupabase();
   try {
     console.log(`📥 Downloading image for ${externalId}...`);
     
@@ -197,6 +199,7 @@ async function downloadAndUploadImage(imageUrl: string, externalId: string): Pro
 
 // Get Texas state ID and Dallas city ID
 async function getLocationIds(): Promise<{ stateId: number | null; cityId: number | null }> {
+  const supabase = getSupabase();
   // Get Texas state ID
   const { data: stateData, error: stateError } = await supabase
     .from('states')
@@ -233,6 +236,7 @@ async function getLocationIds(): Promise<{ stateId: number | null; cityId: numbe
 
 // Sync listings to database
 async function syncListings(listings: ScrapedListing[]) {
+  const supabase = getSupabase();
   console.log(`🔄 Syncing ${listings.length} listings to database...`);
   
   const { stateId: texasStateId, cityId: dallasCityId } = await getLocationIds();
