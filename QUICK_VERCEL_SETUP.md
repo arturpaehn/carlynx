@@ -2,14 +2,14 @@
 
 ## 1️⃣ Генерация CRON_SECRET
 
-**PowerShell:**
+**В терминале VS Code (Ctrl + `) или Windows PowerShell (Win + X):**
 ```powershell
 $bytes = New-Object byte[] 32
 [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
 [Convert]::ToBase64String($bytes)
 ```
 
-Скопируй результат!
+Скопируй результат! (длинная строка типа `abc123XYZ...`)
 
 ## 2️⃣ Добавить в Vercel
 
