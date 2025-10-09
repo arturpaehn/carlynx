@@ -12,8 +12,11 @@ export default function Footer() {
   
   // Prevent hydration mismatch
   const [mounted, setMounted] = useState(false);
+  const [currentYear, setCurrentYear] = useState(2025);
+  
   useEffect(() => {
     setMounted(true);
+    setCurrentYear(new Date().getFullYear());
   }, []);
   
   if (!mounted) {
@@ -78,7 +81,7 @@ export default function Footer() {
             </div>
             
             <div className="text-xs text-gray-300 text-center sm:text-right">
-              <p>&copy; {new Date().getFullYear()} CarLynx. {t('allRightsReserved')}</p>
+              <p>&copy; {currentYear} CarLynx. {t('allRightsReserved')}</p>
             </div>
           </div>
         </div>

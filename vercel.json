@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sync-mars-dealership",
+      "schedule": "0 14 * * *"
+    }
+  ]
+}

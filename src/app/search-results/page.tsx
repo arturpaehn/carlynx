@@ -66,7 +66,7 @@ function updateSearchSEO(searchParams: URLSearchParams | null) {
 }
 
 type Listing = {
-  id: number
+  id: number | string
   title: string
   price: number
   year: number
@@ -82,6 +82,9 @@ type Listing = {
     country_code: string
   } | null
   city?: string | null
+  is_external?: boolean
+  external_source?: string
+  external_url?: string
 }
 
 
@@ -215,15 +218,61 @@ function SearchResultsPageContent() {
       const from = (page - 1) * RESULTS_PER_PAGE
       const to = from + RESULTS_PER_PAGE - 1
 
-      const { data: listingsData, error: listingsError, count } = await query.range(from, to)
+      const { data: listingsData, error: listingsError } = await query
 
-      if (listingsError || !listingsData) {
+      if (listingsError) {
         setError('Failed to load listings.')
         setLoading(false)
         return;
       }
 
-      // Форматируем данные как на главной
+      // Fetch external listings with same filters
+      let externalQuery = supabase
+        .from('external_listings')
+        .select(`
+          id,
+          title,
+          model,
+          year,
+          price,
+          state_id,
+          city_id,
+          city_name,
+          vehicle_type,
+          transmission,
+          fuel_type,
+          image_url,
+          source,
+          external_url,
+          states (id, name, code, country_code)
+        `)
+        .eq('is_active', true)
+
+      // Apply same filters as regular listings
+      if (filters.vehicle_type) externalQuery = externalQuery.eq('vehicle_type', filters.vehicle_type)
+      if (filters.city_id) {
+        externalQuery = externalQuery.eq('city_id', Number(filters.city_id));
+      } else if (filters.city) {
+        externalQuery = externalQuery.ilike('city_name', `%${filters.city}%`)
+      }
+      if (filters.year_min) externalQuery = externalQuery.gte('year', Number(filters.year_min))
+      if (filters.year_max) externalQuery = externalQuery.lte('year', Number(filters.year_max))
+      if (filters.transmission && filters.vehicle_type !== 'motorcycle') externalQuery = externalQuery.eq('transmission', filters.transmission)
+      if (filters.fuel_type) externalQuery = externalQuery.eq('fuel_type', filters.fuel_type)
+      if (filters.price_min) externalQuery = externalQuery.gte('price', Number(filters.price_min))
+      if (filters.price_max) externalQuery = externalQuery.lte('price', Number(filters.price_max))
+
+      if (stateIds.length > 0) {
+        externalQuery = externalQuery.in('state_id', stateIds);
+      }
+
+      const { data: externalData, error: externalError } = await externalQuery
+
+      if (externalError) {
+        console.error('Error fetching external listings:', externalError);
+      }
+
+      // Format regular listings
       const formatted: Listing[] = Array.isArray(listingsData)
         ? listingsData.map((item) => {
             let stateObj: { name: string; code: string; country_code: string } | null = null;
@@ -271,8 +320,62 @@ function SearchResultsPageContent() {
           })
         : []
 
-      setListings(formatted)
-      setTotalPages(Math.ceil((count || 0) / RESULTS_PER_PAGE))
+      // Format external listings
+      const formattedExternal: Listing[] = Array.isArray(externalData)
+        ? externalData.map((item) => {
+            let stateObj: { name: string; code: string; country_code: string } | null = null;
+            if (item.states) {
+              if (Array.isArray(item.states) && item.states.length > 0 && typeof item.states[0] === 'object' && 'name' in item.states[0]) {
+                stateObj = {
+                  name: item.states[0].name,
+                  code: item.states[0].code,
+                  country_code: item.states[0].country_code,
+                };
+              } else if (!Array.isArray(item.states) && typeof item.states === 'object' && 'name' in item.states) {
+                const s = item.states as { name: string; code: string; country_code: string };
+                stateObj = {
+                  name: s.name,
+                  code: s.code,
+                  country_code: s.country_code,
+                };
+              }
+            }
+            
+            return {
+              id: `ext-${item.id}`,
+              title: item.title,
+              model: item.model ?? '',
+              year: item.year ?? undefined,
+              price: item.price,
+              state: stateObj,
+              city: item.city_name,
+              transmission: item.transmission,
+              fuel_type: item.fuel_type,
+              vehicle_type: item.vehicle_type,
+              engine_size: null,
+              image_url: item.image_url,
+              is_external: true,
+              external_source: item.source,
+              external_url: item.external_url,
+            }
+          })
+        : []
+
+      // Combine and sort all listings
+      const allListings = [...formatted, ...formattedExternal];
+      
+      // Apply sorting to combined results
+      if (sortField === 'price') {
+        allListings.sort((a, b) => sortOrder === 'asc' ? a.price - b.price : b.price - a.price);
+      } else if (sortField === 'year') {
+        allListings.sort((a, b) => sortOrder === 'asc' ? a.year - b.year : b.year - a.year);
+      }
+
+      // Paginate combined results
+      const paginatedListings = allListings.slice(from, to + 1);
+
+      setListings(paginatedListings)
+      setTotalPages(Math.ceil(allListings.length / RESULTS_PER_PAGE))
       setLoading(false)
     }
 
@@ -428,7 +531,9 @@ function SearchResultsPageContent() {
 
             {listings.map((listing) => {
               const params = searchParams ? searchParams.toString() : '';
-              const href = `/listing/${listing.id}?from=search&${params}`;
+              const href = listing.is_external 
+                ? listing.external_url || '#'
+                : `/listing/${listing.id}?from=search&${params}`;
               return (
                 <a
                   key={listing.id}
@@ -461,7 +566,17 @@ function SearchResultsPageContent() {
                     <div className="flex-1 p-3 sm:p-4 min-w-0">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1 min-w-0 mr-3">
-                          <h2 className="text-sm sm:text-base font-bold text-gray-800 truncate">{listing.title}</h2>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h2 className="text-sm sm:text-base font-bold text-gray-800 truncate">{listing.title}</h2>
+                            {listing.is_external && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 border border-orange-200 flex-shrink-0">
+                                <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                Partner
+                              </span>
+                            )}
+                          </div>
                           {listing.model && (
                             <p className="text-xs sm:text-sm text-gray-600 truncate">{listing.model}</p>
                           )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 
 interface LegalPageProps {
   title: string;
@@ -9,11 +9,17 @@ interface LegalPageProps {
 }
 
 export default function LegalPage({ title, effectiveDate, children }: LegalPageProps) {
-  const currentDate = effectiveDate || new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  const [currentDate, setCurrentDate] = useState(effectiveDate || 'January 1, 2025');
+  
+  useEffect(() => {
+    if (!effectiveDate) {
+      setCurrentDate(new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }));
+    }
+  }, [effectiveDate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 pt-header px-4 sm:px-6 lg:px-8 relative overflow-hidden">

@@ -40,6 +40,12 @@ export default function AdminPage() {
   const [userStatsLoading, setUserStatsLoading] = useState(true);
   const [monthly, setMonthly] = useState<number[] | null>(null);
   const [monthlyLoading, setMonthlyLoading] = useState(true);
+  const [monthLabels, setMonthLabels] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Generate month labels on client to avoid hydration mismatch
+    setMonthLabels(getMonthLabels(6));
+  }, []);
 
   useEffect(() => {
     async function checkAdmin() {
@@ -195,7 +201,7 @@ export default function AdminPage() {
                     </text>
                     <rect x={20 + i * 45} y={barTop} width={28} height={barHeight} fill="#f59e42" rx={4} />
                     <text x={34 + i * 45} y={105} textAnchor="middle" fontSize="11" fill="#555">
-                      {getMonthLabels(6)[i]}
+                      {monthLabels[i] || ''}
                     </text>
                   </g>
                 );

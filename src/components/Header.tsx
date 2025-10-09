@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
 import { useTranslation } from '@/components/I18nProvider'
+import { useUserType } from '@/hooks/useUserType'
 // Админ email-ы (как в admin/page.tsx)
 const adminEmails = ["admin@carlynx.us"];
 
 export default function Header() {
   const { t, currentLanguage, setLanguage } = useTranslation();
   const headerRef = useRef<HTMLElement>(null);
+  const { isDealer, isIndividual } = useUserType();
   
   // Prevent hydration mismatch - only render translations after mount
   const [mounted, setMounted] = useState(false);
@@ -560,30 +562,80 @@ export default function Header() {
                     </span>
                   </Link>
                 )}
-                <Link href="/profile" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
-                  <span className="inline-flex items-center">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    {t('myProfile')}
-                  </span>
-                </Link>
-                <Link href="/add-listing" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
-                  <span className="inline-flex items-center">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    {t('addListing')}
-                  </span>
-                </Link>
-                <Link href="/my-listings" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
-                  <span className="inline-flex items-center">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                    </svg>
-                    {t('myListings')}
-                  </span>
-                </Link>
+                {/* Dealer Navigation */}
+                {isDealer && (
+                  <>
+                    <Link href="/dealer/dashboard" className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        {t('dashboard')}
+                      </span>
+                    </Link>
+                    <Link href="/profile" className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        {t('profile')}
+                      </span>
+                    </Link>
+                    <Link href="/dealer/my-listings" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                        {t('myListings')}
+                      </span>
+                    </Link>
+                    <Link href="/dealer/add-listing" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        {t('addListing')}
+                      </span>
+                    </Link>
+                    <Link href="/dealer/subscription" className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        {t('subscription')}
+                      </span>
+                    </Link>
+                  </>
+                )}
+                {/* Individual Navigation */}
+                {isIndividual && (
+                  <>
+                    <Link href="/profile" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        {t('myProfile')}
+                      </span>
+                    </Link>
+                    <Link href="/add-listing" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        {t('addListing')}
+                      </span>
+                    </Link>
+                    <Link href="/my-listings" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                        {t('myListings')}
+                      </span>
+                    </Link>
+                  </>
+                )}
                 <button
                   onClick={handleLogout}
                   disabled={loading}
@@ -619,15 +671,40 @@ export default function Header() {
                         {t('admin')}
                       </Link>
                     )}
-                    <Link href="/profile" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
-                      {t('myProfile')}
-                    </Link>
-                    <Link href="/add-listing" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
-                      {t('addListing')}
-                    </Link>
-                    <Link href="/my-listings" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
-                      {t('myListings')}
-                    </Link>
+                    {/* Dealer mobile menu */}
+                    {isDealer && (
+                      <>
+                        <Link href="/dealer/dashboard" className="px-4 py-2 hover:bg-purple-100 text-purple-700 font-semibold" onClick={() => setShowMenu(false)}>
+                          {t('dashboard')}
+                        </Link>
+                        <Link href="/profile" className="px-4 py-2 hover:bg-blue-100 text-blue-700" onClick={() => setShowMenu(false)}>
+                          {t('profile')}
+                        </Link>
+                        <Link href="/dealer/my-listings" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
+                          {t('myListings')}
+                        </Link>
+                        <Link href="/dealer/add-listing" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
+                          {t('addListing')}
+                        </Link>
+                        <Link href="/dealer/subscription" className="px-4 py-2 hover:bg-green-100 text-green-700 font-semibold" onClick={() => setShowMenu(false)}>
+                          {t('subscription')}
+                        </Link>
+                      </>
+                    )}
+                    {/* Individual mobile menu */}
+                    {isIndividual && (
+                      <>
+                        <Link href="/profile" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
+                          {t('myProfile')}
+                        </Link>
+                        <Link href="/add-listing" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
+                          {t('addListing')}
+                        </Link>
+                        <Link href="/my-listings" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
+                          {t('myListings')}
+                        </Link>
+                      </>
+                    )}
                     <Link href="/info" className="px-4 py-2 hover:bg-green-100 text-green-700 font-semibold" onClick={() => setShowMenu(false)}>
                       {t('usefulInformation')}
                     </Link>

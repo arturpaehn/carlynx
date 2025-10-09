@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useTranslation } from '@/components/I18nProvider'
+import IndividualGuard from '@/components/individual/IndividualGuard'
 
 type Listing = {
   id: number
@@ -29,6 +30,14 @@ type State = {
 }
 
 export default function MyListingsPage() {
+  return (
+    <IndividualGuard>
+      <MyListingsContent />
+    </IndividualGuard>
+  )
+}
+
+function MyListingsContent() {
   const { t } = useTranslation()
   const router = useRouter()
   const [listings, setListings] = useState<Listing[]>([])

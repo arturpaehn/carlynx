@@ -144,6 +144,8 @@ type TranslationKey =
   | 'electric'
   | 'compressedGas'
   | 'liquefiedGas'
+  | 'cng'
+  | 'lpg'
   | 'apply'
   | 'modelNotAvailableMotorcycles'
   | 'searchResults'
@@ -274,7 +276,33 @@ type TranslationKey =
   | 'listingTitle' | 'title' | 'vehicle' | 'vehiclePrice' | 'uploaded' | 'includedFeatures'
   | 'feature30DaysFree' | 'feature30Days' | 'featureUnlimitedViews' | 'featureDirectContact'
   | 'featureEditAnytime' | 'featureHighQualityPhotos' | 'total' | 'oneTimePayment'
-  | 'addForFree' | 'proceedToPayment' | 'processing' | 'byConfirmingYouAgree' | 'errorCreatingListing';
+  | 'addForFree' | 'proceedToPayment' | 'processing' | 'byConfirmingYouAgree' | 'errorCreatingListing'
+  | 'accountType' | 'individualUser' | 'individualUserDescription' | 'dealerAccount' 
+  | 'dealerAccountDescription' | 'pleaseSelectAccountType'
+  | 'dashboard' | 'profile' | 'dealerDashboard' | 'subscription'
+  | 'chooseYourPlan' | 'startWithFreeTrial' | 'currentStatus' | 'trialEnds'
+  | 'loadingSubscriptionPlans' | 'failedToLoadSubscription' | 'currentPlan' | 'selectPlan'
+  | 'month' | 'activeListingsLimit' | 'allPlansInclude' | 'sevenDayFreeTrial'
+  | 'bulkListingCreation' | 'csvExcelImport' | 'listingReactivation' | 'advancedFiltering'
+  | 'cancelAnytime' | 'needToCancel' | 'cancelAnytimeDescription' | 'cancelSubscription'
+  | 'canceling' | 'subscriptionCancellationScheduled' | 'subscriptionWillBeCanceledOn'
+  | 'continueAccessUntil' | 'reactivateSubscription' | 'reactivating' | 'areYouSureCancel'
+  | 'subscriptionReactivated' | 'subscriptionCanceled' | 'trial' | 'trialing' | 'pastDue' | 'canceled' | 'unlimited'
+  | 'tier100' | 'tier250' | 'tier500' | 'tier1000' | 'tierUnlimited'
+  | 'trialPlan' | 'freeForSevenDays' | 'unlimitedDuringTrial' | 'noSubscription'
+  | 'totalViews' | 'totalViewsDesc' | 'nextBilling' | 'nextBillingDesc' | 'mostPopular'
+  | 'inactiveListings' | 'youHave' | 'reactivateNow' | 'verifiedDealer' | 'notVerified' 
+  | 'verifiedDealerDesc' | 'notVerifiedDesc' | 'getVerified' | 'recentListings'
+  | 'welcomeToDealerPanel' | 'subscriptionStatus' | 'daysRemaining' | 'quickActions'
+  | 'addNewListing' | 'addNewListingDesc' | 'myListingsDesc' | 'manageSubscription' | 'manageSubscriptionDesc'
+  | 'addMultipleVehicles' | 'unlimitedTrial' | 'limitReached' | 'maxListingsReached' 
+  | 'upgradeOrDeactivate' | 'upgrade' | 'manage' | 'remove' | 'maxImagesAllowed'
+  | 'addAnotherListing' | 'submitAllListings' | 'mustHaveAtLeastOne' | 'imagesTooLarge'
+  | 'fillAllRequired' | 'listing' | 'inappropriateWord' | 'pleaseRemoveIt' | 'pleaseLogIn'
+  | 'adding' | 'listingsWouldExceed' | 'current' | 'failedToCreate' | 'unknownError'
+  | 'listingsCreated' | 'checkAndRetry' | 'failedToCreateListings' | 'status' | 'all'
+  | 'newestFirst' | 'oldestFirst' | 'nameAZ' | 'nameZA' | 'resetFilters' | 'selected'
+  | 'activate' | 'deactivate' | 'clear' | 'selectAll' | 'tryAdjustingFilters';
 
 interface Translations {
   [key: string]: string;
@@ -295,24 +323,30 @@ const translations: Record<string, Translations> = {
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [currentLanguage, setCurrentLanguage] = useState(() => {
-    // Инициализируем язык сразу из localStorage или браузера
-    if (typeof window !== 'undefined') {
-      const savedLang = localStorage.getItem('language');
-      if (savedLang && translations[savedLang]) return savedLang;
-      
-      const browserLang = navigator.language.split('-')[0];
-      if (translations[browserLang]) return browserLang;
-    }
-    return 'en';
-  });
+  // Always initialize with 'en' on server to prevent hydration mismatch
+  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Сохраняем выбранный язык при изменении
-    if (typeof window !== 'undefined') {
+    // Load language from localStorage or browser on client side only
+    const savedLang = localStorage.getItem('language');
+    if (savedLang && translations[savedLang]) {
+      setCurrentLanguage(savedLang);
+    } else {
+      const browserLang = navigator.language.split('-')[0];
+      if (translations[browserLang]) {
+        setCurrentLanguage(browserLang);
+      }
+    }
+    setIsInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    // Save selected language when it changes (but not on initial mount)
+    if (isInitialized) {
       localStorage.setItem('language', currentLanguage);
     }
-  }, [currentLanguage]);
+  }, [currentLanguage, isInitialized]);
 
   const setLanguage = useCallback((lang: string) => {
     if (translations[lang]) {

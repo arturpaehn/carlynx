@@ -1,0 +1,2 @@
+-- QUERY 6: USER PROFILES DATA
+SELECT * FROM user_profiles LIMIT 5;

@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
+  const [userType, setUserType] = useState<'individual' | 'dealer' | ''>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -48,6 +49,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!userType) {
+      setError(t('pleaseSelectAccountType'))
+      return;
+    }
+
     setLoading(true)
 
     try {
@@ -74,6 +80,7 @@ export default function RegisterPage() {
           data: {
             name: fullName,
             phone: phone,
+            user_type: userType,
           },
           emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL + '/confirm',
         },
@@ -83,6 +90,36 @@ export default function RegisterPage() {
         setError(signUpError.message)
       } else if (signUpData?.user?.id) {
         // Profile will be created automatically by database trigger
+        // Wait a moment for the profile to be created by the trigger
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // Now update the user_type in user_profiles
+        try {
+          console.log('Updating user type:', userType, 'for user:', signUpData.user.id)
+          
+          const response = await fetch('/api/update-user-type', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              userType,
+              userId: signUpData.user.id,
+              email: email
+            }),
+          })
+
+          const result = await response.json()
+          
+          if (!response.ok) {
+            console.error('Failed to update user type:', result)
+          } else {
+            console.log('User type updated successfully:', result)
+          }
+        } catch (err) {
+          console.error('Error updating user type:', err)
+        }
+
         setSuccess(true)
       } else {
         setError(t('registrationSuccessNoId'))
@@ -153,6 +190,76 @@ export default function RegisterPage() {
                       placeholder={t('enterFullName')}
                       required
                     />
+                  </div>
+                </div>
+
+                {/* Account Type */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t('accountType')} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-1 gap-3">
+                    {/* Individual Option */}
+                    <label
+                      className={`relative flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        userType === 'individual'
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-300 hover:border-orange-300 bg-white'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="userType"
+                        value="individual"
+                        checked={userType === 'individual'}
+                        onChange={(e) => setUserType(e.target.value as 'individual')}
+                        className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500"
+                      />
+                      <div className="ml-3 flex-1">
+                        <div className="flex items-center">
+                          <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className="block text-sm font-medium text-gray-900">
+                            {t('individualUser')}
+                          </span>
+                        </div>
+                        <span className="block text-xs text-gray-600 mt-1">
+                          {t('individualUserDescription')}
+                        </span>
+                      </div>
+                    </label>
+
+                    {/* Dealer Option */}
+                    <label
+                      className={`relative flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        userType === 'dealer'
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-300 hover:border-orange-300 bg-white'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="userType"
+                        value="dealer"
+                        checked={userType === 'dealer'}
+                        onChange={(e) => setUserType(e.target.value as 'dealer')}
+                        className="mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500"
+                      />
+                      <div className="ml-3 flex-1">
+                        <div className="flex items-center">
+                          <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                          <span className="block text-sm font-medium text-gray-900">
+                            {t('dealerAccount')}
+                          </span>
+                        </div>
+                        <span className="block text-xs text-gray-600 mt-1">
+                          {t('dealerAccountDescription')}
+                        </span>
+                      </div>
+                    </label>
                   </div>
                 </div>
 

@@ -30,6 +30,9 @@ type Listing = {
   } | null
   city?: string | null
   image_url?: string
+  is_external?: boolean
+  external_source?: string
+  external_url?: string
 }
 
 export default function Home() {
@@ -73,6 +76,27 @@ export default function Home() {
           .order('created_at', { ascending: false })
           .limit(12)
 
+        // Fetch external listings
+        const { data: externalData, error: externalError } = await supabase
+          .from('external_listings')
+          .select(`
+            id,
+            title,
+            model,
+            year,
+            price,
+            state_id,
+            city_id,
+            city_name,
+            image_url,
+            source,
+            external_url,
+            states (name, code, country_code)
+          `)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(12)
+
         // Проверяем, не был ли запрос отменен
         if (cancelled) {
           return;
@@ -83,6 +107,10 @@ export default function Home() {
           console.error('Failed to fetch listings:', error.code, error.hint);
           setLoading(false);
           return;
+        }
+
+        if (externalError) {
+          console.error('Failed to fetch external listings:', externalError);
         }
 
       const formatted: Listing[] = Array.isArray(data)
@@ -128,10 +156,50 @@ export default function Home() {
           })
         : []
 
+      // Format external listings
+      const formattedExternal: Listing[] = Array.isArray(externalData)
+        ? externalData.map((item) => {
+            let stateObj: { name: string; code: string; country_code: string } | null = null;
+            if (item.states) {
+              if (Array.isArray(item.states) && item.states.length > 0 && typeof item.states[0] === 'object' && 'name' in item.states[0]) {
+                stateObj = {
+                  name: item.states[0].name,
+                  code: item.states[0].code,
+                  country_code: item.states[0].country_code,
+                };
+              } else if (!Array.isArray(item.states) && typeof item.states === 'object' && 'name' in item.states) {
+                const s = item.states as { name: string; code: string; country_code: string };
+                stateObj = {
+                  name: s.name,
+                  code: s.code,
+                  country_code: s.country_code,
+                };
+              }
+            }
+            
+            return {
+              id: `ext-${item.id}`,
+              title: item.title,
+              model: item.model ?? '',
+              year: item.year ?? undefined,
+              price: item.price,
+              state: stateObj,
+              city: item.city_name,
+              image_url: item.image_url,
+              is_external: true,
+              external_source: item.source,
+              external_url: item.external_url,
+            }
+          })
+        : []
+
+      // Combine listings (both are already sorted by created_at desc)
+      const allListings = [...formatted, ...formattedExternal].slice(0, 12); // Limit to 12 total
+
         // Проверяем, не был ли запрос отменен перед обновлением состояния
         if (!cancelled) {
-          tracker.success(formatted);
-          setListings(formatted)
+          tracker.success(allListings);
+          setListings(allListings)
           setLoading(false)
         }
       } catch (error) {
@@ -222,24 +290,39 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
-              {listings.map((item) => (
-                <Link key={item.id} href={`/listing/${item.id}`} className="group">
-                  <div data-testid="listing-card" className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden hover:shadow-xl hover:bg-white/90 transition-all duration-200 transform hover:scale-[1.02] h-full">
-                    {item.image_url && (
-                      <div className="relative overflow-hidden">
-                        <Image
-                          src={item.image_url}
-                          alt={item.title}
-                          width={280}
-                          height={168}
-                          className="w-full h-32 sm:h-36 object-contain bg-gray-50 group-hover:scale-105 transition-transform duration-200"
-                          placeholder="empty"
-                        />
-                        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-sm font-bold text-green-600">
-                          ${item.price.toLocaleString()}
+              {listings.map((item) => {
+                const href = item.is_external ? item.external_url || '#' : `/listing/${item.id}`;
+                const LinkWrapper = item.is_external ? 'a' : Link;
+                const linkProps = item.is_external 
+                  ? { href, target: '_blank', rel: 'noopener noreferrer' }
+                  : { href };
+                
+                return (
+                  <LinkWrapper key={item.id} {...linkProps} className="group">
+                    <div data-testid="listing-card" className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden hover:shadow-xl hover:bg-white/90 transition-all duration-200 transform hover:scale-[1.02] h-full">
+                      {item.image_url && (
+                        <div className="relative overflow-hidden">
+                          <Image
+                            src={item.image_url}
+                            alt={item.title}
+                            width={280}
+                            height={168}
+                            className="w-full h-32 sm:h-36 object-contain bg-gray-50 group-hover:scale-105 transition-transform duration-200"
+                            placeholder="empty"
+                          />
+                          <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-sm font-bold text-green-600">
+                            ${item.price.toLocaleString()}
+                          </div>
+                          {item.is_external && (
+                            <div className="absolute top-2 left-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-full px-2 py-1 text-xs font-bold flex items-center shadow-lg">
+                              <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              Partner
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      )}
                     
                     <div className="p-3 sm:p-4">
                       <h3 className="text-sm sm:text-base font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-orange-600 transition-colors leading-tight">
@@ -278,8 +361,9 @@ export default function Home() {
                       )}
                     </div>
                   </div>
-                </Link>
-              ))}
+                </LinkWrapper>
+              );
+            })}
             </div>
           )}
         </section>

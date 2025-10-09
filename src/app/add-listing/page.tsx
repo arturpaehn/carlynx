@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useTranslation } from '@/components/I18nProvider'
 import PaymentConfirmModal from '@/components/individual/PaymentConfirmModal'
+import IndividualGuard from '@/components/individual/IndividualGuard'
 
 const fuelOptions = ['gasoline', 'diesel', 'hybrid', 'electric', 'cng', 'lpg']
 const motorcycleFuelOptions = ['gasoline', 'electric']
@@ -32,7 +33,6 @@ const vehicleTypes = [
     )
   }
 ]
-const currentYear = new Date().getFullYear()
 
 // --- Harmful/abusive content keywords ---
 const harmfulKeywords = [
@@ -51,9 +51,24 @@ const harmfulKeywords = [
 ];
 
 export default function AddListingPage() {
+  return (
+    <IndividualGuard>
+      <AddListingContent />
+    </IndividualGuard>
+  )
+}
+
+function AddListingContent() {
   const userProfile = useUser();
   const router = useRouter()
   const { t } = useTranslation();
+  
+  // Current year for validation - initialized on client to avoid hydration mismatch
+  const [currentYear, setCurrentYear] = useState(2025);
+  
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
   
   // Новое состояние для типа транспорта
   const [vehicleType, setVehicleType] = useState<'car' | 'motorcycle'>('car')
