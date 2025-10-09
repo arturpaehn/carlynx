@@ -2,18 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
-  apiVersion: '2025-09-30.clover'
-})
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
-
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_DEALER!
+function getStripe() {
+  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2025-09-30.clover'
+  })
+}
 
 export async function POST(req: NextRequest) {
+  const stripe = getStripe()
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_DEALER!
+
   try {
     const body = await req.text()
     const signature = req.headers.get('stripe-signature')
@@ -113,6 +118,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
+  const supabaseAdmin = getSupabaseAdmin()
   const userId = subscription.metadata?.user_id
   const tierId = subscription.metadata?.tier_id
 
@@ -148,6 +154,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  const supabaseAdmin = getSupabaseAdmin()
   const userId = subscription.metadata?.user_id
 
   if (!userId) {
@@ -211,6 +218,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const supabaseAdmin = getSupabaseAdmin()
   console.log(`[Subscription Deleted] Subscription: ${subscription.id}`)
 
   // Mark subscription as canceled
@@ -239,6 +247,7 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
+  const supabaseAdmin = getSupabaseAdmin()
   const invoiceAny = invoice as any // eslint-disable-line @typescript-eslint/no-explicit-any
   const subscriptionId = typeof invoiceAny.subscription === 'string' ? invoiceAny.subscription : invoiceAny.subscription?.id
 
@@ -262,6 +271,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+  const supabaseAdmin = getSupabaseAdmin()
   const invoiceAny = invoice as any // eslint-disable-line @typescript-eslint/no-explicit-any
   const subscriptionId = typeof invoiceAny.subscription === 'string' ? invoiceAny.subscription : invoiceAny.subscription?.id
 
