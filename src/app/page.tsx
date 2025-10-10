@@ -23,6 +23,7 @@ type Listing = {
   model?: string
   year?: number
   price: number
+  created_at: string
   state?: {
     name: string
     code: string
@@ -68,6 +69,7 @@ export default function Home() {
             state_id,
             city_id,
             city_name,
+            created_at,
             states!inner (name, code, country_code),
             cities (name),
             listing_images (image_url)
@@ -91,6 +93,8 @@ export default function Home() {
             image_url,
             source,
             external_url,
+            views,
+            created_at,
             states (name, code, country_code)
           `)
           .eq('is_active', true)
@@ -147,6 +151,7 @@ export default function Home() {
               model: item.model ?? '',
               year: item.year ?? undefined,
               price: item.price,
+              created_at: item.created_at,
               state: stateObj,
               city,
               image_url: Array.isArray(item.listing_images) && item.listing_images[0]?.image_url
@@ -183,6 +188,7 @@ export default function Home() {
               model: item.model ?? '',
               year: item.year ?? undefined,
               price: item.price,
+              created_at: item.created_at,
               state: stateObj,
               city: item.city_name,
               image_url: item.image_url,
@@ -193,8 +199,10 @@ export default function Home() {
           })
         : []
 
-      // Combine listings (both are already sorted by created_at desc)
-      const allListings = [...formatted, ...formattedExternal].slice(0, 12); // Limit to 12 total
+      // Combine listings and sort by created_at (newest first)
+      const allListings = [...formatted, ...formattedExternal]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 12); // Limit to 12 total
 
         // Проверяем, не был ли запрос отменен перед обновлением состояния
         if (!cancelled) {
@@ -291,14 +299,8 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
               {listings.map((item) => {
-                const href = item.is_external ? item.external_url || '#' : `/listing/${item.id}`;
-                const LinkWrapper = item.is_external ? 'a' : Link;
-                const linkProps = item.is_external 
-                  ? { href, target: '_blank', rel: 'noopener noreferrer' }
-                  : { href };
-                
                 return (
-                  <LinkWrapper key={item.id} {...linkProps} className="group">
+                  <Link key={item.id} href={`/listing/${item.id}`} className="group">
                     <div data-testid="listing-card" className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden hover:shadow-xl hover:bg-white/90 transition-all duration-200 transform hover:scale-[1.02] h-full">
                       {item.image_url && (
                         <div className="relative overflow-hidden">
@@ -361,7 +363,7 @@ export default function Home() {
                       )}
                     </div>
                   </div>
-                </LinkWrapper>
+                </Link>
               );
             })}
             </div>

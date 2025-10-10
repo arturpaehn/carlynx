@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, Suspense } from 'react'
 import Image from 'next/image';
+import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useTranslation } from '@/components/I18nProvider'
@@ -244,6 +245,7 @@ function SearchResultsPageContent() {
           image_url,
           source,
           external_url,
+          views,
           states (id, name, code, country_code)
         `)
         .eq('is_active', true)
@@ -531,15 +533,11 @@ function SearchResultsPageContent() {
 
             {listings.map((listing) => {
               const params = searchParams ? searchParams.toString() : '';
-              const href = listing.is_external 
-                ? listing.external_url || '#'
-                : `/listing/${listing.id}?from=search&${params}`;
+              const href = `/listing/${listing.id}?from=search&${params}`;
               return (
-                <a
+                <Link
                   key={listing.id}
                   href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="block bg-white/80 backdrop-blur-sm rounded-xl shadow-md border border-white/20 overflow-hidden hover:shadow-lg hover:bg-white/90 transition-all duration-200 transform hover:scale-[1.005]"
                 >
                   <div className="flex">
@@ -649,7 +647,7 @@ function SearchResultsPageContent() {
                       </div>
                     </div>
                   </div>
-                </a>
+                </Link>
               );
             })}
 

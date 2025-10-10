@@ -1,7 +1,7 @@
 'use client'
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image';
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
@@ -33,6 +33,9 @@ type Listing = {
   } | null
   city?: string | null
   brand_name?: string
+  is_external?: boolean
+  external_url?: string
+  external_source?: string
 }
 
 type ListingImage = {
@@ -59,6 +62,12 @@ export default function ListingDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [ownerInfo, setOwnerInfo] = useState<UserInfo | null>(null)
+  const hasIncrementedViews = useRef(false)
+
+  // Сброс флага при смене ID
+  useEffect(() => {
+    hasIncrementedViews.current = false;
+  }, [id]);
 
   const cameFromSearch = searchParams?.get('from') === 'search';
   const cameFromMy = searchParams?.get('from') === 'my';
@@ -88,13 +97,7 @@ export default function ListingDetailPage() {
       console.log('ID type:', typeof id)
 
       try {
-        // Сначала увеличиваем views
-        await supabase.rpc('increment_listing_views', { listing_id_input: id });
-
-        // Проверяем, не был ли запрос отменен
-        if (cancelled) return;
-
-        // Затем получаем объявление
+        // Сначала пробуем обычные listings
         const { data, error } = await supabase
           .from('listings')
           .select(`
@@ -124,17 +127,124 @@ export default function ListingDetailPage() {
           .eq('is_active', true)
           .single()
 
-        console.log('Supabase response:')
+        console.log('Regular listing response:')
         console.log('Data:', data)
         console.log('Error:', error)
 
         // Проверяем, не был ли запрос отменен
         if (cancelled) return;
 
+        // Если обычное объявление не найдено, пробуем external_listings
         if (error || !data) {
-          console.log('Setting error state')
-          setError('Failed to load listing.')
-          setLoading(false)
+          console.log('Regular listing not found, trying external_listings...')
+          
+          // Убираем префикс "ext-" если он есть
+          const cleanId = String(id).startsWith('ext-') ? String(id).substring(4) : id;
+          console.log('Looking for external listing with clean ID:', cleanId)
+          
+          const { data: externalData, error: externalError } = await supabase
+            .from('external_listings')
+            .select(`
+              id,
+              title,
+              model,
+              price,
+              year,
+              transmission,
+              fuel_type,
+              vehicle_type,
+              mileage,
+              image_url,
+              external_url,
+              contact_phone,
+              contact_email,
+              source,
+              state_id,
+              city_id,
+              city_name,
+              views
+            `)
+            .eq('id', cleanId)
+            .eq('is_active', true)
+            .single()
+
+          console.log('External listing response:')
+          console.log('Data:', externalData)
+          console.log('Error:', externalError)
+
+          if (cancelled) return;
+
+          if (externalError || !externalData) {
+            console.log('Setting error state - listing not found')
+            setError('Failed to load listing.')
+            setLoading(false)
+            return;
+          }
+
+          // Получаем данные штата отдельно, если есть state_id
+          let stateObj: { name: string; code: string; country_code: string } | null = null;
+          if (externalData.state_id) {
+            const { data: stateData } = await supabase
+              .from('states')
+              .select('id, name, code, country_code')
+              .eq('id', externalData.state_id)
+              .single()
+            
+            if (stateData) {
+              stateObj = { name: stateData.name, code: stateData.code, country_code: stateData.country_code };
+            }
+          }
+
+          const brandName = externalData.title ? externalData.title.split(' ')[0] : undefined;
+
+          const formattedExternal = {
+            id: externalData.id,
+            title: externalData.title,
+            model: externalData.model,
+            price: externalData.price,
+            year: externalData.year,
+            transmission: externalData.transmission,
+            fuel_type: externalData.fuel_type,
+            vehicle_type: externalData.vehicle_type,
+            mileage: externalData.mileage,
+            description: null, // Не показываем description для внешних объявлений
+            user_id: 'external',
+            contact_by_phone: true,
+            contact_by_email: true,
+            views: 0,
+            state: stateObj,
+            city: externalData.city_name,
+            brand_name: brandName,
+            is_external: true,
+            external_url: externalData.external_url,
+            external_source: externalData.source
+          } as Listing & { is_external: boolean; external_url: string; external_source: string };
+
+          setListing(formattedExternal);
+
+          // Для external listings используем image_url как единственное изображение
+          if (externalData.image_url) {
+            setImages([{ listing_id: Number(id), image_url: externalData.image_url }]);
+          }
+
+          // Для external listings устанавливаем имя компании в зависимости от источника
+          const companyName = externalData.source === 'mars_dealership' 
+            ? 'Mars Dealership LLC'
+            : 'Partner Dealer';
+          
+          console.log('Setting external owner info:')
+          console.log('Source:', externalData.source)
+          console.log('Company name:', companyName)
+          console.log('Email:', externalData.contact_email)
+          console.log('Phone:', externalData.contact_phone)
+            
+          setOwnerInfo({
+            full_name: companyName,
+            email: externalData.contact_email || null,
+            phone: externalData.contact_phone || null
+          });
+
+          setLoading(false);
           return;
         }
 
@@ -185,6 +295,26 @@ export default function ListingDetailPage() {
           .select('listing_id, image_url')
           .eq('listing_id', id)
 
+        // Загружаем информацию о владельце только для обычных объявлений
+        if (cancelled) return;
+        
+        // Не загружаем user_profiles для внешних объявлений (они уже установлены выше)
+        if (data.user_id !== 'external') {
+          const { data: userData } = await supabase
+            .from('user_profiles')
+            .select('full_name, email, phone')
+            .eq('user_id', data.user_id)
+            .single()
+
+          if (userData) {
+            setOwnerInfo({
+              full_name: userData.full_name,
+              email: userData.email,
+              phone: userData.phone
+            });
+          }
+        }
+
         // Финальная проверка на отмену
         if (cancelled) return;
 
@@ -215,12 +345,18 @@ useEffect(() => {
 
   const fetchOwnerInfo = async () => {
     if (!listing?.user_id) return;
+    
+    // Не загружаем user_profiles для внешних объявлений (они уже установлены)
+    if (listing.user_id === 'external') {
+      console.log('Skipping user_profiles fetch for external listing');
+      return;
+    }
 
     try {
       // Загружаем имя, телефон и email из user_profiles
       const { data: profileData } = await supabase
         .from('user_profiles')
-        .select('name, phone, email')
+        .select('full_name, phone, email')
         .eq('user_id', listing.user_id)
         .single();
 
@@ -229,7 +365,7 @@ useEffect(() => {
 
       if (profileData) {
         setOwnerInfo({
-          full_name: profileData.name || '',
+          full_name: profileData.full_name || '',
           phone: profileData.phone || '',
           email: profileData.email || '',
         });
@@ -266,6 +402,47 @@ useEffect(() => {
     cancelled = true;
   }
 }, [listing])
+
+// Инкремент счетчика просмотров
+useEffect(() => {
+  if (!listing || !id || hasIncrementedViews.current) {
+    return;
+  }
+
+  const incrementViews = async () => {
+    hasIncrementedViews.current = true; // Устанавливаем флаг до начала запроса
+    
+    try {
+      // Используем API endpoint с service_role_key чтобы обойти RLS
+      const response = await fetch('/api/increment-views', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          listingId: listing.id,
+          isExternal: listing.user_id === 'external'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && listing && result.newViews !== undefined) {
+        // Обновляем state чтобы отобразить новое количество просмотров
+        setListing({ ...listing, views: result.newViews });
+      } else if (!response.ok) {
+        console.error('Error incrementing views:', result.error);
+      }
+    } catch (err) {
+      console.error('❌ Failed to increment views:', err);
+    }
+  };
+
+  // Инкрементируем только один раз при загрузке
+  incrementViews();
+  
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [listing?.id]); // Зависим только от listing.id, чтобы не повторять при других изменениях
 
 // SEO мета-теги
 useEffect(() => {
@@ -553,7 +730,10 @@ useEffect(() => {
             <div className="space-y-3">
               <div className="flex items-center justify-between py-2">
                 <span className="text-gray-600 font-medium">{t('name')}</span>
-                <span className="text-gray-900">{ownerInfo?.full_name || t('notProvided')}</span>
+                <span className="text-gray-900">{(() => {
+                  console.log('RENDER - ownerInfo:', ownerInfo);
+                  return ownerInfo?.full_name || t('notProvided');
+                })()}</span>
               </div>
             </div>
           </div>
