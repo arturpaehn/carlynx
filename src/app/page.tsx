@@ -78,7 +78,7 @@ export default function Home() {
           .order('created_at', { ascending: false })
           .limit(12)
 
-        // Fetch external listings
+        // Fetch external listings (higher limit to ensure mixing of sources)
         const { data: externalData, error: externalError } = await supabase
           .from('external_listings')
           .select(`
@@ -99,7 +99,7 @@ export default function Home() {
           `)
           .eq('is_active', true)
           .order('created_at', { ascending: false })
-          .limit(12)
+          .limit(50)
 
         // Проверяем, не был ли запрос отменен
         if (cancelled) {

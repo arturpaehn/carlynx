@@ -58,22 +58,11 @@ class ProductionMonitor {
     this.saveToLocalStorage(logEntry);
   }
 
-  // Отправка в внешний сервис (httpbin для тестирования)
+  // Отправка в внешний сервис (disabled - use localStorage instead)
   private async sendToExternalService(logEntry: LogEvent) {
-    try {
-      await fetch('https://httpbin.org/post', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          site: 'carlynx',
-          ...logEntry
-        })
-      });
-    } catch {
-      // Молча игнорируем ошибки отправки логов
-    }
+    // Disabled due to CORS issues
+    // Use localStorage and exportLocalLogs() for debugging instead
+    void logEntry; // Mark as intentionally unused
   }
 
   // Сохранение в localStorage для локальной отладки
