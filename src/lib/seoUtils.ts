@@ -43,12 +43,13 @@ export function generateListingDescription(listing: ListingSEO): string {
   ].filter(Boolean).join(' ');
   
   const locationStr = listing.state ? ` in ${listing.state.name}` : '';
+  const priceStr = listing.price ? `$${listing.price.toLocaleString()}` : 'Price available upon request';
   
   if (listing.description && listing.description.length > 20) {
-    return `${listing.description.slice(0, 120)}... | ${specs} | $${listing.price.toLocaleString()}${locationStr} | CarLynx`;
+    return `${listing.description.slice(0, 120)}... | ${specs} | ${priceStr}${locationStr} | CarLynx`;
   }
   
-  return `${specs} for sale for $${listing.price.toLocaleString()}${locationStr}. Contact seller for details. Find more cars and motorcycles on CarLynx.`;
+  return `${specs} for sale for ${priceStr}${locationStr}. Contact seller for details. Find more cars and motorcycles on CarLynx.`;
 }
 
 export function generateListingKeywords(listing: ListingSEO): string[] {

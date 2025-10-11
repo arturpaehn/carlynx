@@ -566,7 +566,7 @@ function SearchResultsPageContent() {
                         <div className="flex-1 min-w-0 mr-3">
                           <div className="flex items-center gap-2 mb-1">
                             <h2 className="text-sm sm:text-base font-bold text-gray-800 truncate">{listing.title}</h2>
-                            {listing.is_external && (
+                            {listing.is_external && listing.external_source === 'mars_dealership' && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 border border-orange-200 flex-shrink-0">
                                 <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -579,9 +579,11 @@ function SearchResultsPageContent() {
                             <p className="text-xs sm:text-sm text-gray-600 truncate">{listing.model}</p>
                           )}
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-base sm:text-lg font-bold text-green-600">${listing.price.toLocaleString()}</div>
-                        </div>
+                        {listing.price && (
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-base sm:text-lg font-bold text-green-600">${listing.price.toLocaleString()}</div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Compact Details - Single Row */}
@@ -669,20 +671,79 @@ function SearchResultsPageContent() {
                     </svg>
                   </button>
                   
-                  <div className="flex gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => setPage(p)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                          page === p
-                            ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg'
-                            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    ))}
+                  <div className="flex gap-1 flex-wrap justify-center">
+                    {(() => {
+                      const pages = [];
+                      const showEllipsis = totalPages > 7;
+                      
+                      if (!showEllipsis) {
+                        // Показываем все страницы, если их меньше 7
+                        for (let i = 1; i <= totalPages; i++) {
+                          pages.push(i);
+                        }
+                      } else {
+                        // Умная пагинация с "..."
+                        // Всегда показываем первую страницу
+                        pages.push(1);
+                        
+                        // Определяем диапазон вокруг текущей страницы
+                        let startPage = Math.max(2, page - 1);
+                        let endPage = Math.min(totalPages - 1, page + 1);
+                        
+                        // Расширяем диапазон если мы близко к началу или концу
+                        if (page <= 3) {
+                          endPage = Math.min(5, totalPages - 1);
+                        }
+                        if (page >= totalPages - 2) {
+                          startPage = Math.max(2, totalPages - 4);
+                        }
+                        
+                        // Добавляем "..." после первой страницы если нужно
+                        if (startPage > 2) {
+                          pages.push('ellipsis-start');
+                        }
+                        
+                        // Добавляем страницы в диапазоне
+                        for (let i = startPage; i <= endPage; i++) {
+                          pages.push(i);
+                        }
+                        
+                        // Добавляем "..." перед последней страницей если нужно
+                        if (endPage < totalPages - 1) {
+                          pages.push('ellipsis-end');
+                        }
+                        
+                        // Всегда показываем последнюю страницу
+                        if (totalPages > 1) {
+                          pages.push(totalPages);
+                        }
+                      }
+                      
+                      return pages.map((p) => {
+                        if (typeof p === 'string') {
+                          // Ellipsis
+                          return (
+                            <span key={p} className="px-2 py-2 text-gray-400">
+                              ...
+                            </span>
+                          );
+                        }
+                        
+                        return (
+                          <button
+                            key={p}
+                            onClick={() => setPage(p)}
+                            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                              page === p
+                                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg'
+                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        );
+                      });
+                    })()}
                   </div>
 
                   <button

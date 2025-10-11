@@ -228,9 +228,12 @@ export default function ListingDetailPage() {
           }
 
           // Для external listings устанавливаем имя компании в зависимости от источника
-          const companyName = externalData.source === 'mars_dealership' 
-            ? 'Mars Dealership LLC'
-            : 'Partner Dealer';
+          let companyName = 'Partner Dealer';
+          if (externalData.source === 'mars_dealership') {
+            companyName = 'Mars Dealership LLC';
+          } else if (externalData.source === 'auto_boutique_texas') {
+            companyName = 'Auto Boutique Texas';
+          }
           
           console.log('Setting external owner info:')
           console.log('Source:', externalData.source)
@@ -592,12 +595,14 @@ useEffect(() => {
             </div>
 
             <div className="flex flex-col items-start sm:items-end gap-2">
-              <div className="flex items-center">
-                <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-                <span className="text-2xl sm:text-3xl font-bold text-orange-600">${listing.price.toLocaleString()}</span>
-              </div>
+              {listing.price && (
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                  <span className="text-2xl sm:text-3xl font-bold text-orange-600">${listing.price.toLocaleString()}</span>
+                </div>
+              )}
 
               {/* Views badge */}
               <div className="flex items-center px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-sm font-medium shadow-sm">

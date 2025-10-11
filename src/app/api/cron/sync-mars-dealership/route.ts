@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { syncMarsDealer } from '../../../../../scripts/parsers/marsDealershipParser';
+import { syncAutoBoutique } from '../../../../../scripts/parsers/autoBoutiqueParser';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes max execution time
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
   }
   
   try {
-    console.log('🕐 Cron job triggered: Mars Dealership sync');
+    console.log('🕐 Cron job triggered: External listings sync');
     
     // Pass credentials explicitly to avoid env variable issues
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -24,13 +25,41 @@ export async function GET(request: Request) {
     
     console.log(`🔑 Env check: url=${!!supabaseUrl}, key=${!!supabaseKey}`);
     
-    await syncMarsDealer(supabaseUrl, supabaseKey);
+    const results = {
+      marsDealer: { success: false, error: null as string | null, count: 0 },
+      autoBoutique: { success: false, error: null as string | null, count: 0 }
+    };
+    
+    // Sync Mars Dealership
+    try {
+      console.log('\n🚗 Starting Mars Dealership sync...');
+      await syncMarsDealer(supabaseUrl, supabaseKey);
+      results.marsDealer.success = true;
+      console.log('✅ Mars Dealership sync completed');
+    } catch (error) {
+      results.marsDealer.error = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ Mars Dealership sync failed:', error);
+    }
+    
+    // Sync Auto Boutique Texas
+    try {
+      console.log('\n🚗 Starting Auto Boutique Texas sync...');
+      await syncAutoBoutique(supabaseUrl, supabaseKey);
+      results.autoBoutique.success = true;
+      console.log('✅ Auto Boutique Texas sync completed');
+    } catch (error) {
+      results.autoBoutique.error = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ Auto Boutique Texas sync failed:', error);
+    }
+    
+    const allSuccess = results.marsDealer.success && results.autoBoutique.success;
     
     return NextResponse.json({ 
-      success: true, 
-      message: 'Mars Dealership sync completed',
+      success: allSuccess, 
+      message: allSuccess ? 'All syncs completed successfully' : 'Some syncs failed',
+      results,
       timestamp: new Date().toISOString()
-    });
+    }, { status: allSuccess ? 200 : 207 }); // 207 Multi-Status if partial success
     
   } catch (error) {
     console.error('❌ Cron job failed:', error);
