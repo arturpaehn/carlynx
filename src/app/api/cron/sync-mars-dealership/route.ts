@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { syncMarsDealer } from '../../../../../scripts/parsers/marsDealershipParser';
 import { syncAutoBoutique } from '../../../../../scripts/parsers/autoBoutiqueParser';
+import { syncPreOwnedPlus } from '../../../../../scripts/parsers/preOwnedPlusParser';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes max execution time
@@ -27,7 +28,8 @@ export async function GET(request: Request) {
     
     const results = {
       marsDealer: { success: false, error: null as string | null, count: 0 },
-      autoBoutique: { success: false, error: null as string | null, count: 0 }
+      autoBoutique: { success: false, error: null as string | null, count: 0 },
+      preOwnedPlus: { success: false, error: null as string | null, count: 0 }
     };
     
     // Sync Mars Dealership
@@ -52,7 +54,18 @@ export async function GET(request: Request) {
       console.error('❌ Auto Boutique Texas sync failed:', error);
     }
     
-    const allSuccess = results.marsDealer.success && results.autoBoutique.success;
+    // Sync Pre-owned Plus
+    try {
+      console.log('\n🚗 Starting Pre-owned Plus sync...');
+      await syncPreOwnedPlus(supabaseUrl, supabaseKey);
+      results.preOwnedPlus.success = true;
+      console.log('✅ Pre-owned Plus sync completed');
+    } catch (error) {
+      results.preOwnedPlus.error = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ Pre-owned Plus sync failed:', error);
+    }
+    
+    const allSuccess = results.marsDealer.success && results.autoBoutique.success && results.preOwnedPlus.success;
     
     return NextResponse.json({ 
       success: allSuccess, 

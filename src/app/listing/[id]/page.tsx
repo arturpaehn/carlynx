@@ -233,6 +233,8 @@ export default function ListingDetailPage() {
             companyName = 'Mars Dealership LLC';
           } else if (externalData.source === 'auto_boutique_texas') {
             companyName = 'Auto Boutique Texas';
+          } else if (externalData.source === 'preowned_plus') {
+            companyName = 'Pre-owned Plus';
           }
           
           console.log('Setting external owner info:')
