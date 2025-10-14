@@ -143,6 +143,8 @@ export default function DealerSubscriptionPage() {
         return
       }
 
+      console.log('🚀 Starting subscription process for tier:', tierId)
+
       // Call API to create Stripe Checkout session
       const response = await fetch('/api/dealer/create-subscription', {
         method: 'POST',
@@ -154,23 +156,38 @@ export default function DealerSubscriptionPage() {
       })
 
       const data = await response.json()
-      console.log('API Response:', data)
+      console.log('📦 API Response:', data)
+      console.log('✅ Response OK:', response.ok)
+      console.log('🔗 URL received:', data.url)
+      console.log('🔍 URL type:', typeof data.url)
 
       if (!response.ok) {
-        console.error('API Error:', data.error)
+        console.error('❌ API Error:', data.error)
         throw new Error(data.error || 'Failed to create subscription')
       }
 
-      // Redirect to Stripe Checkout
-      if (data.url) {
-        console.log('Redirecting to:', data.url)
-        window.location.href = data.url
-      } else {
-        console.error('No URL in response:', data)
-        throw new Error('No checkout URL received')
+      // Validate and redirect to Stripe Checkout
+      if (!data.url) {
+        console.error('❌ No URL in response:', data)
+        throw new Error('No checkout URL received from server')
       }
+
+      // Check if URL is valid
+      if (typeof data.url !== 'string' || data.url.trim() === '') {
+        console.error('❌ Invalid URL format:', data.url)
+        throw new Error('Invalid checkout URL format')
+      }
+
+      // Ensure URL has proper scheme
+      if (!data.url.startsWith('http://') && !data.url.startsWith('https://')) {
+        console.error('❌ URL missing scheme:', data.url)
+        throw new Error('Checkout URL is missing https:// scheme')
+      }
+
+      console.log('✅ Redirecting to valid URL:', data.url)
+      window.location.href = data.url
     } catch (err) {
-      console.error('Error subscribing:', err)
+      console.error('💥 Error subscribing:', err)
       setError(err instanceof Error ? err.message : 'Failed to start subscription')
       setSubscribing(null)
     }

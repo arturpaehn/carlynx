@@ -101,6 +101,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Get base URL - handle different environments
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://carlynx.us')
+
+    console.log('Base URL for Stripe redirect:', baseUrl)
+
     // Create Stripe Checkout Session with 7-day trial
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -131,13 +137,15 @@ export async function POST(req: NextRequest) {
           tier_name: tier.tier_name
         }
       },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dealer/subscription?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dealer/subscription?canceled=true`,
+      success_url: `${baseUrl}/dealer/subscription?success=true`,
+      cancel_url: `${baseUrl}/dealer/subscription?canceled=true`,
       metadata: {
         user_id: userId,
         tier_id: tierId
       }
     })
+
+    console.log('Stripe session created:', session.id, 'URL:', session.url)
 
     // Update dealer with trial status immediately
     const trialEndDate = new Date()
@@ -151,6 +159,15 @@ export async function POST(req: NextRequest) {
         trial_end_date: trialEndDate.toISOString()
       })
       .eq('user_id', userId)
+
+    // Validate session URL
+    if (!session.url) {
+      console.error('Stripe session created but no URL returned:', session)
+      return NextResponse.json(
+        { error: 'Failed to create checkout session URL' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       sessionId: session.id,
