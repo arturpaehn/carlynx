@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import UsefulInfoVinLinks from '@/components/UsefulInfoVinLinks';
+import AveragePriceCalculator from '@/components/AveragePriceCalculator';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { useTranslation } from '@/components/I18nProvider';
@@ -51,6 +52,11 @@ export default function InfoPage() {
         
         <div className="mb-8">
           <UsefulInfoVinLinks />
+        </div>
+
+        {/* Average Price Calculator */}
+        <div className="mb-8">
+          <AveragePriceCalculator />
         </div>
         
         {loading ? (

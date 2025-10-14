@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import ActiveListingsCount from './ActiveListingsCount';
+import SupportModal from './SupportModal';
 import { useTranslation } from './I18nProvider';
 
 export default function Footer() {
@@ -13,6 +14,7 @@ export default function Footer() {
   // Prevent hydration mismatch
   const [mounted, setMounted] = useState(false);
   const [currentYear, setCurrentYear] = useState(2025);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   
   useEffect(() => {
     setMounted(true);
@@ -57,8 +59,22 @@ export default function Footer() {
 
           {/* Правая часть: контакты */}
           <div className="text-sm text-center lg:text-right">
-            <p className="mb-1">{t('contactUs')}</p>
-            <p className="underline">support@carlynx.us</p>
+            <p className="mb-2 text-gray-200">{t('contactUs')}</p>
+            <a 
+              href="mailto:support@carlynx.us" 
+              className="underline hover:text-orange-300 transition-colors block mb-3"
+            >
+              support@carlynx.us
+            </a>
+            <button
+              onClick={() => setShowSupportModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium shadow-lg hover:shadow-xl"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              {t('contactSupport')}
+            </button>
           </div>
         </div>
 
@@ -86,6 +102,9 @@ export default function Footer() {
           </div>
         </div>
       </div>
+
+      {/* Support Modal */}
+      <SupportModal open={showSupportModal} onClose={() => setShowSupportModal(false)} />
     </footer>
   )
 }

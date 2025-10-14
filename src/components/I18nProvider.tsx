@@ -302,7 +302,13 @@ type TranslationKey =
   | 'adding' | 'listingsWouldExceed' | 'current' | 'failedToCreate' | 'unknownError'
   | 'listingsCreated' | 'checkAndRetry' | 'failedToCreateListings' | 'status' | 'all'
   | 'newestFirst' | 'oldestFirst' | 'nameAZ' | 'nameZA' | 'resetFilters' | 'selected'
-  | 'activate' | 'deactivate' | 'clear' | 'selectAll' | 'tryAdjustingFilters';
+  | 'activate' | 'deactivate' | 'clear' | 'selectAll' | 'tryAdjustingFilters'
+  | 'contactSupport' | 'supportModalTitle' | 'supportSubject' | 'supportMessage' | 'supportEmail'
+  | 'supportEmailPlaceholder' | 'supportSubjectPlaceholder' | 'supportMessagePlaceholder'
+  | 'supportSuccess' | 'supportSuccessDescription' | 'closeModal'
+  | 'averagePriceTitle' | 'averagePriceDescription' | 'selectBrandAverage' | 'selectModelAverage' | 'selectYearAverage'
+  | 'calculate' | 'calculating' | 'averagePrice' | 'noListingsFound' | 'listingsFound' 
+  | 'basedOnListings' | 'selectAllFields' | 'vehicleOrBrand';
 
 interface Translations {
   [key: string]: string;

@@ -1,4 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -23,16 +26,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // TODO: Здесь должна быть интеграция с email сервисом
-    // Например, SendGrid, Nodemailer, или другой сервис
-    console.log('Contact form submission:', { email, subject, message })
-    
-    // Имитация отправки письма (заглушка)
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Отправка письма через Resend на support@carlynx.us
+    const { data, error } = await resend.emails.send({
+      from: 'CarLynx Support <onboarding@resend.dev>',
+      to: ['support@carlynx.us'],
+      replyTo: email,
+      subject: `Support Request: ${subject}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #f97316;">New Support Request from CarLynx</h2>
+          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>From:</strong> ${email}</p>
+            <p><strong>Subject:</strong> ${subject}</p>
+          </div>
+          <div style="background: white; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h3 style="margin-top: 0;">Message:</h3>
+            <p style="white-space: pre-wrap; line-height: 1.6;">${message}</p>
+          </div>
+          <p style="color: #6b7280; font-size: 12px; margin-top: 20px;">
+            This email was sent from the CarLynx support form at ${new Date().toLocaleString()}
+          </p>
+        </div>
+      `,
+    })
+
+    if (error) {
+      console.error('Resend API error:', error)
+      return res.status(500).json({ message: 'Failed to send email', error: error.message })
+    }
+
+    console.log('✅ Email sent successfully to support@carlynx.us:', {
+      messageId: data?.id,
+      from: email,
+      subject,
+      timestamp: new Date().toISOString()
+    })
 
     return res.status(200).json({ 
-      message: 'Contact form submitted successfully',
-      success: true 
+      message: 'Email sent successfully',
+      success: true,
+      messageId: data?.id
     })
   } catch (error) {
     console.error('Contact form error:', error)
