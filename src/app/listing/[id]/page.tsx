@@ -235,6 +235,10 @@ export default function ListingDetailPage() {
             companyName = 'Auto Boutique Texas';
           } else if (externalData.source === 'preowned_plus') {
             companyName = 'Pre-owned Plus';
+          } else if (externalData.source === 'dick_poe_used_cars') {
+            companyName = "Dick Poe's Used Car America";
+          } else if (externalData.source === 'leif_johnson') {
+            companyName = 'Leif Johnson Used Car Superstore';
           }
           
           console.log('Setting external owner info:')

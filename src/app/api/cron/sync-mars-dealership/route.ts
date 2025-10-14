@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { syncMarsDealer } from '../../../../../scripts/parsers/marsDealershipParser';
 import { syncAutoBoutique } from '../../../../../scripts/parsers/autoBoutiqueParser';
 import { syncPreOwnedPlus } from '../../../../../scripts/parsers/preOwnedPlusParser';
+import { syncLeifJohnson } from '../../../../../scripts/parsers/leifJohnsonParser';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes max execution time
@@ -29,7 +30,8 @@ export async function GET(request: Request) {
     const results = {
       marsDealer: { success: false, error: null as string | null, count: 0 },
       autoBoutique: { success: false, error: null as string | null, count: 0 },
-      preOwnedPlus: { success: false, error: null as string | null, count: 0 }
+      preOwnedPlus: { success: false, error: null as string | null, count: 0 },
+      leifJohnson: { success: false, error: null as string | null, count: 0 }
     };
     
     // Sync Mars Dealership
@@ -65,7 +67,18 @@ export async function GET(request: Request) {
       console.error('❌ Pre-owned Plus sync failed:', error);
     }
     
-    const allSuccess = results.marsDealer.success && results.autoBoutique.success && results.preOwnedPlus.success;
+    // Sync Leif Johnson
+    try {
+      console.log('\n🚗 Starting Leif Johnson sync...');
+      await syncLeifJohnson(supabaseUrl, supabaseKey);
+      results.leifJohnson.success = true;
+      console.log('✅ Leif Johnson sync completed');
+    } catch (error) {
+      results.leifJohnson.error = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ Leif Johnson sync failed:', error);
+    }
+    
+    const allSuccess = results.marsDealer.success && results.autoBoutique.success && results.preOwnedPlus.success && results.leifJohnson.success;
     
     return NextResponse.json({ 
       success: allSuccess, 

@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.syncAutoBoutique = syncAutoBoutique;
+exports.syncMarsDealer = syncMarsDealer;
 const supabase_js_1 = require("@supabase/supabase-js");
 const cheerio = __importStar(require("cheerio"));
 function getSupabase(supabaseUrl, supabaseKey) {
@@ -44,17 +44,18 @@ function getSupabase(supabaseUrl, supabaseKey) {
     }
     return (0, supabase_js_1.createClient)(url, key);
 }
-// Fetch and parse Auto Boutique Texas listings from all pages
+// Fetch and parse Mars Dealership listings from all pages
 async function fetchListings() {
-    console.log('🔍 Fetching Auto Boutique Texas listings...');
+    console.log('🔍 Fetching Mars Dealership listings...');
     const allListings = [];
-    const maxPages = 25; // Максимум 25 страниц как указал пользователь
-    for (let currentPage = 1; currentPage <= maxPages; currentPage++) {
+    let currentPage = 1;
+    let hasMorePages = true;
+    while (hasMorePages) {
         try {
             const url = currentPage === 1
-                ? 'https://www.autoboutiquetexas.com/used-vehicles-houston-tx'
-                : `https://www.autoboutiquetexas.com/used-vehicles-houston-tx/page/${currentPage}`;
-            console.log(`📄 Fetching page ${currentPage}/${maxPages}...`);
+                ? 'https://marsdealership.com/listings/'
+                : `https://marsdealership.com/listings/page/${currentPage}/`;
+            console.log(`📄 Fetching page ${currentPage}...`);
             const response = await fetch(url);
             if (!response.ok) {
                 console.log(`⚠️ Page ${currentPage} returned status ${response.status}, stopping.`);
@@ -63,116 +64,66 @@ async function fetchListings() {
             const html = await response.text();
             const $ = cheerio.load(html);
             const pageListings = [];
-            // Parse each vehicle card - looking for vehicle links
+            // Parse each listing card - use 'article' selector to avoid duplicates
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            $('a[href*="/vehicle-details/"]').each((index, element) => {
+            $('article.listing-item').each((index, element) => {
                 try {
-                    const $link = $(element);
-                    // Get the URL
-                    const href = $link.attr('href');
-                    if (!href || !href.includes('/vehicle-details/'))
+                    const $el = $(element);
+                    // Extract data from the card
+                    const link = $el.find('a.listing-image').first().attr('href');
+                    if (!link)
                         return;
-                    const externalUrl = href.startsWith('http') ? href : `https://www.autoboutiquetexas.com${href}`;
-                    // Extract ID from URL (e.g., "used-2021-toyota-corolla-le-5yfepmae8mp214314")
-                    const urlParts = href.split('/').filter(p => p);
+                    const externalUrl = link;
+                    // Extract ID from URL more reliably
+                    const urlParts = link.split('/').filter(p => p);
                     const externalId = urlParts[urlParts.length - 1] || `listing-${index}`;
-                    // Skip if we already processed this listing (same link appears multiple times)
-                    if (pageListings.find(l => l.externalId === externalId))
-                        return;
-                    // Find the vehicle card container (parent elements)
-                    const $card = $link.closest('div').parent();
-                    // Get title - it's the link text itself in most cases
-                    let title = $link.text().trim();
-                    // If title is empty or too short, try to construct from URL
-                    if (!title || title.length < 5) {
-                        // Extract from URL: "used-2021-toyota-corolla-le-5yfepmae8mp214314"
-                        const parts = externalId.split('-');
-                        if (parts.length >= 4 && parts[0] === 'used') {
-                            const year = parts[1];
-                            const make = parts[2].charAt(0).toUpperCase() + parts[2].slice(1);
-                            const model = parts[3].charAt(0).toUpperCase() + parts[3].slice(1);
-                            const trim = parts.length > 4 && !parts[4].match(/^\d/)
-                                ? parts[4].toUpperCase()
-                                : '';
-                            title = `${year} ${make} ${model} ${trim}`.trim();
-                        }
-                    }
+                    // Get title from h2.listing-title or h3.listing-title
+                    const title = $el.find('h2.listing-title a, h3.listing-title a').text().trim();
                     if (!title || title.length < 5)
                         return; // Skip invalid titles
-                    // Extract year from title or URL
-                    const yearMatch = title.match(/\b(19|20)\d{2}\b/) || externalId.match(/\b(19|20)\d{2}\b/);
+                    // Extract price from .listing-price .price-text
+                    const priceText = $el.find('.listing-price .price-text').text().trim();
+                    const priceMatch = priceText.match(/[\d,]+/);
+                    const price = priceMatch ? parseFloat(priceMatch[0].replace(/,/g, '')) : undefined;
+                    // Extract year
+                    const yearMatch = title.match(/\b(19|20)\d{2}\b/);
                     const year = yearMatch ? parseInt(yearMatch[0]) : undefined;
-                    // Extract make and model from title
-                    const titleParts = title.split(' ').filter(p => p);
-                    let model;
-                    if (titleParts.length >= 3) {
-                        // Format: "2021 Toyota Corolla LE" -> model = "Toyota Corolla"
-                        model = `${titleParts[1]} ${titleParts[2]}`;
-                    }
-                    else if (titleParts.length >= 2) {
-                        model = titleParts.slice(1).join(' ');
-                    }
-                    // Look for price in the card
-                    // Price format: "$15,200" or "$15,505"
-                    const priceText = $card.find('*').contents().filter(function () {
-                        return this.type === 'text' && $(this).text().includes('$');
-                    }).text();
-                    const priceMatch = priceText.match(/\$[\d,]+/);
-                    const price = priceMatch
-                        ? parseFloat(priceMatch[0].replace(/[$,]/g, ''))
-                        : undefined;
-                    // Look for mileage
-                    // Format: "77,721miles" or "77,721 miles"
-                    const mileageText = $card.text();
-                    const mileageMatch = mileageText.match(/([\d,]+)\s*miles/i);
-                    const mileage = mileageMatch
-                        ? parseInt(mileageMatch[1].replace(/,/g, ''))
-                        : undefined;
-                    // Try to determine fuel type from title/model
-                    const titleLower = title.toLowerCase();
+                    // Extract model from title (everything after year)
+                    const titleParts = title.split(' ');
+                    const yearIndex = titleParts.findIndex(p => /^\d{4}$/.test(p));
+                    const model = yearIndex >= 0 ? titleParts.slice(yearIndex + 1, yearIndex + 3).join(' ') : undefined;
+                    // Extract mileage from .listing-meta .value-suffix (odometer icon)
+                    const mileageText = $el.find('.listing-meta.with-icon .value-suffix').text().trim();
+                    const mileageMatch = mileageText.match(/[\d,]+/);
+                    const mileage = mileageMatch ? parseInt(mileageMatch[0].replace(/,/g, '')) : undefined;
+                    // Extract transmission from .listing-meta.transmission
+                    const transmissionText = $el.find('.listing-meta.transmission').text().toLowerCase();
+                    let transmission;
+                    if (transmissionText.includes('automatic') || transmissionText.includes('cvt'))
+                        transmission = 'automatic';
+                    else if (transmissionText.includes('manual'))
+                        transmission = 'manual';
+                    // Extract fuel type from .listing-meta (look for fuel-related classes or content)
+                    const allMetaText = $el.find('.listing-meta').text().toLowerCase();
                     let fuelType;
-                    if (titleLower.includes('tesla') || titleLower.includes('electric') || titleLower.includes(' ev ')) {
+                    if (allMetaText.includes('electric') || allMetaText.includes('ev'))
                         fuelType = 'electric';
-                    }
-                    else if (titleLower.includes('hybrid')) {
+                    else if (allMetaText.includes('hybrid'))
                         fuelType = 'hybrid';
-                    }
-                    else if (titleLower.includes('diesel')) {
+                    else if (allMetaText.includes('diesel'))
                         fuelType = 'diesel';
-                    }
-                    else {
-                        fuelType = 'gasoline'; // Default
-                    }
-                    // Determine vehicle type from title
-                    let vehicleType = 'car';
-                    if (titleLower.includes('truck') || titleLower.includes('f-150') || titleLower.includes('silverado')) {
-                        vehicleType = 'truck';
-                    }
-                    else if (titleLower.includes('suv') || titleLower.includes('highlander') || titleLower.includes('x5') || titleLower.includes('x3')) {
-                        vehicleType = 'suv';
-                    }
-                    // Extract image from the link (it usually has an img inside)
-                    const img = $link.find('img').first();
+                    else if (allMetaText.includes('gasoline') || allMetaText.includes('gas') || allMetaText.includes('petrol'))
+                        fuelType = 'gasoline';
+                    // Extract image from .listing-image img
+                    const img = $el.find('.listing-image img').first();
                     let imageUrl = img.attr('src') || img.attr('data-src') || img.attr('data-lazy-src');
-                    // If no image in link, look in the card
-                    if (!imageUrl) {
-                        const cardImg = $card.find('img').first();
-                        imageUrl = cardImg.attr('src') || cardImg.attr('data-src') || cardImg.attr('data-lazy-src');
-                    }
-                    // Make sure image URL is absolute
                     if (imageUrl && !imageUrl.startsWith('http')) {
-                        imageUrl = `https://www.autoboutiquetexas.com${imageUrl}`;
+                        imageUrl = `https://marsdealership.com${imageUrl}`;
                     }
                     // Skip placeholder images
-                    if ((imageUrl === null || imageUrl === void 0 ? void 0 : imageUrl.includes('placeholder')) || (imageUrl === null || imageUrl === void 0 ? void 0 : imageUrl.includes('loading')) || (imageUrl === null || imageUrl === void 0 ? void 0 : imageUrl.includes('icon'))) {
+                    if ((imageUrl === null || imageUrl === void 0 ? void 0 : imageUrl.includes('placeholder')) || (imageUrl === null || imageUrl === void 0 ? void 0 : imageUrl.includes('loading'))) {
                         imageUrl = undefined;
                     }
-                    // Skip listings without price - we don't want them
-                    if (!price) {
-                        return;
-                    }
-                    // Default transmission (most cars are automatic)
-                    const transmission = 'automatic';
                     pageListings.push({
                         externalId,
                         externalUrl,
@@ -183,7 +134,7 @@ async function fetchListings() {
                         transmission,
                         mileage,
                         fuelType,
-                        vehicleType,
+                        vehicleType: 'car',
                         imageUrl
                     });
                 }
@@ -194,16 +145,18 @@ async function fetchListings() {
             console.log(`  ✅ Found ${pageListings.length} listings on page ${currentPage}`);
             // If no listings found on this page, stop pagination
             if (pageListings.length === 0) {
-                console.log(`⚠️ No listings found on page ${currentPage}, stopping pagination.`);
-                break;
+                hasMorePages = false;
             }
-            allListings.push(...pageListings);
-            // Add small delay between requests to be polite
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            else {
+                allListings.push(...pageListings);
+                currentPage++;
+                // Add small delay between requests to be polite
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
         }
         catch (error) {
             console.error(`❌ Error fetching page ${currentPage}:`, error);
-            break;
+            hasMorePages = false;
         }
     }
     console.log(`\n✅ Total listings found: ${allListings.length}`);
@@ -220,7 +173,7 @@ async function downloadAndUploadImage(imageUrl, externalId) {
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         // Upload to Supabase Storage
-        const fileName = `autoboutique-${externalId}-${Date.now()}.jpg`;
+        const fileName = `${externalId}-${Date.now()}.jpg`;
         const { error } = await supabase.storage
             .from('external-listing-images')
             .upload(fileName, buffer, {
@@ -243,7 +196,7 @@ async function downloadAndUploadImage(imageUrl, externalId) {
         return null;
     }
 }
-// Get Texas state ID and Houston city ID
+// Get Texas state ID and Dallas city ID
 async function getLocationIds() {
     const supabase = getSupabase();
     // Get Texas state ID
@@ -260,15 +213,15 @@ async function getLocationIds() {
     if (!stateId) {
         return { stateId: null, cityId: null };
     }
-    // Get Houston city ID
+    // Get Dallas city ID
     const { data: cityData, error: cityError } = await supabase
         .from('cities')
         .select('id')
         .eq('state_id', stateId)
-        .ilike('name', '%houston%')
+        .ilike('name', '%dallas%')
         .single();
     if (cityError) {
-        console.error('❌ Error fetching Houston city:', cityError);
+        console.error('❌ Error fetching Dallas city:', cityError);
         return { stateId, cityId: null };
     }
     return { stateId, cityId: (cityData === null || cityData === void 0 ? void 0 : cityData.id) || null };
@@ -277,7 +230,7 @@ async function getLocationIds() {
 async function syncListings(listings) {
     const supabase = getSupabase();
     console.log(`🔄 Syncing ${listings.length} listings to database...`);
-    const { stateId: texasStateId, cityId: houstonCityId } = await getLocationIds();
+    const { stateId: texasStateId, cityId: dallasCityId } = await getLocationIds();
     const currentTime = new Date().toISOString();
     const seenExternalIds = new Set();
     for (const listing of listings) {
@@ -288,7 +241,7 @@ async function syncListings(listings) {
                 .from('external_listings')
                 .select('id, image_url')
                 .eq('external_id', listing.externalId)
-                .eq('source', 'auto_boutique_texas')
+                .eq('source', 'mars_dealership')
                 .single();
             let finalImageUrl = listing.imageUrl;
             // Download and upload image if needed
@@ -302,7 +255,7 @@ async function syncListings(listings) {
             }
             const listingData = {
                 external_id: listing.externalId,
-                source: 'auto_boutique_texas',
+                source: 'mars_dealership',
                 external_url: listing.externalUrl,
                 title: listing.title,
                 model: listing.model,
@@ -313,11 +266,11 @@ async function syncListings(listings) {
                 fuel_type: listing.fuelType,
                 vehicle_type: listing.vehicleType || 'car',
                 image_url: finalImageUrl,
-                contact_phone: '(713) 352-0777',
-                contact_email: null,
+                contact_phone: '+1 682 360 3867',
+                contact_email: 'marsdealership@gmail.com',
                 state_id: texasStateId,
-                city_id: houstonCityId,
-                city_name: 'Houston',
+                city_id: dallasCityId,
+                city_name: 'Dallas',
                 last_seen_at: currentTime,
                 is_active: true
             };
@@ -355,7 +308,7 @@ async function syncListings(listings) {
     const { error: deactivateError } = await supabase
         .from('external_listings')
         .update({ is_active: false })
-        .eq('source', 'auto_boutique_texas')
+        .eq('source', 'mars_dealership')
         .lt('last_seen_at', currentTime);
     if (deactivateError) {
         console.error('❌ Error deactivating old listings:', deactivateError);
@@ -366,9 +319,9 @@ async function syncListings(listings) {
     console.log(`🎉 Sync complete! Processed ${listings.length} listings`);
 }
 // Main execution
-async function syncAutoBoutique(supabaseUrl, supabaseKey) {
+async function syncMarsDealer(supabaseUrl, supabaseKey) {
     try {
-        console.log('🚀 Starting Auto Boutique Texas sync...');
+        console.log('🚀 Starting Mars Dealership sync...');
         console.log(`⏰ Time: ${new Date().toLocaleString('en-US', { timeZone: 'Europe/Tallinn' })} (Estonian Time)`);
         console.log(`🔑 Credentials check: url=${!!supabaseUrl || !!process.env.NEXT_PUBLIC_SUPABASE_URL}, key=${!!supabaseKey || !!process.env.SUPABASE_SERVICE_ROLE_KEY}`);
         const listings = await fetchListings();
@@ -377,7 +330,7 @@ async function syncAutoBoutique(supabaseUrl, supabaseKey) {
             return;
         }
         await syncListings(listings);
-        console.log('✅ Auto Boutique Texas sync completed successfully!');
+        console.log('✅ Mars Dealership sync completed successfully!');
     }
     catch (error) {
         console.error('❌ Fatal error during sync:', error);
@@ -386,7 +339,7 @@ async function syncAutoBoutique(supabaseUrl, supabaseKey) {
 }
 // If run directly
 if (require.main === module) {
-    syncAutoBoutique()
+    syncMarsDealer()
         .then(() => process.exit(0))
         .catch((error) => {
         console.error('Fatal error:', error);

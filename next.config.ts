@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'nusnffvsnhmqxoeqjhjs.supabase.co',
       },
+      {
+        protocol: 'https',
+        hostname: 'content.homenetiol.com',
+      },
     ],
   },
   // Умное кеширование: статика кешируется, динамика обновляется
