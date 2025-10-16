@@ -49,13 +49,21 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // HTML страницы - короткое кеширование с ревалидацией
+      // HTML страницы - полный запрет кеширования
       {
         source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=0, must-revalidate, stale-while-revalidate=60',
+            value: 'no-cache, no-store, must-revalidate, private, max-age=0',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
           },
           {
             key: 'X-Frame-Options',

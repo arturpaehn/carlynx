@@ -32,9 +32,11 @@ export const metadata: Metadata = {
   creator: 'CarLynx',
   publisher: 'CarLynx',
   other: {
-    'cache-control': 'no-cache, no-store, must-revalidate',
+    'cache-control': 'no-cache, no-store, must-revalidate, private',
     'pragma': 'no-cache',
     'expires': '0',
+    'last-modified': new Date().toUTCString(),
+    'etag': `"${Date.now()}"`,
     'google-site-verification': 'your-google-verification-code', // Add your actual verification code
   },
   robots: {
@@ -86,6 +88,13 @@ export default function RootLayout({
   // Используем usePathname для определения текущего пути
   return (
     <html lang="en">
+      <head>
+        {/* Динамические meta-теги для предотвращения кеширования */}
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate, private" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
+        <meta name="build-time" content={Date.now().toString()} />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased pt-[224px] min-h-screen bg-[#ffe6cc]`}>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-17529094861"
