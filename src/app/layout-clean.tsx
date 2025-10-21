@@ -72,10 +72,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate, private" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
       </head>
       <body className={geistSans.variable + ' ' + geistMono.variable + ' antialiased pt-[224px] min-h-screen bg-[#ffe6cc]'}>
-        <Script src="https://www.googletagmanager.com/gtag/js?id=AW-17529094861" strategy="lazyOnload" />
-        <Script id="gtag-init" strategy="lazyOnload" dangerouslySetInnerHTML={{ __html: gtagScript }} />
+        <Script src="https://www.googletagmanager.com/gtag/js?id=AW-17529094861" strategy="afterInteractive" />
+        <Script id="google-ads" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: gtagScript }} />
         
         <SupabaseProvider>
           <I18nProvider>

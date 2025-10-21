@@ -36,7 +36,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Main Footer Content */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6">
-          {/* Левая часть: лого и текст */}
+          {/* Left part: logo and text */}
           <div className="flex items-center gap-4 mb-6 lg:mb-0">
             <Image
               src="/logo2.png"
@@ -50,14 +50,14 @@ export default function Footer() {
             <div>
               <h2 className="text-2xl font-bold">CarLynx</h2>
               <p className="text-sm text-gray-200">{t('connectingCarOwners')}</p>
-              {/* Счётчик активных объявлений */}
+              {/* Active listings counter */}
               <div className="mt-2 flex justify-start">
                 <ActiveListingsCount />
               </div>
             </div>
           </div>
 
-          {/* Правая часть: контакты */}
+          {/* Right part: contacts */}
           <div className="text-sm text-center lg:text-right">
             <p className="mb-2 text-gray-200">{t('contactUs')}</p>
             <a 

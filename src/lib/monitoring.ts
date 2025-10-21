@@ -1,4 +1,25 @@
 // Система мониторинга для отладки production проблем
+
+// Extend window interface for debugging
+declare global {
+  interface Window {
+    productionMonitor: ProductionMonitor;
+    carlynxLogs: () => {
+      all: LogEvent[];
+      errors: LogEvent[];
+      warnings: LogEvent[];
+      count: {
+        total: number;
+        errors: number;
+        warnings: number;
+        info: number;
+        debug: number;
+      };
+      ui: () => void;
+    };
+  }
+}
+
 export interface LogEvent {
   timestamp: number;
   level: 'info' | 'warn' | 'error' | 'debug';
@@ -70,7 +91,7 @@ class ProductionMonitor {
     if (typeof window === 'undefined') return;
 
     try {
-      const existingLogs = localStorage.getItem('carlynx_logs');
+      const existingLogs = localStorage.getItem('carlynx_monitoring_logs');
       const logs = existingLogs ? JSON.parse(existingLogs) : [];
       logs.push(logEntry);
       
@@ -79,7 +100,8 @@ class ProductionMonitor {
         logs.splice(0, logs.length - 100);
       }
       
-      localStorage.setItem('carlynx_logs', JSON.stringify(logs));
+      localStorage.setItem('carlynx_monitoring_logs', JSON.stringify(logs));
+      localStorage.setItem('carlynx_monitoring_last_update', Date.now().toString());
     } catch {
       // Игнорируем ошибки localStorage
     }
@@ -235,7 +257,7 @@ class ProductionMonitor {
     if (typeof window === 'undefined') return [];
     
     try {
-      const logs = localStorage.getItem('carlynx_logs');
+      const logs = localStorage.getItem('carlynx_monitoring_logs');
       return logs ? JSON.parse(logs) : [];
     } catch {
       return [];
@@ -246,13 +268,83 @@ class ProductionMonitor {
   clearLogs() {
     this.logs = [];
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('carlynx_logs');
+      localStorage.removeItem('carlynx_monitoring_logs');
+      localStorage.removeItem('carlynx_monitoring_last_update');
+    }
+  }
+
+  // Получить количество ошибок
+  getErrorCount(): number {
+    const allLogs = [...this.logs, ...this.exportLocalLogs()];
+    return allLogs.filter(log => log.level === 'error').length;
+  }
+
+  // Принудительное обновление данных
+  refresh() {
+    if (typeof window !== 'undefined') {
+      // Очищаем кэш и перезагружаем данные
+      const event = new CustomEvent('monitoring-refresh');
+      window.dispatchEvent(event);
     }
   }
 }
 
 // Singleton instance
 export const monitor = new ProductionMonitor();
+
+// Expose to window for debugging
+if (typeof window !== 'undefined') {
+  window.productionMonitor = monitor;
+  
+  // Global debugging functions
+  window.carlynxLogs = () => {
+    const logs = monitor.exportLocalLogs();
+    const errors = logs.filter(log => log.level === 'error');
+    const warnings = logs.filter(log => log.level === 'warn');
+    
+    return {
+      all: logs,
+      errors,
+      warnings,
+      count: {
+        total: logs.length,
+        errors: errors.length,
+        warnings: warnings.length,
+        info: logs.filter(log => log.level === 'info').length,
+        debug: logs.filter(log => log.level === 'debug').length
+      },
+      ui: () => {
+        console.log('🔍 CARLYNX MONITORING DASHBOARD');
+        console.log('=' .repeat(50));
+        console.log(`📊 Total logs: ${logs.length}`);
+        console.log(`❌ Errors: ${errors.length}`);
+        console.log(`⚠️  Warnings: ${warnings.length}`);
+        
+        if (errors.length > 0) {
+          console.log('\n🚨 ERRORS:');
+          errors.forEach((error, i) => {
+            console.log(`${i + 1}. [${new Date(error.timestamp).toLocaleString()}] ${error.event}`);
+            console.log('   Message:', error.data);
+          });
+        }
+        
+        if (warnings.length > 0) {
+          console.log('\n⚠️  WARNINGS:');
+          warnings.slice(-5).forEach((warning, i) => {
+            console.log(`${i + 1}. [${new Date(warning.timestamp).toLocaleString()}] ${warning.event}`);
+            console.log('   Data:', warning.data);
+          });
+        }
+        
+        console.log('\n🔧 AVAILABLE COMMANDS:');
+        console.log('carlynxLogs().all        - All logs');
+        console.log('carlynxLogs().errors     - Error logs only');
+        console.log('productionMonitor.clearLogs() - Clear all logs');
+        console.log('productionMonitor.refresh()   - Refresh monitoring');
+      }
+    };
+  };
+}
 
 // Convenience methods
 export const logInfo = (event: string, data?: unknown) => monitor.log('info', event, data);

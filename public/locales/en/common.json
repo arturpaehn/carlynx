@@ -480,6 +480,20 @@
   "listingsFound": "listings found",
   "basedOnListings": "Based on",
   "selectAllFields": "Please select all fields",
-  "vehicleOrBrand": "Vehicle/Brand"
+  "vehicleOrBrand": "Vehicle/Brand",
+  "importExcelListings": "Import Excel Listings",
+  "downloadTemplate": "Download Template",
+  "downloadTemplateDescription": "Download our Excel template with the correct format and sample data to get started",
+  "downloadExcelTemplate": "Download Excel Template",
+  "selectExcelFile": "Select Excel File",
+  "processingExcelFile": "Processing Excel file",
+  "validationErrors": "Validation Errors",
+  "previewListings": "Preview Listings",
+  "validListings": "valid listings",
+  "type": "Type",
+  "importListings": "Import Listings",
+  "excelFileEmpty": "Excel file is empty or has no data rows",
+  "failedToParseExcel": "Failed to parse Excel file",
+  "noValidListingsToImport": "No valid listings to import"
 }
 

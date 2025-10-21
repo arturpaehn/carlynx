@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { email, subject, message } = req.body
 
-  // Валидация данных
+  // Data validation
   if (!email || !subject || !message) {
     return res.status(400).json({ message: 'All fields are required' })
   }
@@ -19,14 +19,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'Invalid data format' })
   }
 
-  // Простая валидация email
+  // Simple email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(email)) {
     return res.status(400).json({ message: 'Invalid email format' })
   }
 
   try {
-    // Отправка письма через Resend на support@carlynx.us
+    // Send email via Resend to support@carlynx.us
     const { data, error } = await resend.emails.send({
       from: 'CarLynx Support <onboarding@resend.dev>',
       to: ['support@carlynx.us'],

@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "rimraf .next node_modules\\.cache .swc && next dev",
+    "dev:simple": "next dev",
+    "build": "rimraf .next node_modules\\.cache .swc && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "playwright test",
@@ -12,6 +13,7 @@
     "test:report": "playwright show-report",
     "test:debug": "playwright test --debug",
     "test:headed": "playwright test --headed",
+    "clean": "rimraf .next node_modules/.cache .swc",
     "precommit": "npm run lint && npm run build && npm run test",
     "predeploy": "npm run precommit && echo 'All checks passed! Ready to deploy 🚀'"
   },
@@ -33,7 +35,8 @@
     "react-dom": "^19.0.0",
     "react-i18next": "^15.6.1",
     "resend": "^6.1.2",
-    "stripe": "^19.0.0"
+    "stripe": "^19.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -42,8 +45,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/xlsx": "^0.0.35",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
+    "rimraf": "^6.0.1",
     "tailwindcss": "3.4.3",
     "typescript": "^5"
   }

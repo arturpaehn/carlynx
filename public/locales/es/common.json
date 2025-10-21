@@ -521,6 +521,20 @@
   "listingsFound": "anuncios encontrados",
   "basedOnListings": "Basado en",
   "selectAllFields": "Por favor selecciona todos los campos",
-  "vehicleOrBrand": "Vehículo/Marca"
+  "vehicleOrBrand": "Vehículo/Marca",
+  "importExcelListings": "Importar Anuncios de Excel",
+  "downloadTemplate": "Descargar Plantilla",
+  "downloadTemplateDescription": "Descarga nuestra plantilla de Excel con el formato correcto y datos de ejemplo para comenzar",
+  "downloadExcelTemplate": "Descargar Plantilla de Excel",
+  "selectExcelFile": "Seleccionar Archivo de Excel",
+  "processingExcelFile": "Procesando archivo de Excel",
+  "validationErrors": "Errores de Validación",
+  "previewListings": "Vista Previa de Anuncios",
+  "validListings": "anuncios válidos",
+  "type": "Tipo",
+  "importListings": "Importar Anuncios",
+  "excelFileEmpty": "El archivo de Excel está vacío o no tiene filas de datos",
+  "failedToParseExcel": "Error al procesar archivo de Excel",
+  "noValidListingsToImport": "No hay anuncios válidos para importar"
 }
 

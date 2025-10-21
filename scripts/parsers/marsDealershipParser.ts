@@ -14,7 +14,7 @@ function getSupabase(supabaseUrl?: string, supabaseKey?: string) {
 
 interface ScrapedListing {
   externalId: string;
-  externalUrl: string;
+  externalUrl: string;  
   title: string;
   model?: string;
   year?: number;

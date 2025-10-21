@@ -2,6 +2,37 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // ПОЛНОЕ ОТКЛЮЧЕНИЕ КЕШИРОВАНИЯ
+  webpack: (config) => {
+    // Отключаем webpack кеш
+    config.cache = false;
+    
+    // Отключаем все виды оптимизации кеширования
+    if (config.optimization) {
+      config.optimization.moduleIds = 'named';
+      config.optimization.chunkIds = 'named';
+      config.optimization.runtimeChunk = false;
+      config.optimization.splitChunks = false;
+    }
+    
+    // Отключаем кеш модулей
+    config.module.unsafeCache = false;
+    
+    // Отключаем кеш резолвера
+    if (config.resolve) {
+      config.resolve.unsafeCache = false;
+      config.resolve.cache = false;
+    }
+    
+    return config;
+  },
+  
+  // Отключаем build ID кеширование
+  generateBuildId: () => {
+    return 'no-cache-' + Date.now();
+  },
+  
+  // Изображения
   images: {
     remotePatterns: [
       {
@@ -18,62 +49,22 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Умное кеширование: статика кешируется, динамика обновляется
+  
+  // Minimal caching disable - only for API routes
   async headers() {
     return [
-      // Статические ресурсы - агрессивное кеширование (1 год)
+      // Only API without cache - let Next.js handle the rest
       {
-        source: '/locales/:path*',
+        source: '/api/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            value: 'no-cache, no-store, must-revalidate',
           },
         ],
       },
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/favicon.ico',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=86400', // 1 день
-          },
-        ],
-      },
-      // HTML страницы - полный запрет кеширования
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate, private, max-age=0',
-          },
-          {
-            key: 'Pragma',
-            value: 'no-cache',
-          },
-          {
-            key: 'Expires',
-            value: '0',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-        ],
-      },
-    ]
+    ];
   },
-  // другие опции, если появятся
 };
 
 export default nextConfig;

@@ -501,7 +501,18 @@ export default function Header() {
         </a>
         <div className="relative w-full flex flex-col items-center">
           <Link href="/">
-            <Image src="/logo.png" alt="CarLynx Logo" width={128} height={128} className="h-16 w-auto md:h-32 transition-all mx-auto" priority />
+            <Image 
+              src="/logo.png" 
+              alt="CarLynx Logo" 
+              width={180} 
+              height={180} 
+              className="h-24 md:h-40 transition-all mx-auto" 
+              style={{ 
+                width: 'auto',
+                height: 'auto'
+              }}
+              priority 
+            />
           </Link>
           {/* Language switcher removed */}
         </div>

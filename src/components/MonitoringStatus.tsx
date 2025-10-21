@@ -28,7 +28,17 @@ export default function MonitoringStatus() {
     // Обновляем каждые 5 секунд
     const interval = setInterval(updateLogs, 5000)
     
-    return () => clearInterval(interval)
+    // Слушаем события обновления
+    const handleRefresh = () => {
+      updateLogs()
+    }
+    
+    window.addEventListener('monitoring-refresh', handleRefresh)
+    
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('monitoring-refresh', handleRefresh)
+    }
   }, [])
 
   if (!isVisible) return null
@@ -52,10 +62,31 @@ export default function MonitoringStatus() {
             <div className="text-red-400">❌ Errors: {errorCount}</div>
           )}
           
-          <div className="mt-2 text-gray-400">
-            Open console and run:
-            <br />
-            <code className="bg-gray-700 px-1 rounded">carlynxLogs()</code>
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={() => {
+                monitor.clearLogs()
+                setLogs([])
+                setErrorCount(0)
+              }}
+              className="text-xs bg-red-600 hover:bg-red-700 px-2 py-1 rounded"
+            >
+              Clear
+            </button>
+            <button
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.carlynxLogs) {
+                  window.carlynxLogs().ui()
+                }
+              }}
+              className="text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded"
+            >
+              Console
+            </button>
+          </div>
+          
+          <div className="mt-2 text-gray-400 text-xs">
+            Console: <code className="bg-gray-700 px-1 rounded">carlynxLogs().ui</code>
           </div>
         </div>
       </div>

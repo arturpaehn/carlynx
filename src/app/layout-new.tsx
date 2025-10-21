@@ -21,7 +21,6 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NODE_ENV === 'production' ? 'https://carlynx.us' : 'http://localhost:3000'),
   title: {
     template: '%s | CarLynx',
     default: 'CarLynx - Buy & Sell Used Cars and Motorcycles',
@@ -31,6 +30,14 @@ export const metadata: Metadata = {
   authors: [{ name: 'CarLynx' }],
   creator: 'CarLynx',
   publisher: 'CarLynx',
+  other: {
+    'cache-control': 'no-cache, no-store, must-revalidate, private',
+    'pragma': 'no-cache',
+    'expires': '0',
+    'last-modified': new Date().toUTCString(),
+    'etag': '"' + Date.now() + '"',
+    'google-site-verification': 'your-google-verification-code',
+  },
   robots: {
     index: true,
     follow: true,
@@ -51,7 +58,7 @@ export const metadata: Metadata = {
     description: 'Your trusted marketplace for buying and selling used cars and motorcycles across Texas and nearby states.',
     images: [
       {
-        url: '/logo.png',
+        url: '/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'CarLynx - Used Cars Marketplace',
@@ -62,20 +69,37 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'CarLynx - Buy & Sell Used Cars and Motorcycles',
     description: 'Your trusted marketplace for buying and selling used cars and motorcycles across Texas.',
-    images: ['/logo.png'],
+    images: ['/og-image.jpg'],
+  },
+  verification: {
+    google: 'your-google-verification-code',
+  },
+  alternates: {
+    canonical: 'https://carlynx.us',
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const gtagScript = 'window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","AW-17529094861");'
-  
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
       <head>
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate, private" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
+        <meta name="build-time" content={Date.now().toString()} />
       </head>
       <body className={geistSans.variable + ' ' + geistMono.variable + ' antialiased pt-[224px] min-h-screen bg-[#ffe6cc]'}>
-        <Script src="https://www.googletagmanager.com/gtag/js?id=AW-17529094861" strategy="lazyOnload" />
-        <Script id="gtag-init" strategy="lazyOnload" dangerouslySetInnerHTML={{ __html: gtagScript }} />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17529094861"
+          strategy="afterInteractive"
+        />
+        <Script id="google-ads" strategy="afterInteractive">
+          {'window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag("js", new Date()); gtag("config", "AW-17529094861");'}
+        </Script>
         
         <SupabaseProvider>
           <I18nProvider>

@@ -309,18 +309,27 @@ export default function ListingDetailPage() {
         
         // Не загружаем user_profiles для внешних объявлений (они уже установлены выше)
         if (data.user_id !== 'external') {
-          const { data: userData } = await supabase
+          console.log('Loading user profile for user_id:', data.user_id);
+          
+          const { data: userData, error: userError } = await supabase
             .from('user_profiles')
-            .select('full_name, email, phone')
+            .select('name, email, phone')
             .eq('user_id', data.user_id)
             .single()
 
+          console.log('User profile query result:', userData);
+          console.log('User profile query error:', userError);
+
           if (userData) {
-            setOwnerInfo({
-              full_name: userData.full_name,
+            const ownerData = {
+              full_name: userData.name,
               email: userData.email,
               phone: userData.phone
-            });
+            };
+            console.log('Setting ownerInfo:', ownerData);
+            setOwnerInfo(ownerData);
+          } else {
+            console.log('No user profile found for user_id:', data.user_id);
           }
         }
 
@@ -355,36 +364,48 @@ useEffect(() => {
   const fetchOwnerInfo = async () => {
     if (!listing?.user_id) return;
     
-    // Не загружаем user_profiles для внешних объявлений (они уже установлены)
+    // Для внешних объявлений (партнерские) - не загружаем, они уже установлены выше с предопределенными именами
     if (listing.user_id === 'external') {
-      console.log('Skipping user_profiles fetch for external listing');
+      console.log('Skipping user_profiles fetch for external listing - already set with partner names');
       return;
     }
 
     try {
-      // Загружаем имя, телефон и email из user_profiles
+      console.log('=== FETCHING OWNER INFO FROM USER_PROFILES ===');
+      console.log('User ID:', listing.user_id);
+
+      // Для всех остальных (дилеры и обычные пользователи) - берем данные только из user_profiles
       const { data: profileData } = await supabase
         .from('user_profiles')
-        .select('full_name, phone, email')
+        .select('name, phone, email')
         .eq('user_id', listing.user_id)
         .single();
+
+      console.log('Profile data from user_profiles:', profileData);
 
       // Проверяем, не был ли запрос отменен
       if (cancelled) return;
 
       if (profileData) {
         setOwnerInfo({
-          full_name: profileData.full_name || '',
+          full_name: profileData.name || '',
+          phone: profileData.phone || '',
+          email: profileData.email || '',
+        });
+        console.log('Set owner info from user_profiles:', {
+          full_name: profileData.name || '',
           phone: profileData.phone || '',
           email: profileData.email || '',
         });
       } else if (listing?.user_id === 'e8799652-9d86-4806-8196-a77fdfa1f84a') {
+        // Fallback для конкретного пользователя
         setOwnerInfo({
           full_name: 'Mr Artur Paehn',
           phone: '55532171',
           email: '',
         });
       } else {
+        console.log('No owner info found in user_profiles, setting empty');
         setOwnerInfo({
           full_name: '',
           phone: '',
@@ -395,7 +416,7 @@ useEffect(() => {
       // Проверяем, не был ли запрос отменен
       if (cancelled) return;
       
-      console.error('Failed to load owner info:', err)
+      console.error('Failed to load owner info from user_profiles:', err)
       setOwnerInfo({
         full_name: '',
         phone: '',
@@ -766,7 +787,7 @@ useEffect(() => {
         )}
 
         {/* Contact Information */}
-        {(listing.contact_by_phone || listing.contact_by_email) && (
+        {(listing.contact_by_phone || listing.contact_by_email) && ownerInfo && (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-4 sm:p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
               <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -775,7 +796,7 @@ useEffect(() => {
               {t('contactInformation')}
             </h2>
             <div className="space-y-3">
-              {listing.contact_by_phone && ownerInfo?.phone && (
+              {listing.contact_by_phone && ownerInfo.phone && (
                 <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-xl border border-orange-200">
                   <div className="flex items-center">
                     <div className="bg-orange-500 p-2 rounded-lg mr-3">
@@ -790,7 +811,7 @@ useEffect(() => {
                   </div>
                 </div>
               )}
-              {listing.contact_by_email && ownerInfo?.email && (
+              {listing.contact_by_email && ownerInfo.email && (
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
                   <div className="flex items-center">
                     <div className="bg-blue-500 p-2 rounded-lg mr-3">

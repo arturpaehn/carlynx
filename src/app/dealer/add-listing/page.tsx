@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useTranslation } from '@/components/I18nProvider'
 import DealerGuard from '@/components/dealer/DealerGuard'
+import ExcelImportModal from '@/components/dealer/ExcelImportModal'
 
 const vehicleTypes = [
   { 
@@ -120,6 +121,9 @@ function DealerAddListingContent() {
   
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Excel import modal state
+  const [isExcelImportOpen, setIsExcelImportOpen] = useState(false)
 
   // Load dealer subscription info
   useEffect(() => {
@@ -233,6 +237,26 @@ function DealerAddListingContent() {
       return
     }
     setListings(listings.filter(l => l.id !== id))
+  }
+
+  // Handle Excel import
+  const handleExcelImport = (importedListings: ListingForm[]) => {
+    // Check dealer limits before adding
+    if (dealerInfo) {
+      const { subscription_status, max_listings, active_listings_count } = dealerInfo
+      
+      if (subscription_status !== 'trialing' && max_listings !== null) {
+        const totalNewListings = active_listings_count + listings.length + importedListings.length
+        if (totalNewListings > max_listings) {
+          setMessage(`Importing ${importedListings.length} listings would exceed your limit (${max_listings}). Current: ${active_listings_count}, Form: ${listings.length}.`)
+          return
+        }
+      }
+    }
+
+    // Append imported listings to current listings
+    setListings([...listings, ...importedListings])
+    setMessage(`✅ Successfully imported ${importedListings.length} listings. Please review and add images for each listing.`)
   }
 
   const updateListing = <K extends keyof ListingForm>(id: string, field: K, value: ListingForm[K]) => {
@@ -1036,17 +1060,32 @@ function DealerAddListingContent() {
               </div>
             ))}
 
-            {/* Add Another Button */}
-            <button
-              type="button"
-              onClick={addNewListing}
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2 sm:py-2.5 rounded-lg font-bold text-sm hover:from-green-700 hover:to-emerald-700 transition flex items-center justify-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              {t('addAnotherListing')}
-            </button>
+            {/* Action Buttons Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Add Another Button */}
+              <button
+                type="button"
+                onClick={addNewListing}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2 sm:py-2.5 rounded-lg font-bold text-sm hover:from-green-700 hover:to-emerald-700 transition flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                {t('addAnotherListing')}
+              </button>
+
+              {/* Import Excel Button */}
+              <button
+                type="button"
+                onClick={() => setIsExcelImportOpen(true)}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 sm:py-2.5 rounded-lg font-bold text-sm hover:from-blue-700 hover:to-indigo-700 transition flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3.75 3.75 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                </svg>
+                Import Excel
+              </button>
+            </div>
 
             {/* Error message */}
             {message && (
@@ -1066,6 +1105,14 @@ function DealerAddListingContent() {
           </form>
         )}
       </div>
+
+      {/* Excel Import Modal */}
+      <ExcelImportModal
+        isOpen={isExcelImportOpen}
+        onClose={() => setIsExcelImportOpen(false)}
+        onImport={handleExcelImport}
+        states={states}
+      />
     </div>
   )
 }
