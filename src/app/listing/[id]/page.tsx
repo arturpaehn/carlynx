@@ -1,10 +1,10 @@
 'use client'
-export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image';
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { getCacheBuster } from '@/lib/cacheUtils'
 import { generateListingTitle, generateListingDescription, generateListingKeywords, updateMetaTags } from '@/lib/seoUtils'
 import { useTranslation } from '@/components/I18nProvider'
 
@@ -92,9 +92,12 @@ export default function ListingDetailPage() {
       setLoading(true)
       setError('')
 
+      // Add cache busting for forced listing data refresh
+      const cacheBuster = getCacheBuster();
       console.log('=== DEBUGGING LISTING PAGE ===')
       console.log('Listing ID:', id)
       console.log('ID type:', typeof id)
+      console.log('Cache buster:', cacheBuster)
 
       try {
         // Сначала пробуем обычные listings

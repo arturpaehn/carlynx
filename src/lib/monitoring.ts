@@ -17,6 +17,9 @@ declare global {
       };
       ui: () => void;
     };
+    carlynxClearLogs: () => void;
+    carlynxExportLogs: () => void;
+    carlynxMonitor: ProductionMonitor;
   }
 }
 

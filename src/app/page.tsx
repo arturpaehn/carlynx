@@ -1,6 +1,5 @@
 
 'use client';
-export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image';
@@ -47,17 +46,19 @@ export default function Home() {
   
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
-  // Инициализируем useUser для аутентификации, но не блокируем загрузку данных
+  // Initialize useUser for authentication, but don't block data loading
   useUser();
 
   useEffect(() => {
-    let cancelled = false; // Флаг для предотвращения race conditions
+    let cancelled = false; // Flag to prevent race conditions
     
     const fetchData = async () => {
       const startTime = Date.now();
       const tracker = monitor.trackSupabaseRequest('homepage_listings', startTime);
 
       try {
+        console.log('Fetching homepage data...');
+        
         const { data, error } = await supabase
           .from('listings')
           .select(`
@@ -79,6 +80,7 @@ export default function Home() {
           .limit(12)
 
         // Fetch external listings (higher limit to ensure mixing of sources)
+        console.log('Fetching external listings...');
         const { data: externalData, error: externalError } = await supabase
           .from('external_listings')
           .select(`
@@ -101,7 +103,7 @@ export default function Home() {
           .order('created_at', { ascending: false })
           .limit(50)
 
-        // Проверяем, не был ли запрос отменен
+        // Check if request was cancelled
         if (cancelled) {
           return;
         }
@@ -136,7 +138,7 @@ export default function Home() {
                 };
               }
             }
-            // Определяем город: если есть city_name (ручной ввод) — берём его, иначе — название из cities
+            // Determine city: if city_name exists (manual input) - use it, otherwise - use name from cities
             let city: string | null = null;
             if (item.city_name && item.city_name.trim()) {
               city = item.city_name.trim();
@@ -204,7 +206,7 @@ export default function Home() {
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 12); // Limit to 12 total
 
-        // Проверяем, не был ли запрос отменен перед обновлением состояния
+        // Check if request was cancelled before updating state
         if (!cancelled) {
           tracker.success(allListings);
           setListings(allListings)
@@ -221,11 +223,11 @@ export default function Home() {
 
     fetchData()
     
-    // Cleanup function для предотвращения race conditions
+    // Cleanup function to prevent race conditions
     return () => {
       cancelled = true;
-    }
-  }, []) // Убираем зависимость от user - загружаем данные сразу
+    };
+  }, []); // Remove dependency on user - load data immediately
 
 
 

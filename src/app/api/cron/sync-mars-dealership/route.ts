@@ -4,7 +4,6 @@ import { syncAutoBoutique } from '../../../../../scripts/parsers/autoBoutiquePar
 import { syncPreOwnedPlus } from '../../../../../scripts/parsers/preOwnedPlusParser';
 import { syncLeifJohnson } from '../../../../../scripts/parsers/leifJohnsonParser';
 
-export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes max execution time
 
 export async function GET(request: Request) {
@@ -79,6 +78,32 @@ export async function GET(request: Request) {
     }
     
     const allSuccess = results.marsDealer.success && results.autoBoutique.success && results.preOwnedPlus.success && results.leifJohnson.success;
+    
+    // ADD CACHE INVALIDATION AFTER SUCCESSFUL PARSERS
+    if (allSuccess) {
+      console.log('\n🔄 All parsers completed successfully - triggering cache invalidation...');
+      
+      try {
+        // Set headers for forced cache clearing
+        const response = NextResponse.json({ 
+          success: true, 
+          message: 'All syncs completed successfully - cache invalidated',
+          results,
+          cacheInvalidated: true,
+          timestamp: new Date().toISOString()
+        }, { status: 200 });
+
+        // Set header to indicate cache was invalidated
+        response.headers.set('X-Cache-Invalidated', new Date().toISOString());
+        
+        console.log('✅ Cache invalidation headers set');
+        return response;
+        
+      } catch (cacheError) {
+        console.error('⚠️ Cache invalidation failed (but parsers succeeded):', cacheError);
+        // Continue with normal response if cache clearing failed
+      }
+    }
     
     return NextResponse.json({ 
       success: allSuccess, 

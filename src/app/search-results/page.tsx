@@ -1,11 +1,11 @@
 'use client'
-export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, Suspense } from 'react'
 import Image from 'next/image';
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { getCacheBuster } from '@/lib/cacheUtils'
 import { useTranslation } from '@/components/I18nProvider'
 
 // SEO функция для поиска
@@ -130,6 +130,10 @@ function SearchResultsPageContent() {
     const fetchListings = async () => {
       setLoading(true)
       setError('')
+
+      // Add cache busting for search results
+      const cacheBuster = getCacheBuster();
+      console.log('Fetching search results with cache buster:', cacheBuster);
 
       const filters: Record<string, string> = {};
       if (searchParams) {

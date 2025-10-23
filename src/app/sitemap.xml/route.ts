@@ -1,4 +1,8 @@
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 interface SitemapUrl {
   url: string;
@@ -178,7 +182,6 @@ export async function GET() {
     return new Response(sitemap, {
       headers: {
         'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
       },
     });
   } catch (error) {
@@ -197,7 +200,6 @@ export async function GET() {
     return new Response(fallbackSitemap, {
       headers: {
         'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=3600', // Shorter cache for fallback
       },
     });
   }
