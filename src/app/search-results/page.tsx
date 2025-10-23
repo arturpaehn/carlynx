@@ -268,6 +268,11 @@ function SearchResultsPageContent() {
       if (filters.price_min) externalQuery = externalQuery.gte('price', Number(filters.price_min))
       if (filters.price_max) externalQuery = externalQuery.lte('price', Number(filters.price_max))
 
+      // Simple brand filter for external listings - search in title field
+      if (filters.brand) {
+        externalQuery = externalQuery.ilike('title', `%${filters.brand}%`)
+      }
+
       if (stateIds.length > 0) {
         externalQuery = externalQuery.in('state_id', stateIds);
       }
