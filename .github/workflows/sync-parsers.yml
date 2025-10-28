@@ -33,7 +33,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: npx ts-node scripts/run-all-parsers.ts
+        run: npx tsx scripts/run-all-parsers.ts
       
       - name: Summary
         if: always()
