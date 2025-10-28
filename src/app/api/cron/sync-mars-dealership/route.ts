@@ -7,6 +7,11 @@ import { syncLeifJohnson } from '../../../../../scripts/parsers/leifJohnsonParse
 export const maxDuration = 300; // 5 minutes max execution time
 
 export async function GET(request: Request) {
+  // Log all relevant headers for debugging
+  console.log('🔍 Checking authorization...');
+  console.log(`   x-vercel-cron: "${request.headers.get('x-vercel-cron')}"`);
+  console.log(`   x-cron-secret: ${request.headers.get('x-cron-secret') ? 'provided' : 'missing'}`);
+  
   // Verify the request is from Vercel Cron OR manual trigger with secret
   const isVercelCron = request.headers.get('x-vercel-cron') === '1';
   const manualSecret = request.headers.get('x-cron-secret');
@@ -15,8 +20,6 @@ export async function GET(request: Request) {
   // Allow either Vercel Cron automatic trigger OR manual trigger with correct secret
   if (!isVercelCron && manualSecret !== CRON_SECRET) {
     console.error('❌ Unauthorized cron request');
-    console.error(`   x-vercel-cron: ${request.headers.get('x-vercel-cron')}`);
-    console.error(`   x-cron-secret: ${manualSecret ? 'provided' : 'missing'}`);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   
