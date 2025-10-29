@@ -4,6 +4,7 @@ import { syncAutoBoutique } from '../../../../../scripts/parsers/autoBoutiquePar
 import { syncPreOwnedPlus } from '../../../../../scripts/parsers/preOwnedPlusParser';
 import { syncLeifJohnson } from '../../../../../scripts/parsers/leifJohnsonParser';
 
+export const runtime = 'nodejs'; // Use Node.js runtime for Buffer, File, etc.
 export const maxDuration = 300; // 5 minutes max execution time
 
 export async function GET(request: Request) {
