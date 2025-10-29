@@ -1,8 +1,6 @@
 name: Pre-Deploy Checks
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch: # Позволяет запускать вручную
 
 jobs:
