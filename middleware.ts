@@ -11,17 +11,20 @@ export async function middleware(req: NextRequest) {
   // Update session if needed (refresh token etc.)
   await supabase.auth.getSession()
 
-  // CORRECT STRATEGY: stale-while-revalidate
-  // Allows caching with intelligent revalidation
+  // Smart caching strategy with proper Cache-Control headers
   const pathname = req.nextUrl.pathname;
   
-  // For API and dynamic data - minimal caching
-  if (pathname.startsWith('/api/') || pathname.includes('/listing/') || pathname.includes('/search-')) {
-    res.headers.set('Cache-Control', 'public, max-age=0, must-revalidate, stale-while-revalidate=30')
-  } 
-  // For static pages - moderate caching
+  // API routes - short cache with revalidation
+  if (pathname.startsWith('/api/')) {
+    res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+  }
+  // Dynamic listing pages - minimal cache
+  else if (pathname.includes('/listing/') || pathname.includes('/search-')) {
+    res.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60')
+  }
+  // Static pages (homepage, terms, etc) - longer cache
   else {
-    res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
+    res.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
   }
 
   return res

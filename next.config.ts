@@ -21,6 +21,18 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'www.autocenteroftexas.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'imageserver.promaxinventory.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.preownedplus.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.iwanttobuyused.com',
+      },
     ],
   },
 };

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Monitoring Logs - CarLynx</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .danger {
+            background: #f44336;
+        }
+        .danger:hover {
+            background: #da190b;
+        }
+        .info {
+            background: #2196F3;
+        }
+        .info:hover {
+            background: #0b7dda;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+        }
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .result.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🧹 Clear Monitoring Logs</h1>
+        <p>This tool helps you clear old monitoring logs from localStorage.</p>
+        
+        <button onclick="checkLogs()" class="info">📊 Check Current Logs</button>
+        <button onclick="clearLogs()" class="danger">🗑️ Clear All Logs</button>
+        <button onclick="exportLogs()">💾 Export Logs (JSON)</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        function checkLogs() {
+            const logs = localStorage.getItem('carlynx_monitoring_logs');
+            const lastUpdate = localStorage.getItem('carlynx_monitoring_last_update');
+            const result = document.getElementById('result');
+            
+            if (!logs) {
+                result.className = 'result info';
+                result.style.display = 'block';
+                result.innerHTML = '✅ No monitoring logs found. Storage is clean!';
+                return;
+            }
+            
+            try {
+                const parsed = JSON.parse(logs);
+                const errors = parsed.filter(log => log.type === 'supabase_error' || log.type === 'javascript_error');
+                const warnings = parsed.filter(log => log.type === 'warning');
+                
+                const lastUpdateDate = lastUpdate ? new Date(parseInt(lastUpdate)).toLocaleString() : 'Unknown';
+                
+                result.className = 'result info';
+                result.style.display = 'block';
+                result.innerHTML = `
+                    <strong>📊 Current Monitoring Stats:</strong><br>
+                    Total logs: ${parsed.length}<br>
+                    Errors: ${errors.length}<br>
+                    Warnings: ${warnings.length}<br>
+                    Last update: ${lastUpdateDate}<br>
+                    <br>
+                    <strong>Storage size:</strong> ${(logs.length / 1024).toFixed(2)} KB
+                `;
+            } catch (e) {
+                result.className = 'result info';
+                result.style.display = 'block';
+                result.innerHTML = `❌ Error parsing logs: ${e.message}`;
+            }
+        }
+        
+        function clearLogs() {
+            if (!confirm('Are you sure you want to clear all monitoring logs?')) {
+                return;
+            }
+            
+            localStorage.removeItem('carlynx_monitoring_logs');
+            localStorage.removeItem('carlynx_monitoring_last_update');
+            
+            const result = document.getElementById('result');
+            result.className = 'result success';
+            result.style.display = 'block';
+            result.innerHTML = '✅ All monitoring logs cleared successfully!<br><br>Refresh the page to start with clean logs.';
+        }
+        
+        function exportLogs() {
+            const logs = localStorage.getItem('carlynx_monitoring_logs');
+            
+            if (!logs) {
+                alert('No logs to export!');
+                return;
+            }
+            
+            const blob = new Blob([logs], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `carlynx-monitoring-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            const result = document.getElementById('result');
+            result.className = 'result success';
+            result.style.display = 'block';
+            result.innerHTML = '✅ Logs exported successfully!';
+        }
+        
+        // Auto-check on load
+        window.onload = checkLogs;
+    </script>
+</body>
+</html>

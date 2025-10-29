@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image';
-import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
 import { useUser } from '@/hooks/useUser'
 import { monitor } from '@/lib/monitoring'
@@ -57,164 +56,36 @@ export default function Home() {
       const tracker = monitor.trackSupabaseRequest('homepage_listings', startTime);
 
       try {
-        console.log('Fetching homepage data...');
+        console.log('Fetching homepage data from API...');
         
-        const { data, error } = await supabase
-          .from('listings')
-          .select(`
-            id,
-            title,
-            model,
-            year,
-            price,
-            state_id,
-            city_id,
-            city_name,
-            created_at,
-            states!inner (name, code, country_code),
-            cities (name),
-            listing_images (image_url)
-          `)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(12)
-
-        // Fetch external listings (higher limit to ensure mixing of sources)
-        console.log('Fetching external listings...');
-        const { data: externalData, error: externalError } = await supabase
-          .from('external_listings')
-          .select(`
-            id,
-            title,
-            model,
-            year,
-            price,
-            state_id,
-            city_id,
-            city_name,
-            image_url,
-            source,
-            external_url,
-            views,
-            created_at,
-            states (name, code, country_code)
-          `)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(50)
+        // Fetch from our new API route with ISR
+        const response = await fetch('/api/homepage-listings', {
+          method: 'GET',
+          // Allow browser to cache the response
+          cache: 'default',
+        });
 
         // Check if request was cancelled
         if (cancelled) {
           return;
         }
 
-        if (error) {
-          tracker.error(error);
-          console.error('Failed to fetch listings:', error.code, error.hint);
-          setLoading(false);
-          return;
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
         }
 
-        if (externalError) {
-          console.error('Failed to fetch external listings:', externalError);
-        }
-
-      const formatted: Listing[] = Array.isArray(data)
-        ? data.map((item) => {
-            let stateObj: { name: string; code: string; country_code: string } | null = null;
-            if (item.states) {
-              if (Array.isArray(item.states) && item.states.length > 0 && typeof item.states[0] === 'object' && 'name' in item.states[0]) {
-                stateObj = {
-                  name: item.states[0].name,
-                  code: item.states[0].code,
-                  country_code: item.states[0].country_code,
-                };
-              } else if (!Array.isArray(item.states) && typeof item.states === 'object' && 'name' in item.states) {
-                const s = item.states as { name: string; code: string; country_code: string };
-                stateObj = {
-                  name: s.name,
-                  code: s.code,
-                  country_code: s.country_code,
-                };
-              }
-            }
-            // Determine city: if city_name exists (manual input) - use it, otherwise - use name from cities
-            let city: string | null = null;
-            if (item.city_name && item.city_name.trim()) {
-              city = item.city_name.trim();
-            } else if (item.cities && Array.isArray(item.cities) && item.cities[0]?.name) {
-              city = item.cities[0].name;
-            } else if (item.cities && typeof item.cities === 'object' && 'name' in item.cities) {
-              city = (item.cities as { name: string }).name;
-            }
-            return {
-              id: item.id,
-              title: item.title,
-              model: item.model ?? '',
-              year: item.year ?? undefined,
-              price: item.price,
-              created_at: item.created_at,
-              state: stateObj,
-              city,
-              image_url: Array.isArray(item.listing_images) && item.listing_images[0]?.image_url
-                ? item.listing_images[0].image_url
-                : undefined,
-            }
-          })
-        : []
-
-      // Format external listings
-      const formattedExternal: Listing[] = Array.isArray(externalData)
-        ? externalData.map((item) => {
-            let stateObj: { name: string; code: string; country_code: string } | null = null;
-            if (item.states) {
-              if (Array.isArray(item.states) && item.states.length > 0 && typeof item.states[0] === 'object' && 'name' in item.states[0]) {
-                stateObj = {
-                  name: item.states[0].name,
-                  code: item.states[0].code,
-                  country_code: item.states[0].country_code,
-                };
-              } else if (!Array.isArray(item.states) && typeof item.states === 'object' && 'name' in item.states) {
-                const s = item.states as { name: string; code: string; country_code: string };
-                stateObj = {
-                  name: s.name,
-                  code: s.code,
-                  country_code: s.country_code,
-                };
-              }
-            }
-            
-            return {
-              id: `ext-${item.id}`,
-              title: item.title,
-              model: item.model ?? '',
-              year: item.year ?? undefined,
-              price: item.price,
-              created_at: item.created_at,
-              state: stateObj,
-              city: item.city_name,
-              image_url: item.image_url,
-              is_external: true,
-              external_source: item.source,
-              external_url: item.external_url,
-            }
-          })
-        : []
-
-      // Combine listings and sort by created_at (newest first)
-      const allListings = [...formatted, ...formattedExternal]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 12); // Limit to 12 total
+        const data = await response.json();
 
         // Check if request was cancelled before updating state
         if (!cancelled) {
-          tracker.success(allListings);
-          setListings(allListings)
+          tracker.success(data.listings);
+          setListings(data.listings || [])
           setLoading(false)
+          console.log(`✅ Loaded ${data.listings?.length || 0} listings from API`);
         }
       } catch (error) {
         tracker.error(error);
-        console.error('Error fetching listings:', error)
+        console.error('Error fetching listings from API:', error)
         if (!cancelled) {
           setLoading(false)
         }
@@ -227,7 +98,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, []); // Remove dependency on user - load data immediately
+  }, []); // Load data immediately on mount
 
 
 

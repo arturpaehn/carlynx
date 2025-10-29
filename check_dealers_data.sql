@@ -1,2 +1,0 @@
--- QUERY 3: DEALERS TABLE DATA
-SELECT * FROM dealers;
