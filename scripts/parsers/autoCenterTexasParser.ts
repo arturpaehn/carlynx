@@ -384,10 +384,12 @@ async function syncListings(listings: ScrapedListing[]) {
       
       let finalImageUrl = listing.imageUrl;
       
-      // Download and upload image if needed
-      if (listing.imageUrl && !existing?.image_url) {
+      // FORCE re-download all images to fix broken URLs
+      if (listing.imageUrl) {
         const uploadedUrl = await downloadAndUploadImage(listing.imageUrl, listing.externalId);
-        if (uploadedUrl) finalImageUrl = uploadedUrl;
+        if (uploadedUrl) {
+          finalImageUrl = uploadedUrl;
+        }
       } else if (existing?.image_url) {
         finalImageUrl = existing.image_url;
       }

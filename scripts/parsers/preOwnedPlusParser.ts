@@ -441,12 +441,13 @@ async function syncListings(
         .eq('external_url', listing.url)
         .single();
 
-      // Download and upload image if we have one
+      // Download and upload image if we have one and don't have it in storage yet
       let uploadedImageUrl = existing?.image_url || null;
-      if (listing.imageUrl && !existing?.image_url) {
+      if (listing.imageUrl && !uploadedImageUrl) {
         console.log(`📥 Downloading image for ${listingId}...`);
-        uploadedImageUrl = await downloadAndUploadImage(listing.imageUrl, listingId, supabase);
-        if (uploadedImageUrl) {
+        const uploaded = await downloadAndUploadImage(listing.imageUrl, listingId, supabase);
+        if (uploaded) {
+          uploadedImageUrl = uploaded;
           console.log(`✅ Image uploaded for ${listingId}`);
         }
       }
