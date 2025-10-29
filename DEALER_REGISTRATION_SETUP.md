@@ -38,7 +38,7 @@
   - `individualUser`: "Individual User" / "Usuario Individual"
   - `individualUserDescription`: "Pay $5 per listing" / "Paga $5 por anuncio"
   - `dealerAccount`: "Dealer Account" / "Cuenta de Distribuidor"
-  - `dealerAccountDescription`: "Starting at $50/month subscription" / "Desde $50/mes con suscripción"
+  - `dealerAccountDescription`: "Starting at $400/month subscription" / "Desde $400/mes con suscripción"
   - `pleaseSelectAccountType`: "Please select an account type." / "Por favor selecciona un tipo de cuenta."
 
 ## How It Works

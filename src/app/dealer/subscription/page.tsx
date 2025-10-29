@@ -10,7 +10,7 @@ interface SubscriptionTier {
   tier_id: string
   tier_name: string
   monthly_price: number
-  max_active_listings: number | null
+  listing_limit: number | null
   active: boolean
 }
 
@@ -446,7 +446,7 @@ export default function DealerSubscriptionPage() {
                   
                   <div className="text-center mb-6">
                     <div className="text-2xl font-semibold text-green-600">
-                      {tier.max_active_listings === null ? t('unlimited') : tier.max_active_listings}
+                      {tier.listing_limit === null ? t('unlimited') : tier.listing_limit}
                     </div>
                   </div>
                   

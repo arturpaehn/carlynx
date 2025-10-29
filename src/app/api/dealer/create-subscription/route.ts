@@ -118,8 +118,8 @@ export async function POST(req: NextRequest) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `${tier.tier_name.replace('tier_', 'Tier ').replace('_', ' ')} - ${tier.max_active_listings || 'Unlimited'} Listings`,
-              description: `Monthly subscription for ${tier.max_active_listings || 'unlimited'} active listings`
+              name: `${tier.tier_name.replace('tier_', 'Tier ').replace('_', ' ')} - ${tier.listing_limit || 'Unlimited'} Listings`,
+              description: `Monthly subscription for ${tier.listing_limit || 'unlimited'} active listings`
             },
             recurring: {
               interval: 'month'

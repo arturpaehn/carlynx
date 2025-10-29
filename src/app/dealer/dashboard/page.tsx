@@ -17,7 +17,7 @@ interface SubscriptionInfo {
 interface TierInfo {
   tier_name: string
   monthly_price: number
-  max_active_listings: number | null
+  listing_limit: number | null
 }
 
 interface MostViewedListing {
@@ -48,7 +48,6 @@ export default function DealerDashboardPage() {
   const [totalViews, setTotalViews] = useState(0)
   const [mostViewedListing, setMostViewedListing] = useState<MostViewedListing | null>(null)
   const [recentListings, setRecentListings] = useState<RecentListing[]>([])
-  const [isVerified, setIsVerified] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -60,19 +59,18 @@ export default function DealerDashboardPage() {
         // Fetch dealer subscription info
         const { data: dealerData } = await supabase
           .from('dealers')
-          .select('subscription_status, trial_end_date, current_tier_id, subscription_start_date, subscription_end_date, verified')
+          .select('subscription_status, trial_end_date, current_tier_id, subscription_start_date, subscription_end_date')
           .eq('user_id', session.user.id)
           .single()
 
         if (dealerData) {
           setSubscriptionInfo(dealerData)
-          setIsVerified(dealerData.verified || false)
 
           // Fetch tier info if dealer has a tier
           if (dealerData.current_tier_id) {
             const { data: tierData } = await supabase
               .from('subscription_tiers')
-              .select('tier_name, monthly_price, max_active_listings')
+              .select('tier_name, monthly_price, listing_limit')
               .eq('tier_id', dealerData.current_tier_id)
               .single()
 
@@ -232,14 +230,14 @@ export default function DealerDashboardPage() {
                 <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 rounded-xl">
                   <div className="text-sm text-purple-600 font-semibold mb-1">{t('currentPlan')}</div>
                   <div className="text-2xl font-bold text-gray-900">
-                    {subscriptionInfo.subscription_status === 'trialing'
+                    {subscriptionInfo.subscription_status === 'trial'
                       ? t('trialPlan')
                       : subscriptionInfo.current_tier_id && tierInfo
                       ? translateTierName(subscriptionInfo.current_tier_id)
                       : t('noSubscription')}
                   </div>
                   <div className="text-sm text-gray-600 mt-1">
-                    {subscriptionInfo.subscription_status === 'trialing'
+                    {subscriptionInfo.subscription_status === 'trial'
                       ? t('freeForSevenDays')
                       : tierInfo
                       ? `$${tierInfo.monthly_price}/${t('month')}`
@@ -251,12 +249,12 @@ export default function DealerDashboardPage() {
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl">
                   <div className="text-sm text-green-600 font-semibold mb-1">{t('currentStatus')}</div>
                   <div className="text-2xl font-bold text-gray-900 capitalize">
-                    {subscriptionInfo.subscription_status === 'trialing' ? t('trialing') : 
+                    {subscriptionInfo.subscription_status === 'trial' ? t('trialing') : 
                      subscriptionInfo.subscription_status === 'active' ? t('active') : 
                      subscriptionInfo.subscription_status === 'canceled' ? t('canceled') : 
                      subscriptionInfo.subscription_status}
                   </div>
-                  {subscriptionInfo.subscription_status === 'trialing' && getDaysRemaining() !== null && (
+                  {subscriptionInfo.subscription_status === 'trial' && getDaysRemaining() !== null && (
                     <div className="text-sm text-gray-600 mt-1">
                       {getDaysRemaining()} {t('daysRemaining')}
                     </div>
@@ -268,15 +266,15 @@ export default function DealerDashboardPage() {
                   <div className="text-sm text-orange-600 font-semibold mb-1">{t('activeListings')}</div>
                   <div className="text-2xl font-bold text-gray-900">
                     {activeListingsCount} / {
-                      subscriptionInfo.subscription_status === 'trialing'
+                      subscriptionInfo.subscription_status === 'trial'
                         ? '∞'
-                        : subscriptionInfo.current_tier_id && tierInfo && tierInfo.max_active_listings !== null
-                        ? tierInfo.max_active_listings
+                        : subscriptionInfo.current_tier_id && tierInfo && tierInfo.listing_limit !== null
+                        ? tierInfo.listing_limit
                         : t('unlimited')
                     }
                   </div>
                   <div className="text-sm text-gray-600 mt-1">
-                    {subscriptionInfo.subscription_status === 'trialing' ? t('unlimitedDuringTrial') : t('activeListingsLimit')}
+                    {subscriptionInfo.subscription_status === 'trial' ? t('unlimitedDuringTrial') : t('activeListingsLimit')}
                   </div>
                 </div>
               </div>
@@ -303,7 +301,7 @@ export default function DealerDashboardPage() {
               </div>
 
               {/* Next Billing Date */}
-              {subscriptionInfo.subscription_status !== 'trialing' && subscriptionInfo.subscription_end_date && (
+              {subscriptionInfo.subscription_status !== 'trial' && subscriptionInfo.subscription_end_date && (
                 <div className="bg-white rounded-2xl shadow-xl p-6">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-lg font-bold text-gray-900">{t('nextBilling')}</h3>
@@ -407,40 +405,6 @@ export default function DealerDashboardPage() {
                   </a>
                 </div>
               )}
-
-              {/* Verification Status */}
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <div className="flex items-center mb-4">
-                  {isVerified ? (
-                    <>
-                      <svg className="w-6 h-6 text-green-500 mr-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-                      </svg>
-                      <h3 className="text-lg font-bold text-green-600">{t('verifiedDealer')}</h3>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-6 h-6 text-gray-400 mr-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                      </svg>
-                      <h3 className="text-lg font-bold text-gray-600">{t('notVerified')}</h3>
-                    </>
-                  )}
-                </div>
-                <p className="text-gray-600 mb-3">
-                  {isVerified 
-                    ? t('verifiedDealerDesc')
-                    : t('notVerifiedDesc')}
-                </p>
-                {!isVerified && (
-                  <a 
-                    href="/dealer/profile" 
-                    className="inline-block bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
-                  >
-                    {t('getVerified')} →
-                  </a>
-                )}
-              </div>
             </div>
           )}
 

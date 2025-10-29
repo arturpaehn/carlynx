@@ -98,11 +98,11 @@ function DealerMyListingsContent() {
       if (dealerData.current_tier_id) {
         const { data: tierData } = await supabase
           .from('subscription_tiers')
-          .select('max_active_listings')
+          .select('listing_limit')
           .eq('tier_id', dealerData.current_tier_id)
           .single()
         if (tierData) {
-          maxListings = tierData.max_active_listings
+          maxListings = tierData.listing_limit
         }
       }
 
@@ -271,7 +271,7 @@ function DealerMyListingsContent() {
                   <div className="text-xs text-gray-600 mb-0.5">{t('activeListings')}</div>
                   <div className="text-2xl font-bold text-orange-600">
                     {dealerInfo.active_count}
-                    {dealerInfo.max_listings !== null && dealerInfo.subscription_status !== 'trialing' && (
+                    {dealerInfo.max_listings !== null && dealerInfo.subscription_status !== 'trial' && (
                       <span className="text-sm text-gray-600"> / {dealerInfo.max_listings}</span>
                     )}
                   </div>

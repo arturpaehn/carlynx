@@ -151,12 +151,12 @@ function DealerAddListingContent() {
         if (dealerData.current_tier_id) {
           const { data: tierData } = await supabase
             .from('subscription_tiers')
-            .select('max_active_listings')
+            .select('listing_limit')
             .eq('tier_id', dealerData.current_tier_id)
             .single()
 
           if (tierData) {
-            maxListings = tierData.max_active_listings
+            maxListings = tierData.listing_limit
           }
         }
 
@@ -244,7 +244,7 @@ function DealerAddListingContent() {
     if (dealerInfo) {
       const { subscription_status, max_listings, active_listings_count } = dealerInfo
       
-      if (subscription_status !== 'trialing' && max_listings !== null) {
+      if (subscription_status !== 'trial' && max_listings !== null) {
         const totalNewListings = active_listings_count + listings.length + importedListings.length
         if (totalNewListings > max_listings) {
           setMessage(`Importing ${importedListings.length} listings would exceed your limit (${max_listings}). Current: ${active_listings_count}, Form: ${listings.length}.`)
@@ -392,7 +392,7 @@ function DealerAddListingContent() {
     if (dealerInfo) {
       const { subscription_status, max_listings, active_listings_count } = dealerInfo
       
-      if (subscription_status !== 'trialing' && max_listings !== null) {
+      if (subscription_status !== 'trial' && max_listings !== null) {
         const totalNewListings = active_listings_count + listings.length
         if (totalNewListings > max_listings) {
           setMessage(`${t('adding')} ${listings.length} ${t('listingsWouldExceed')} (${max_listings}). ${t('current')}: ${active_listings_count}.`)
@@ -612,7 +612,7 @@ function DealerAddListingContent() {
 
   // Check if dealer can add more listings
   const canAddListing = dealerInfo
-    ? dealerInfo.subscription_status === 'trialing' ||
+    ? dealerInfo.subscription_status === 'trial' ||
       dealerInfo.max_listings === null ||
       dealerInfo.active_listings_count < dealerInfo.max_listings
     : false
@@ -630,10 +630,10 @@ function DealerAddListingContent() {
             <div className="mt-2 flex items-center gap-2">
               <span className="text-xs sm:text-sm text-gray-600">
                 {t('active')}: <span className="font-bold">{dealerInfo.active_listings_count}</span>
-                {dealerInfo.max_listings !== null && dealerInfo.subscription_status !== 'trialing' && (
+                {dealerInfo.max_listings !== null && dealerInfo.subscription_status !== 'trial' && (
                   <> / {dealerInfo.max_listings}</>
                 )}
-                {dealerInfo.subscription_status === 'trialing' && (
+                {dealerInfo.subscription_status === 'trial' && (
                   <span className="ml-1 text-green-600 text-xs">({t('unlimitedTrial')})</span>
                 )}
               </span>
