@@ -9,13 +9,18 @@ function getSupabase(supabaseUrl?: string, supabaseKey?: string) {
     throw new Error(`Supabase credentials missing: url=${!!url}, key=${!!key}`);
   }
   
-  return createClient(url, key);
+  return createClient(url, key, {
+    db: { schema: 'public' },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
 }
 
 interface ScrapedListing {
   externalId: string;
   externalUrl: string;
   title: string;
+  description?: string;
+  make?: string;
   model?: string;
   year?: number;
   price?: number;
@@ -75,10 +80,10 @@ async function fetchListings(): Promise<ScrapedListing[]> {
           const $card = $link.closest('div').parent();
           
           // Get title - it's the link text itself in most cases
-          let title = $link.text().trim();
+          let fullTitle = $link.text().trim();
           
           // If title is empty or too short, try to construct from URL
-          if (!title || title.length < 5) {
+          if (!fullTitle || fullTitle.length < 5) {
             // Extract from URL: "used-2021-toyota-corolla-le-5yfepmae8mp214314"
             const parts = externalId.split('-');
             if (parts.length >= 4 && parts[0] === 'used') {
@@ -88,24 +93,27 @@ async function fetchListings(): Promise<ScrapedListing[]> {
               const trim = parts.length > 4 && !parts[4].match(/^\d/) 
                 ? parts[4].toUpperCase() 
                 : '';
-              title = `${year} ${make} ${model} ${trim}`.trim();
+              fullTitle = `${year} ${make} ${model} ${trim}`.trim();
             }
           }
           
-          if (!title || title.length < 5) return; // Skip invalid titles
+          if (!fullTitle || fullTitle.length < 5) return; // Skip invalid titles
           
           // Extract year from title or URL
-          const yearMatch = title.match(/\b(19|20)\d{2}\b/) || externalId.match(/\b(19|20)\d{2}\b/);
+          const yearMatch = fullTitle.match(/\b(19|20)\d{2}\b/) || externalId.match(/\b(19|20)\d{2}\b/);
           const year = yearMatch ? parseInt(yearMatch[0]) : undefined;
           
           // Extract make and model from title
-          const titleParts = title.split(' ').filter(p => p);
+          const titleParts = fullTitle.split(' ').filter(p => p);
+          let make: string | undefined;
           let model: string | undefined;
+          
           if (titleParts.length >= 3) {
-            // Format: "2021 Toyota Corolla LE" -> model = "Toyota Corolla"
-            model = `${titleParts[1]} ${titleParts[2]}`;
+            // Format: "2021 Toyota Corolla LE" -> make = "Toyota", model = "Corolla"
+            make = titleParts[1];   // First word after year = Brand
+            model = titleParts[2];  // Second word = Model
           } else if (titleParts.length >= 2) {
-            model = titleParts.slice(1).join(' ');
+            make = titleParts[1];
           }
           
           // Look for price in the card
@@ -128,7 +136,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
             : undefined;
           
           // Try to determine fuel type from title/model
-          const titleLower = title.toLowerCase();
+          const titleLower = fullTitle.toLowerCase();
           let fuelType: string | undefined;
           if (titleLower.includes('tesla') || titleLower.includes('electric') || titleLower.includes(' ev ')) {
             fuelType = 'electric';
@@ -179,8 +187,10 @@ async function fetchListings(): Promise<ScrapedListing[]> {
           pageListings.push({
             externalId,
             externalUrl,
-            title,
-            model,
+            title: make || 'Unknown',  // Title = Brand only (e.g., "Toyota")
+            description: fullTitle,    // Full title for description (e.g., "2021 Toyota Corolla LE")
+            make,                      // Brand
+            model,                     // Model only
             year,
             price,
             transmission,
@@ -332,6 +342,8 @@ async function syncListings(listings: ScrapedListing[]) {
         source: 'auto_boutique_texas',
         external_url: listing.externalUrl,
         title: listing.title,
+        description: listing.description,
+        brand: listing.make,
         model: listing.model,
         year: listing.year,
         price: listing.price,

@@ -242,6 +242,8 @@ export default function ListingDetailPage() {
             companyName = "Dick Poe's Used Car America";
           } else if (externalData.source === 'leif_johnson') {
             companyName = 'Leif Johnson Used Car Superstore';
+          } else if (externalData.source === 'auto_center_texas') {
+            companyName = 'Auto Center of Texas';
           }
           
           console.log('Setting external owner info:')

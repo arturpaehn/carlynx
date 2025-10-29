@@ -12,6 +12,7 @@ const STATE = 'TX';
 interface Listing {
   url: string;
   title: string;
+  description?: string;
   year: number | null;
   make: string | null;
   model: string | null;
@@ -30,6 +31,7 @@ function getSupabase(url?: string, key?: string) {
   }
 
   return createClient(supabaseUrl, supabaseKey, {
+    db: { schema: 'public' },
     auth: {
       autoRefreshToken: false,
       persistSession: false
@@ -207,6 +209,7 @@ async function fetchListings(): Promise<Listing[]> {
       const results: Array<{
         url: string;
         title: string;
+        description: string;
         year: number | null;
         make: string | null;
         model: string | null;
@@ -254,21 +257,21 @@ async function fetchListings(): Promise<Listing[]> {
 
         const containerText = container?.textContent || '';
 
-        // Extract title
-        const title = link.textContent?.trim() || '';
-        if (!title) return;
+        // Extract full title (will be used for description)
+        const fullTitle = link.textContent?.trim() || '';
+        if (!fullTitle) return;
 
         // Extract year
-        const yearMatch = title.match(/(\d{4})/);
+        const yearMatch = fullTitle.match(/(\d{4})/);
         const year = yearMatch ? parseInt(yearMatch[1]) : null;
 
         // Extract make and model
         let make: string | null = null;
         let model: string | null = null;
-        const parts = title.replace(/^\d{4}\s+/, '').trim().split(' ');
+        const parts = fullTitle.replace(/^\d{4}\s+/, '').trim().split(' ');
         if (parts.length >= 2) {
-          make = parts[0];
-          model = parts.slice(1).join(' ');
+          make = parts[0];  // First word after year = Brand (e.g., "Toyota")
+          model = parts[1]; // Second word = Model (e.g., "Tacoma")
         }
 
         // Extract price
@@ -280,13 +283,14 @@ async function fetchListings(): Promise<Listing[]> {
         const mileage = mileageMatch ? parseInt(mileageMatch[1].replace(/,/g, '')) : null;
 
         // Only add if we have minimum required data (no image yet - will fetch from detail page)
-        if (title && fullUrl && price) {
+        if (fullTitle && fullUrl && price && make) {
           results.push({
             url: fullUrl,
-            title,
+            title: make,           // Title = Brand only (e.g., "Toyota")
+            description: fullTitle, // Full title for description (e.g., "2024 Toyota Tacoma 4WD TRD...")
             year,
-            make,
-            model,
+            make,                  // Brand (e.g., "Toyota")
+            model,                 // Model only (e.g., "Tacoma")
             price,
             mileage,
             imageUrl: null // Will be fetched later
@@ -452,8 +456,9 @@ async function syncListings(
         source: SOURCE,
         external_url: listing.url,
         title: listing.title,
+        description: listing.description,
         year: listing.year,
-        make: listing.make,
+        brand: listing.make,
         model: listing.model,
         price: listing.price,
         mileage: listing.mileage,

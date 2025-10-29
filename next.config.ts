@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'content.homenetiol.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.autocenteroftexas.com',
+      },
     ],
   },
 };

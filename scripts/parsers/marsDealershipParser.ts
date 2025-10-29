@@ -9,13 +9,18 @@ function getSupabase(supabaseUrl?: string, supabaseKey?: string) {
     throw new Error(`Supabase credentials missing: url=${!!url}, key=${!!key}`);
   }
   
-  return createClient(url, key);
+  return createClient(url, key, {
+    db: { schema: 'public' },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
 }
 
 interface ScrapedListing {
   externalId: string;
   externalUrl: string;  
   title: string;
+  description?: string;
+  make?: string;
   model?: string;
   year?: number;
   price?: number;
@@ -69,8 +74,8 @@ async function fetchListings(): Promise<ScrapedListing[]> {
         const externalId = urlParts[urlParts.length - 1] || `listing-${index}`;
         
         // Get title from h2.listing-title or h3.listing-title
-        const title = $el.find('h2.listing-title a, h3.listing-title a').text().trim();
-        if (!title || title.length < 5) return; // Skip invalid titles
+        const fullTitle = $el.find('h2.listing-title a, h3.listing-title a').text().trim();
+        if (!fullTitle || fullTitle.length < 5) return; // Skip invalid titles
         
         // Extract price from .listing-price .price-text
         const priceText = $el.find('.listing-price .price-text').text().trim();
@@ -78,13 +83,19 @@ async function fetchListings(): Promise<ScrapedListing[]> {
         const price = priceMatch ? parseFloat(priceMatch[0].replace(/,/g, '')) : undefined;
         
         // Extract year
-        const yearMatch = title.match(/\b(19|20)\d{2}\b/);
+        const yearMatch = fullTitle.match(/\b(19|20)\d{2}\b/);
         const year = yearMatch ? parseInt(yearMatch[0]) : undefined;
         
-        // Extract model from title (everything after year)
-        const titleParts = title.split(' ');
+        // Extract make and model from title
+        const titleParts = fullTitle.split(' ');
         const yearIndex = titleParts.findIndex(p => /^\d{4}$/.test(p));
-        const model = yearIndex >= 0 ? titleParts.slice(yearIndex + 1, yearIndex + 3).join(' ') : undefined;
+        let make: string | undefined;
+        let model: string | undefined;
+        
+        if (yearIndex >= 0 && titleParts.length > yearIndex + 2) {
+          make = titleParts[yearIndex + 1];  // First word after year = Brand
+          model = titleParts[yearIndex + 2]; // Second word = Model
+        }
         
         // Extract mileage from .listing-meta .value-suffix (odometer icon)
         const mileageText = $el.find('.listing-meta.with-icon .value-suffix').text().trim();
@@ -119,8 +130,10 @@ async function fetchListings(): Promise<ScrapedListing[]> {
         pageListings.push({
           externalId,
           externalUrl,
-          title,
-          model,
+          title: make || 'Unknown',  // Title = Brand only (e.g., "Ford")
+          description: fullTitle,    // Full title for description (e.g., "2018 Ford F150 SuperCrew...")
+          make,                      // Brand
+          model,                     // Model only
           year,
           price,
           transmission,
@@ -271,6 +284,8 @@ async function syncListings(listings: ScrapedListing[]) {
         source: 'mars_dealership',
         external_url: listing.externalUrl,
         title: listing.title,
+        description: listing.description,
+        brand: listing.make,
         model: listing.model,
         year: listing.year,
         price: listing.price,

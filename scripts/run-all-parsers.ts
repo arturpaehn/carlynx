@@ -9,6 +9,7 @@ import { syncMarsDealer } from './parsers/marsDealershipParser';
 import { syncAutoBoutique } from './parsers/autoBoutiqueParser';
 import { syncPreOwnedPlus } from './parsers/preOwnedPlusParser';
 import { syncLeifJohnson } from './parsers/leifJohnsonParser';
+import { syncAutoCenterTexas } from './parsers/autoCenterTexasParser';
 
 async function runAllParsers() {
   console.log('🚀 Starting all parsers sync...');
@@ -19,7 +20,8 @@ async function runAllParsers() {
     marsDealer: { success: false, error: null as string | null },
     autoBoutique: { success: false, error: null as string | null },
     preOwnedPlus: { success: false, error: null as string | null },
-    leifJohnson: { success: false, error: null as string | null }
+    leifJohnson: { success: false, error: null as string | null },
+    autoCenterTexas: { success: false, error: null as string | null }
   };
 
   // Get Supabase credentials from environment
@@ -71,7 +73,7 @@ async function runAllParsers() {
 
   // 4. Leif Johnson (Puppeteer)
   try {
-    console.log('\n🚗 [4/4] Leif Johnson...');
+    console.log('\n🚗 [4/5] Leif Johnson...');
     await syncLeifJohnson(supabaseUrl, supabaseKey);
     results.leifJohnson.success = true;
     console.log('✅ Leif Johnson completed');
@@ -80,21 +82,33 @@ async function runAllParsers() {
     console.error('❌ Leif Johnson failed:', error);
   }
 
+  // 5. Auto Center of Texas
+  try {
+    console.log('\n🚗 [5/5] Auto Center of Texas...');
+    await syncAutoCenterTexas(supabaseUrl, supabaseKey);
+    results.autoCenterTexas.success = true;
+    console.log('✅ Auto Center of Texas completed');
+  } catch (error) {
+    results.autoCenterTexas.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Auto Center of Texas failed:', error);
+  }
+
   // Summary
   console.log('\n' + '='.repeat(60));
   console.log('📊 SUMMARY');
   console.log('='.repeat(60));
-  console.log(`Mars Dealership:     ${results.marsDealer.success ? '✅ Success' : '❌ Failed'}`);
-  console.log(`Auto Boutique Texas: ${results.autoBoutique.success ? '✅ Success' : '❌ Failed'}`);
-  console.log(`Pre-owned Plus:      ${results.preOwnedPlus.success ? '✅ Success' : '❌ Failed'}`);
-  console.log(`Leif Johnson:        ${results.leifJohnson.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Mars Dealership:      ${results.marsDealer.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Auto Boutique Texas:  ${results.autoBoutique.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Pre-owned Plus:       ${results.preOwnedPlus.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Leif Johnson:         ${results.leifJohnson.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Auto Center of Texas: ${results.autoCenterTexas.success ? '✅ Success' : '❌ Failed'}`);
   console.log('='.repeat(60));
 
   const successCount = Object.values(results).filter(r => r.success).length;
-  console.log(`\n🎉 Completed: ${successCount}/4 parsers successful`);
+  console.log(`\n🎉 Completed: ${successCount}/5 parsers successful`);
 
   // Exit with error if any parser failed
-  if (successCount < 4) {
+  if (successCount < 5) {
     console.error('\n⚠️  Some parsers failed - check logs above');
     process.exit(1);
   }

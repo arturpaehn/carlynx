@@ -135,9 +135,17 @@ async function fetchVehiclesFromPage(page: Page, pageNum: number): Promise<Vehic
         if (vehicle.title) {
           const titleParts = vehicle.title.split(' ');
           if (titleParts.length >= 3) {
+            // Extract year
             const yearMatch = vehicle.title.match(/\b(19|20)\d{2}\b/);
             if (yearMatch) {
               vehicle.year = yearMatch[0];
+              
+              // Extract make and model (format: "2018 Ford F150 XLT...")
+              const yearIndex = titleParts.findIndex(p => /^\d{4}$/.test(p));
+              if (yearIndex >= 0 && titleParts.length > yearIndex + 2) {
+                vehicle.make = titleParts[yearIndex + 1];  // First word after year
+                vehicle.model = titleParts[yearIndex + 2]; // Second word after year
+              }
             }
           }
         }
@@ -162,7 +170,10 @@ export async function syncLeifJohnson(supabaseUrl?: string, supabaseKey?: string
   // Initialize Supabase client with provided or environment credentials
   const url = supabaseUrl || process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const key = supabaseKey || process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  const supabase = createClient(url, key);
+  const supabase = createClient(url, key, {
+    db: { schema: 'public' },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
 
   try {
     console.log('🌐 Launching browser...');
@@ -298,9 +309,10 @@ export async function syncLeifJohnson(supabaseUrl?: string, supabaseKey?: string
           external_id: externalId,
           source: SOURCE,
           external_url: vehicle.detailUrl || BASE_URL,
-          title: vehicle.title || `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''}`.trim() || 'Vehicle',
+          title: vehicle.make || 'Vehicle',  // Title = Brand only
+          description: vehicle.title,        // Full title from site (e.g., "2018 Ford F150 XLT...")
           year: vehicle.year ? parseInt(vehicle.year) : null,
-          make: vehicle.make || null,
+          brand: vehicle.make || null,
           model: vehicle.model || null,
           price: vehicle.price || null,
           mileage: vehicle.mileage || null,
