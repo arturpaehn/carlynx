@@ -221,7 +221,16 @@ async function fetchListings(): Promise<ScrapedListing[]> {
                          img.getAttribute('data-lazy-src');
               
               if (src && !src.includes('placeholder') && !src.includes('loading') && !src.includes('logo')) {
-                imageUrl = src.startsWith('http') ? src : `https://www.autocenteroftexas.com${src}`;
+                // Handle protocol-relative URLs (//cdn-ds.com/...)
+                if (src.startsWith('//')) {
+                  imageUrl = `https:${src}`;
+                } else if (src.startsWith('http')) {
+                  imageUrl = src;
+                } else if (src.startsWith('/')) {
+                  imageUrl = `https://www.autocenteroftexas.com${src}`;
+                } else {
+                  imageUrl = `https://www.autocenteroftexas.com/${src}`;
+                }
                 break;
               }
             }
