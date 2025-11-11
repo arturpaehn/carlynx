@@ -1,5 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import * as cheerio from 'cheerio';
+import puppeteer from 'puppeteer';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load environment variables
+const envPath = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.local';
+dotenv.config({ path: path.resolve(process.cwd(), envPath) });
 
 function getSupabase(supabaseUrl?: string, supabaseKey?: string) {
   const url = supabaseUrl || process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -28,7 +35,59 @@ interface ScrapedListing {
   mileage?: number;
   fuelType?: string;
   vehicleType?: string;
-  imageUrl?: string;
+  imageUrls?: string[]; // Changed to array for multiple images (up to 4)
+}
+
+// Fetch images from vehicle detail page using Puppeteer (up to 4)
+async function fetchImagesFromDetailPage(detailUrl: string, browser: any): Promise<string[]> {
+  let page = null;
+  try {
+    page = await browser.newPage();
+    await page.goto(detailUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+    
+    // Wait for images to load
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const imageUrls = await page.evaluate(() => {
+      const foundUrls: string[] = [];
+      
+      // Find all images in the vehicle gallery
+      const images = Array.from(document.querySelectorAll('img'));
+      
+      for (const img of images) {
+        if (foundUrls.length >= 4) break; // Maximum 4 images
+        
+        const src = (img as HTMLImageElement).src || 
+                   img.getAttribute('src') || 
+                   img.getAttribute('data-src') || 
+                   img.getAttribute('data-lazy-src');
+        
+        // Skip placeholder, logo, and icon images
+        if (src && 
+            src.startsWith('http') &&
+            !src.includes('placeholder') && 
+            !src.includes('loading') && 
+            !src.includes('icon') &&
+            !src.includes('logo') &&
+            (img as HTMLImageElement).width > 200) {
+          foundUrls.push(src);
+        }
+      }
+      
+      return foundUrls;
+    });
+    
+    await page.close();
+    return imageUrls;
+  } catch (error) {
+    console.error(`Error fetching images from ${detailUrl}:`, error);
+    if (page) {
+      try {
+        await page.close();
+      } catch {}
+    }
+    return [];
+  }
 }
 
 // Fetch and parse Mars Dealership listings from all pages
@@ -140,7 +199,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
           mileage,
           fuelType,
           vehicleType: 'car',
-          imageUrl
+          imageUrls: [] // Will be fetched from detail page later
         });
         
       } catch (err) {
@@ -168,6 +227,40 @@ async function fetchListings(): Promise<ScrapedListing[]> {
   }
     
   console.log(`\n✅ Total listings found: ${allListings.length}`);
+  
+  // Now fetch images from detail pages using Puppeteer
+  if (allListings.length > 0) {
+    console.log('\n📸 Fetching images from detail pages...');
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    
+    try {
+      for (let i = 0; i < allListings.length; i++) {
+        const listing = allListings[i];
+        try {
+          console.log(`  [${i + 1}/${allListings.length}] ${listing.title}...`);
+          const imageUrls = await fetchImagesFromDetailPage(listing.externalUrl, browser);
+          if (imageUrls.length > 0) {
+            listing.imageUrls = imageUrls;
+            console.log(`    ✅ Got ${imageUrls.length} image(s)`);
+          } else {
+            console.log(`    ⚠️  No images found`);
+          }
+          
+          // Small delay between requests
+          await new Promise(resolve => setTimeout(resolve, 800));
+        } catch (error) {
+          console.error(`    ❌ Error: ${error}`);
+        }
+      }
+    } finally {
+      await browser.close();
+      console.log('🔒 Browser closed');
+    }
+  }
+  
   return allListings;
 }
 
@@ -264,19 +357,35 @@ async function syncListings(listings: ScrapedListing[]) {
       // Check if listing already exists
       const { data: existing } = await supabase
         .from('external_listings')
-        .select('id, image_url')
+        .select('id, image_url, image_url_2, image_url_3, image_url_4')
         .eq('external_id', listing.externalId)
         .eq('source', 'mars_dealership')
         .single();
       
-      let finalImageUrl = listing.imageUrl;
+      // Download and upload images (up to 4)
+      const uploadedImageUrls: (string | null)[] = [null, null, null, null];
       
-      // Download and upload image if needed
-      if (listing.imageUrl && !existing?.image_url) {
-        const uploadedUrl = await downloadAndUploadImage(listing.imageUrl, listing.externalId);
-        if (uploadedUrl) finalImageUrl = uploadedUrl;
-      } else if (existing?.image_url) {
-        finalImageUrl = existing.image_url;
+      // Keep existing images if available
+      if (existing) {
+        uploadedImageUrls[0] = existing.image_url || null;
+        uploadedImageUrls[1] = existing.image_url_2 || null;
+        uploadedImageUrls[2] = existing.image_url_3 || null;
+        uploadedImageUrls[3] = existing.image_url_4 || null;
+      }
+      
+      // Upload new images
+      if (listing.imageUrls && listing.imageUrls.length > 0) {
+        console.log(`📥 Uploading ${listing.imageUrls.length} image(s) for ${listing.externalId}...`);
+        
+        for (let i = 0; i < Math.min(listing.imageUrls.length, 4); i++) {
+          const uploadedUrl = await downloadAndUploadImage(listing.imageUrls[i], `${listing.externalId}-${i+1}`);
+          if (uploadedUrl) {
+            uploadedImageUrls[i] = uploadedUrl;
+          }
+        }
+        
+        const uploadedCount = uploadedImageUrls.filter(url => url !== null).length;
+        console.log(`✅ ${uploadedCount} image(s) ready for ${listing.externalId}`);
       }
       
       const listingData = {
@@ -293,7 +402,10 @@ async function syncListings(listings: ScrapedListing[]) {
         mileage: listing.mileage,
         fuel_type: listing.fuelType,
         vehicle_type: listing.vehicleType || 'car',
-        image_url: finalImageUrl,
+        image_url: uploadedImageUrls[0],
+        image_url_2: uploadedImageUrls[1],
+        image_url_3: uploadedImageUrls[2],
+        image_url_4: uploadedImageUrls[3],
         contact_phone: '+1 682 360 3867',
         contact_email: 'marsdealership@gmail.com',
         state_id: texasStateId,

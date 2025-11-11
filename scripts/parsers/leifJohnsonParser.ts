@@ -20,7 +20,7 @@ interface VehicleData {
   model?: string;
   price?: number;
   mileage?: number;
-  imageUrl?: string;
+  imageUrl?: string; // Single image only
   detailUrl?: string;
   title?: string;
 }
@@ -38,6 +38,7 @@ async function fetchImageFromDetailPage(browser: Browser, detailUrl: string): Pr
     const imageUrl = await detailPage.evaluate(() => {
       // Ищем первую настоящую фотку машины (из homenetiol.com)
       const images = Array.from(document.querySelectorAll('img'));
+      
       for (const img of images) {
         const src = img.src || img.getAttribute('src');
         if (src && src.includes('homenetiol.com') && img.width > 300) {
@@ -107,10 +108,13 @@ async function fetchVehiclesFromPage(page: Page, pageNum: number): Promise<Vehic
           vehicle.detailUrl = linkEl.getAttribute('href') || undefined;
         }
 
-        // Get image
+        // Get image (placeholder - real images will be fetched from detail page)
         const imgEl = el.querySelector('img');
         if (imgEl) {
-          vehicle.imageUrl = imgEl.getAttribute('src') || imgEl.getAttribute('data-src') || undefined;
+          const imgSrc = imgEl.getAttribute('src') || imgEl.getAttribute('data-src');
+          if (imgSrc) {
+            vehicle.imageUrl = imgSrc; // Single image
+          }
         }
 
         // Get price
@@ -320,6 +324,9 @@ export async function syncLeifJohnson(supabaseUrl?: string, supabaseKey?: string
           city_id: cityId,
           city_name: CITY,
           image_url: vehicle.imageUrl || null,
+          image_url_2: null,
+          image_url_3: null,
+          image_url_4: null,
           contact_phone: PHONE,
           contact_email: null,
           is_active: true,

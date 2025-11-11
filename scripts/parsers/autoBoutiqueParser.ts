@@ -1,5 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import * as cheerio from 'cheerio';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load environment variables
+const envPath = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.local';
+dotenv.config({ path: path.resolve(process.cwd(), envPath) });
 
 function getSupabase(supabaseUrl?: string, supabaseKey?: string) {
   const url = supabaseUrl || process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -225,6 +231,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
   }
     
   console.log(`\n✅ Total listings found: ${allListings.length}`);
+  
   return allListings;
 }
 
@@ -352,6 +359,9 @@ async function syncListings(listings: ScrapedListing[]) {
         fuel_type: listing.fuelType,
         vehicle_type: listing.vehicleType || 'car',
         image_url: finalImageUrl,
+        image_url_2: null, // Auto Boutique has only 1 photo per listing
+        image_url_3: null,
+        image_url_4: null,
         contact_phone: '(713) 352-0777',
         contact_email: null,
         state_id: texasStateId,

@@ -1,5 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import puppeteer from 'puppeteer';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load environment variables
+const envPath = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.local';
+dotenv.config({ path: path.resolve(process.cwd(), envPath) });
 
 function getSupabase(supabaseUrl?: string, supabaseKey?: string) {
   const url = supabaseUrl || process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -28,7 +34,7 @@ interface ScrapedListing {
   mileage?: number;
   fuelType?: string;
   vehicleType?: string;
-  imageUrl?: string;
+  imageUrls?: string[]; // Multiple images from detail page (up to 4)
 }
 
 // Fetch and parse Auto Center of Texas listings
@@ -86,7 +92,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
         mileage?: number;
         fuelType?: string;
         vehicleType?: string;
-        imageUrl?: string;
+        imageUrls?: string[]; // Changed to array
       }> = [];
       
       const debugInfo: string[] = [];
@@ -210,31 +216,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
             fuelType = 'gasoline';
           }
           
-          // Extract image - look for images near the link
-          let imageUrl: string | undefined;
-          if (container) {
-            const nearbyImages = container.querySelectorAll('img');
-            
-            for (const img of Array.from(nearbyImages)) {
-              const src = (img as HTMLImageElement).src || 
-                         img.getAttribute('data-src') || 
-                         img.getAttribute('data-lazy-src');
-              
-              if (src && !src.includes('placeholder') && !src.includes('loading') && !src.includes('logo')) {
-                // Handle protocol-relative URLs (//cdn-ds.com/...)
-                if (src.startsWith('//')) {
-                  imageUrl = `https:${src}`;
-                } else if (src.startsWith('http')) {
-                  imageUrl = src;
-                } else if (src.startsWith('/')) {
-                  imageUrl = `https://www.autocenteroftexas.com${src}`;
-                } else {
-                  imageUrl = `https://www.autocenteroftexas.com/${src}`;
-                }
-                break;
-              }
-            }
-          }
+          // Don't extract images here - will fetch from detail page later
           
           // Only add if we have minimum data
           if (make && fullTitle) {
@@ -251,7 +233,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
               mileage,
               fuelType,
               vehicleType: 'car',
-              imageUrl
+              imageUrls: [] // Will be populated from detail page
             });
           } else {
             if (index < 3) debugInfo.push(`  -> Skipped: no make extracted`);
@@ -272,6 +254,29 @@ async function fetchListings(): Promise<ScrapedListing[]> {
     listings.push(...vehicleData.results);
     console.log(`✅ Total listings found: ${listings.length}`);
     
+    // Fetch images from detail pages
+    console.log('\n📸 Fetching images from detail pages...');
+    for (let i = 0; i < listings.length; i++) {
+      const listing = listings[i];
+      if (listing.externalUrl) {
+        try {
+          console.log(`  [${i + 1}/${listings.length}] ${listing.make}...`);
+          const imageUrls = await fetchImagesFromDetailPage(browser, listing.externalUrl);
+          if (imageUrls.length > 0) {
+            listing.imageUrls = imageUrls;
+            console.log(`    ✅ Got ${imageUrls.length} image(s)`);
+          } else {
+            console.log(`    ⚠️  No images found`);
+          }
+          
+          // Small delay between requests
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error(`    ❌ Error fetching images for ${listing.make}:`, error);
+        }
+      }
+    }
+    
   } catch (error) {
     console.error('❌ Error during scraping:', error);
     throw error;
@@ -281,6 +286,62 @@ async function fetchListings(): Promise<ScrapedListing[]> {
   }
   
   return listings;
+}
+
+// Fetch images from detail page using Puppeteer
+async function fetchImagesFromDetailPage(browser: any, detailUrl: string): Promise<string[]> {
+  const page = await browser.newPage();
+  try {
+    console.log(`  Fetching images from: ${detailUrl.substring(0, 80)}...`);
+    await page.goto(detailUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+    
+    // Wait for images to load
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const imageUrls = await page.evaluate(() => {
+      const urls: string[] = [];
+      const seen = new Set<string>();
+      
+      // Get all images with vehicle info
+      const images = Array.from(document.querySelectorAll('img.main-slider__inner-img'));
+      
+      for (const img of images) {
+        const imgEl = img as HTMLImageElement;
+        let src = imgEl.src || imgEl.getAttribute('data-src');
+        
+        // Fix protocol-relative URLs (//cdn-ds.com/...)
+        if (src && src.startsWith('//')) {
+          src = `https:${src}`;
+        }
+        
+        // Only take images that:
+        // 1. Have src
+        // 2. Are from cdn-ds.com (vehicle images)
+        // 3. Are larger than thumbnails (width > 200px or naturalWidth > 200)
+        // 4. Haven't been added yet
+        if (src && 
+            src.includes('cdn-ds.com') && 
+            !src.includes('logo') &&
+            (imgEl.width > 200 || imgEl.naturalWidth > 200) &&
+            !seen.has(src)) {
+          
+          urls.push(src);
+          seen.add(src);
+          
+          if (urls.length >= 4) break;
+        }
+      }
+      
+      return urls.slice(0, 4); // Maximum 4 images
+    });
+    
+    await page.close();
+    return imageUrls;
+  } catch (error) {
+    console.error(`  Error fetching images from ${detailUrl}:`, error);
+    await page.close();
+    return [];
+  }
 }
 
 // Download image and upload to Supabase Storage
@@ -377,21 +438,36 @@ async function syncListings(listings: ScrapedListing[]) {
       // Check if listing already exists
       const { data: existing } = await supabase
         .from('external_listings')
-        .select('id, image_url')
+        .select('id, image_url, image_url_2, image_url_3, image_url_4')
         .eq('external_id', listing.externalId)
         .eq('source', 'auto_center_texas')
         .single();
       
-      let finalImageUrl = listing.imageUrl;
+      // Download and upload images (up to 4)
+      const uploadedImageUrls: (string | null)[] = [null, null, null, null];
       
-      // FORCE re-download all images to fix broken URLs
-      if (listing.imageUrl) {
-        const uploadedUrl = await downloadAndUploadImage(listing.imageUrl, listing.externalId);
-        if (uploadedUrl) {
-          finalImageUrl = uploadedUrl;
+      // Keep existing images if available
+      if (existing) {
+        uploadedImageUrls[0] = existing.image_url || null;
+        uploadedImageUrls[1] = existing.image_url_2 || null;
+        uploadedImageUrls[2] = existing.image_url_3 || null;
+        uploadedImageUrls[3] = existing.image_url_4 || null;
+      }
+      
+      // Upload new images
+      if (listing.imageUrls && listing.imageUrls.length > 0) {
+        console.log(`📥 Downloading ${listing.imageUrls.length} image(s) for ${listing.externalId}...`);
+        
+        for (let i = 0; i < Math.min(listing.imageUrls.length, 4); i++) {
+          // Upload each image
+          const uploadedUrl = await downloadAndUploadImage(listing.imageUrls[i], `${listing.externalId}-${i+1}`);
+          if (uploadedUrl) {
+            uploadedImageUrls[i] = uploadedUrl;
+          }
         }
-      } else if (existing?.image_url) {
-        finalImageUrl = existing.image_url;
+        
+        const uploadedCount = uploadedImageUrls.filter(url => url !== null).length;
+        console.log(`✅ ${uploadedCount} image(s) ready for ${listing.externalId}`);
       }
       
       const listingData = {
@@ -408,7 +484,10 @@ async function syncListings(listings: ScrapedListing[]) {
         mileage: listing.mileage,
         fuel_type: listing.fuelType,
         vehicle_type: listing.vehicleType || 'car',
-        image_url: finalImageUrl,
+        image_url: uploadedImageUrls[0],
+        image_url_2: uploadedImageUrls[1],
+        image_url_3: uploadedImageUrls[2],
+        image_url_4: uploadedImageUrls[3],
         contact_phone: '(972) 524-0306',
         contact_email: null,
         state_id: texasStateId,
@@ -485,7 +564,7 @@ export async function syncAutoCenterTexas(supabaseUrl?: string, supabaseKey?: st
       console.log(`   URL: ${listing.externalUrl}`);
       console.log(`   Make: ${listing.make}, Model: ${listing.model}, Year: ${listing.year}`);
       console.log(`   Price: $${listing.price}, Mileage: ${listing.mileage} miles`);
-      console.log(`   Image: ${listing.imageUrl ? '✅' : '❌'}`);
+      console.log(`   Images: ${listing.imageUrls && listing.imageUrls.length > 0 ? listing.imageUrls.length : 0}`);
     });
     
     await syncListings(listings);

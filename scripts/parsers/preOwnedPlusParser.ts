@@ -1,5 +1,11 @@
-import puppeteer from 'puppeteer';
 import { createClient } from '@supabase/supabase-js';
+import puppeteer from 'puppeteer';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load environment variables
+const envPath = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.local';
+dotenv.config({ path: path.resolve(process.cwd(), envPath) });
 
 const BASE_URL = 'https://www.preownedplus.com';
 const INVENTORY_URL = `${BASE_URL}/inventory`;
@@ -18,19 +24,19 @@ interface Listing {
   model: string | null;
   price: number | null;
   mileage: number | null;
-  imageUrl: string | null;
+  imageUrls: string[]; // Changed to array for multiple images (up to 4)
 }
 
 // Get Supabase client
-function getSupabase(url?: string, key?: string) {
-  const supabaseUrl = url || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = key || process.env.SUPABASE_SERVICE_ROLE_KEY;
+function getSupabase(supabaseUrl?: string, supabaseKey?: string) {
+  const url = supabaseUrl || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = supabaseKey || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error(`Supabase credentials missing: url=${!!supabaseUrl}, key=${!!supabaseKey}`);
+  if (!url || !key) {
+    throw new Error(`Supabase credentials missing: url=${!!url}, key=${!!key}`);
   }
 
-  return createClient(supabaseUrl, supabaseKey, {
+  return createClient(url, key, {
     db: { schema: 'public' },
     auth: {
       autoRefreshToken: false,
@@ -39,9 +45,9 @@ function getSupabase(url?: string, key?: string) {
   });
 }
 
-// Fetch image from vehicle detail page
+// Fetch images from vehicle detail page (up to 4)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchImageFromDetailPage(url: string, browser: any): Promise<string | null> {
+async function fetchImageFromDetailPage(url: string, browser: any): Promise<string[]> {
   let page = null;
   try {
     page = await browser.newPage();
@@ -50,20 +56,22 @@ async function fetchImageFromDetailPage(url: string, browser: any): Promise<stri
     // Wait a bit for lazy-loaded images
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const imageUrl = await page.evaluate(() => {
+    const imageUrls = await page.evaluate(() => {
+      const foundUrls: string[] = [];
+      
       // First, try to find ProMax inventory images (most reliable for this site)
       const promaxImages = Array.from(document.querySelectorAll('img[src*="imageserver.promaxinventory.com"]'));
       
-      if (promaxImages.length > 0) {
-        const firstImage = promaxImages[0] as HTMLImageElement;
-        const src = firstImage.src;
+      for (const img of promaxImages) {
+        const src = (img as HTMLImageElement).src;
         // Make sure it's not a thumbnail
         if (src && !src.includes('/thumb/')) {
-          return src;
+          foundUrls.push(src);
+          if (foundUrls.length >= 4) return foundUrls;
         }
       }
       
-      // Try multiple selectors in order of priority
+      // If not enough images, try multiple selectors in order of priority
       const selectors = [
         'img[src*="promaxinventory"]',
         '.vehicle-image img',
@@ -77,45 +85,52 @@ async function fetchImageFromDetailPage(url: string, browser: any): Promise<stri
         '[class*="image"] img:not([class*="logo"])',
         '[id*="photo"] img',
         'img[alt*="Vehicle"]',
-        'img[alt*="Photo"]',
-        'img[alt*="Hyundai"]',
-        'img[alt*="BMW"]',
-        'img[alt*="Mercedes"]',
-        'img[alt*="Used"]'
+        'img[alt*="Photo"]'
       ];
       
       for (const selector of selectors) {
-        const img = document.querySelector(selector);
-        if (img) {
-          const src = (img as HTMLImageElement).src;
-          if (src && src.startsWith('http') && !src.includes('logo') && !src.includes('icon') && !src.includes('/thumb/') && !src.includes('onepix.png')) {
-            return src;
+        if (foundUrls.length >= 4) break;
+        
+        const elements = document.querySelectorAll(selector);
+        for (const el of Array.from(elements)) {
+          const img = el as HTMLImageElement;
+          const src = img.src;
+          if (src && 
+              src.startsWith('http') && 
+              !src.includes('logo') && 
+              !src.includes('icon') && 
+              !src.includes('/thumb/') && 
+              !src.includes('onepix.png') &&
+              !foundUrls.includes(src)) {
+            foundUrls.push(src);
+            if (foundUrls.length >= 4) break;
           }
         }
       }
       
-      // Final fallback: find the largest image that looks like a vehicle photo
-      const images = Array.from(document.querySelectorAll('img'));
-      const vehicleImages = images.filter(img => {
-        const src = (img as HTMLImageElement).src || '';
-        const alt = img.getAttribute('alt') || '';
-        const width = (img as HTMLImageElement).naturalWidth || (img as HTMLImageElement).width;
-        const height = (img as HTMLImageElement).naturalHeight || (img as HTMLImageElement).height;
+      // Final fallback: find the largest images that look like vehicle photos
+      if (foundUrls.length < 4) {
+        const images = Array.from(document.querySelectorAll('img'));
+        const vehicleImages = images.filter(img => {
+          const src = (img as HTMLImageElement).src || '';
+          const alt = img.getAttribute('alt') || '';
+          const width = (img as HTMLImageElement).naturalWidth || (img as HTMLImageElement).width;
+          const height = (img as HTMLImageElement).naturalHeight || (img as HTMLImageElement).height;
+          
+          // Filter criteria
+          return src.startsWith('http') &&
+                 !src.includes('logo') && 
+                 !src.includes('icon') &&
+                 !src.includes('banner') &&
+                 !src.includes('/thumb/') &&
+                 !src.includes('onepix.png') &&
+                 !alt.toLowerCase().includes('logo') &&
+                 !foundUrls.includes(src) &&
+                 width > 250 && 
+                 height > 180;
+        });
         
-        // Filter criteria
-        return src.startsWith('http') &&
-               !src.includes('logo') && 
-               !src.includes('icon') &&
-               !src.includes('banner') &&
-               !src.includes('/thumb/') &&
-               !src.includes('onepix.png') &&
-               !alt.toLowerCase().includes('logo') &&
-               width > 250 && 
-               height > 180;
-      });
-      
-      // Return the largest image
-      if (vehicleImages.length > 0) {
+        // Sort by size and take remaining needed
         vehicleImages.sort((a, b) => {
           const aSize = ((a as HTMLImageElement).naturalWidth || (a as HTMLImageElement).width) * 
                        ((a as HTMLImageElement).naturalHeight || (a as HTMLImageElement).height);
@@ -123,23 +138,27 @@ async function fetchImageFromDetailPage(url: string, browser: any): Promise<stri
                        ((b as HTMLImageElement).naturalHeight || (b as HTMLImageElement).height);
           return bSize - aSize;
         });
-        return (vehicleImages[0] as HTMLImageElement).src;
+        
+        for (const img of vehicleImages) {
+          if (foundUrls.length >= 4) break;
+          foundUrls.push((img as HTMLImageElement).src);
+        }
       }
       
-      return null;
+      return foundUrls;
     });
     
     await page.close();
-    return imageUrl;
+    return imageUrls;
   } catch (error) {
-    console.error('❌ Error fetching image from detail page:', error);
+    console.error('❌ Error fetching images from detail page:', error);
     if (page) {
       try {
         await page.close();
       } catch {}
     }
-    // Silently fail - image is optional
-    return null;
+    // Silently fail - images are optional
+    return [];
   }
 }
 
@@ -215,7 +234,7 @@ async function fetchListings(): Promise<Listing[]> {
         model: string | null;
         price: number | null;
         mileage: number | null;
-        imageUrl: string | null;
+        imageUrls: string[]; // Changed to array
       }> = [];
 
       // Find all links to VehicleDetails pages
@@ -282,7 +301,7 @@ async function fetchListings(): Promise<Listing[]> {
         const mileageMatch = containerText.match(/Mileage:\s*([\d,]+)/);
         const mileage = mileageMatch ? parseInt(mileageMatch[1].replace(/,/g, '')) : null;
 
-        // Only add if we have minimum required data (no image yet - will fetch from detail page)
+        // Only add if we have minimum required data (images will be fetched from detail page)
         if (fullTitle && fullUrl && price && make) {
           results.push({
             url: fullUrl,
@@ -293,7 +312,7 @@ async function fetchListings(): Promise<Listing[]> {
             model,                 // Model only (e.g., "Tacoma")
             price,
             mileage,
-            imageUrl: null // Will be fetched later
+            imageUrls: [] // Will be fetched later from detail page
           });
         }
       });
@@ -302,6 +321,7 @@ async function fetchListings(): Promise<Listing[]> {
     }, BASE_URL);
 
     console.log(`✅ Found ${vehicleData.length} listings`);
+    
     console.log('📸 Fetching images from detail pages (this may take a while)...');
 
     // Fetch images from detail pages
@@ -310,8 +330,8 @@ async function fetchListings(): Promise<Listing[]> {
       const progress = `[${i + 1}/${vehicleData.length}]`;
       console.log(`  ${progress} ${listing.title}`);
       
-      const imageUrl = await fetchImageFromDetailPage(listing.url, browser);
-      listing.imageUrl = imageUrl;
+      const imageUrls = await fetchImageFromDetailPage(listing.url, browser);
+      listing.imageUrls = imageUrls;
       
       // Small delay to be polite to the server
       if (i < vehicleData.length - 1) {
@@ -436,20 +456,37 @@ async function syncListings(
       // Check if listing already exists
       const { data: existing } = await supabase
         .from('external_listings')
-        .select('id, image_url')
+        .select('id, image_url, image_url_2, image_url_3, image_url_4')
         .eq('source', SOURCE)
         .eq('external_url', listing.url)
         .single();
 
-      // Download and upload image if we have one and don't have it in storage yet
-      let uploadedImageUrl = existing?.image_url || null;
-      if (listing.imageUrl && !uploadedImageUrl) {
-        console.log(`📥 Downloading image for ${listingId}...`);
-        const uploaded = await downloadAndUploadImage(listing.imageUrl, listingId, supabase);
-        if (uploaded) {
-          uploadedImageUrl = uploaded;
-          console.log(`✅ Image uploaded for ${listingId}`);
+      // Download and upload images (up to 4)
+      const uploadedImageUrls: (string | null)[] = [null, null, null, null];
+      
+      // Keep existing images if available
+      if (existing) {
+        uploadedImageUrls[0] = existing.image_url || null;
+        uploadedImageUrls[1] = existing.image_url_2 || null;
+        uploadedImageUrls[2] = existing.image_url_3 || null;
+        uploadedImageUrls[3] = existing.image_url_4 || null;
+      }
+      
+      // Upload new images
+      if (listing.imageUrls && listing.imageUrls.length > 0) {
+        console.log(`📥 Downloading ${listing.imageUrls.length} image(s) for ${listingId}...`);
+        
+        for (let i = 0; i < Math.min(listing.imageUrls.length, 4); i++) {
+          if (!uploadedImageUrls[i]) { // Only upload if not already exists
+            const uploaded = await downloadAndUploadImage(listing.imageUrls[i], `${listingId}-${i+1}`, supabase);
+            if (uploaded) {
+              uploadedImageUrls[i] = uploaded;
+            }
+          }
         }
+        
+        const uploadedCount = uploadedImageUrls.filter(url => url !== null).length;
+        console.log(`✅ ${uploadedCount} image(s) ready for ${listingId}`);
       }
 
       const listingData = {
@@ -466,7 +503,10 @@ async function syncListings(
         state_id: stateId,
         city_id: cityId,
         city_name: CITY,
-        image_url: uploadedImageUrl,
+        image_url: uploadedImageUrls[0],
+        image_url_2: uploadedImageUrls[1],
+        image_url_3: uploadedImageUrls[2],
+        image_url_4: uploadedImageUrls[3],
         contact_phone: COMPANY_PHONE,
         contact_email: COMPANY_EMAIL,
         is_active: true,
