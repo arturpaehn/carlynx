@@ -315,7 +315,12 @@ type TranslationKey =
   | 'supportSuccess' | 'supportSuccessDescription' | 'closeModal'
   | 'averagePriceTitle' | 'averagePriceDescription' | 'selectBrandAverage' | 'selectModelAverage' | 'selectYearAverage'
   | 'calculate' | 'calculating' | 'averagePrice' | 'noListingsFound' | 'listingsFound' 
-  | 'basedOnListings' | 'selectAllFields' | 'vehicleOrBrand';
+  | 'basedOnListings' | 'selectAllFields' | 'vehicleOrBrand'
+  | 'calculateAutoLoan' | 'autoLoanCalculator' | 'loanCalculatorDescription' | 'loanVehiclePrice'
+  | 'downPayment' | 'downPaymentPlaceholder' | 'loanTerm' | 'loanTermPlaceholder'
+  | 'interestRate' | 'interestRatePlaceholder' | 'monthlyPayment' | 'totalPayment'
+  | 'totalInterest' | 'resetToRecommended' | 'applyForLoan' | 'lendingTreeApply'
+  | 'boaApply' | 'carsDirectApply' | 'lenderOptions' | 'compareMultipleLenders';
 
 interface Translations {
   [key: string]: string;

@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { getCacheBuster } from '@/lib/cacheUtils'
 import { generateListingTitle, generateListingDescription, generateListingKeywords, updateMetaTags, generateVehicleStructuredData, insertStructuredData } from '@/lib/seoUtils'
 import { useTranslation } from '@/components/I18nProvider'
+import AutoLoanCalculator from '@/components/AutoLoanCalculator'
 
 type Listing = {
   id: number
@@ -63,6 +64,7 @@ export default function ListingDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [ownerInfo, setOwnerInfo] = useState<UserInfo | null>(null)
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
   const hasIncrementedViews = useRef(false)
 
   // Сброс флага при смене ID
@@ -686,12 +688,25 @@ useEffect(() => {
 
             <div className="flex flex-col items-start sm:items-end gap-2">
               {listing.price && (
-                <div className="flex items-center">
-                  <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                  <span className="text-2xl sm:text-3xl font-bold text-orange-600">${listing.price.toLocaleString()}</span>
-                </div>
+                <>
+                  <div className="flex items-center">
+                    <svg className="h-5 w-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                    <span className="text-2xl sm:text-3xl font-bold text-orange-600">${listing.price.toLocaleString()}</span>
+                  </div>
+                  
+                  {/* Auto Loan Calculator Button */}
+                  <button
+                    onClick={() => setIsCalculatorOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    {t('calculateAutoLoan')}
+                  </button>
+                </>
               )}
 
               {/* Views badge */}
@@ -1022,6 +1037,13 @@ useEffect(() => {
           </div>
         </div>
       )}
+
+      {/* Auto Loan Calculator Modal */}
+      <AutoLoanCalculator
+        isOpen={isCalculatorOpen}
+        onClose={() => setIsCalculatorOpen(false)}
+        vehiclePrice={listing?.price || 0}
+      />
     </div>
   )
 }

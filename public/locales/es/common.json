@@ -542,6 +542,26 @@
   "importListings": "Importar Anuncios",
   "excelFileEmpty": "El archivo de Excel está vacío o no tiene filas de datos",
   "failedToParseExcel": "Error al procesar archivo de Excel",
-  "noValidListingsToImport": "No hay anuncios válidos para importar"
+  "noValidListingsToImport": "No hay anuncios válidos para importar",
+  "calculateAutoLoan": "Calcular Préstamo Auto",
+  "autoLoanCalculator": "Calculadora de Préstamo Auto",
+  "loanCalculatorDescription": "Calcule sus pagos mensuales y costo total",
+  "loanVehiclePrice": "Precio del Vehículo",
+  "downPayment": "Pago Inicial",
+  "downPaymentPlaceholder": "Ingrese pago inicial",
+  "loanTerm": "Plazo del Préstamo (meses)",
+  "loanTermPlaceholder": "Ingrese plazo en meses",
+  "interestRate": "Tasa de Interés (APR %)",
+  "interestRatePlaceholder": "Ingrese tasa de interés",
+  "monthlyPayment": "Pago Mensual",
+  "totalPayment": "Pago Total",
+  "totalInterest": "Interés Total",
+  "resetToRecommended": "Restablecer a Recomendado",
+  "applyForLoan": "Solicitar Préstamo",
+  "lendingTreeApply": "LendingTree — Comparar Ofertas",
+  "boaApply": "Bank of America — Solicitar Ahora",
+  "carsDirectApply": "CarsDirect — Obtener Financiamiento",
+  "lenderOptions": "Opciones de Prestamistas",
+  "compareMultipleLenders": "Comparar múltiples prestamistas"
 }
 

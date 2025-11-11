@@ -502,6 +502,26 @@
   "importListings": "Import Listings",
   "excelFileEmpty": "Excel file is empty or has no data rows",
   "failedToParseExcel": "Failed to parse Excel file",
-  "noValidListingsToImport": "No valid listings to import"
+  "noValidListingsToImport": "No valid listings to import",
+  "calculateAutoLoan": "Calculate Auto Loan",
+  "autoLoanCalculator": "Auto Loan Calculator",
+  "loanCalculatorDescription": "Calculate your monthly payments and total cost",
+  "loanVehiclePrice": "Vehicle Price",
+  "downPayment": "Down Payment",
+  "downPaymentPlaceholder": "Enter down payment",
+  "loanTerm": "Loan Term (months)",
+  "loanTermPlaceholder": "Enter term in months",
+  "interestRate": "Interest Rate (APR %)",
+  "interestRatePlaceholder": "Enter interest rate",
+  "monthlyPayment": "Monthly Payment",
+  "totalPayment": "Total Payment",
+  "totalInterest": "Total Interest",
+  "resetToRecommended": "Reset to Recommended",
+  "applyForLoan": "Apply for Loan",
+  "lendingTreeApply": "LendingTree — Compare Offers",
+  "boaApply": "Bank of America — Apply Now",
+  "carsDirectApply": "CarsDirect — Get Financing",
+  "lenderOptions": "Lender Options",
+  "compareMultipleLenders": "Compare multiple lenders"
 }
 
