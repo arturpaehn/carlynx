@@ -33,6 +33,18 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'www.iwanttobuyused.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'dps-assets-2.s3.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'psmfirestorm.blob.core.windows.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.dealerspike.com',
+      },
     ],
   },
 };

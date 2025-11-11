@@ -835,7 +835,8 @@ useEffect(() => {
                           'auto_boutique_texas': 'Auto Boutique Texas',
                           'auto_center_texas': 'Auto Center Texas',
                           'preowned_plus': 'PreOwned Plus',
-                          'leif_johnson': 'Leif Johnson Auto Group'
+                          'leif_johnson': 'Leif Johnson Auto Group',
+                          'dream_machines_texas': 'Dream Machines of Texas'
                         };
                         return sourceMap[listing.external_source || ''] || listing.external_source || 'Dealer';
                       })()}
@@ -850,7 +851,8 @@ useEffect(() => {
                           'auto_boutique_texas': 'https://www.autoboutiquetexas.com',
                           'auto_center_texas': 'https://www.autocentertexas.com',
                           'preowned_plus': 'https://www.preownedplus.com',
-                          'leif_johnson': 'https://www.leifjohnson.com'
+                          'leif_johnson': 'https://www.leifjohnson.com',
+                          'dream_machines_texas': 'https://www.dreammachinesoftexas.com'
                         };
                         
                         // Try to extract base URL from external_url
@@ -938,7 +940,7 @@ useEffect(() => {
               {ownerInfo.phone && (
                 <a
                   href={`https://wa.me/${ownerInfo.phone.replace(/\D/g, '')}?text=${encodeURIComponent(
-                    `Hi! I'm interested in your ${listing.year} ${listing.brand_name || ''} ${listing.model || ''} listed at $${listing.price.toLocaleString()}`
+                    `Hi! I'm interested in your ${listing.year} ${listing.brand_name || ''} ${listing.model || ''} ${listing.price ? `listed at $${listing.price.toLocaleString()}` : ''}`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"

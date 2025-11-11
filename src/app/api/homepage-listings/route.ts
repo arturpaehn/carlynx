@@ -77,9 +77,11 @@ export async function GET() {
     // Format regular listings
     const formatted = (listingsResult.data || [])
       .filter((item) => {
-        // Filter: must have at least 2 images
+        // Filter: motorcycles need min 1 image, cars need min 2 images
         const imageCount = Array.isArray(item.listing_images) ? item.listing_images.length : 0
-        return imageCount >= 2
+        const vehicleType = item.vehicle_type || 'car'
+        const minImages = vehicleType === 'motorcycle' ? 1 : 2
+        return imageCount >= minImages
       })
       .map((item) => {
         let stateObj: { name: string; code: string; country_code: string } | null = null
@@ -154,13 +156,16 @@ export async function GET() {
     // Format external listings
     const formattedExternal = (externalResult.data || [])
       .filter((item) => {
-        // Filter: must have at least 2 images
+        // Filter: motorcycles need min 1 image, cars need min 2 images
         let imageCount = 0
         if (item.image_url) imageCount++
         if (item.image_url_2) imageCount++
         if (item.image_url_3) imageCount++
         if (item.image_url_4) imageCount++
-        return imageCount >= 2
+        
+        const vehicleType = item.vehicle_type || 'car'
+        const minImages = vehicleType === 'motorcycle' ? 1 : 2
+        return imageCount >= minImages
       })
       .map((item) => {
         let stateObj: { name: string; code: string; country_code: string } | null = null

@@ -289,6 +289,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
 }
 
 // Fetch images from detail page using Puppeteer
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchImagesFromDetailPage(browser: any, detailUrl: string): Promise<string[]> {
   const page = await browser.newPage();
   try {

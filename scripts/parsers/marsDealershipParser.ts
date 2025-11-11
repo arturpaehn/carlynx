@@ -39,6 +39,7 @@ interface ScrapedListing {
 }
 
 // Fetch images from vehicle detail page using Puppeteer (up to 4)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchImagesFromDetailPage(detailUrl: string, browser: any): Promise<string[]> {
   let page = null;
   try {
