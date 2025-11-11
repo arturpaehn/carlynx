@@ -86,6 +86,8 @@ type Listing = {
   is_external?: boolean
   external_source?: string
   external_url?: string
+  user_type?: string
+  user_id?: string
 }
 
 
@@ -172,6 +174,7 @@ function SearchResultsPageContent() {
           city_name,
           vehicle_type,
           engine_size,
+          user_id,
           states (id, name, code, country_code),
           cities (id, name),
           transmission,
@@ -327,9 +330,31 @@ function SearchResultsPageContent() {
               image_url: Array.isArray(item.listing_images) && item.listing_images[0]?.image_url
                 ? item.listing_images[0].image_url
                 : null,
+              user_id: item.user_id,
+              user_type: 'individual', // Default, will update below
             }
           })
         : []
+
+      // Get user_type for all listings in one query
+      if (formatted.length > 0) {
+        const userIds = formatted.map(item => item.user_id).filter(Boolean)
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('user_profiles')
+            .select('user_id, user_type')
+            .in('user_id', userIds)
+          
+          if (profiles) {
+            const profileMap = new Map(profiles.map((p: { user_id: string; user_type: string }) => [p.user_id, p.user_type]))
+            formatted.forEach(item => {
+              if (item.user_id) {
+                item.user_type = profileMap.get(item.user_id) || 'individual'
+              }
+            })
+          }
+        }
+      }
 
       // Format external listings
       const formattedExternal: Listing[] = Array.isArray(externalData)
@@ -373,7 +398,14 @@ function SearchResultsPageContent() {
         : []
 
       // Combine and sort all listings
-      const allListings = [...formatted, ...formattedExternal];
+      let allListings = [...formatted, ...formattedExternal];
+      
+      // Filter by private sellers only if requested
+      if (filters.private_only === 'true') {
+        allListings = allListings.filter(listing => 
+          !listing.is_external && listing.user_type === 'individual'
+        );
+      }
       
       // Apply sorting to combined results
       if (sortField === 'price') {
@@ -414,6 +446,16 @@ function SearchResultsPageContent() {
       params.set('sort_by', newSort);
     } else {
       params.delete('sort_by');
+    }
+    router.push(`/search-results?${params.toString()}`);
+  };
+
+  const handlePrivateOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
+    if (e.target.checked) {
+      params.set('private_only', 'true');
+    } else {
+      params.delete('private_only');
     }
     router.push(`/search-results?${params.toString()}`);
   };
@@ -465,6 +507,23 @@ function SearchResultsPageContent() {
                   autoComplete="off"
                 />
               </div>
+            </div>
+
+            {/* Private Sellers Only Checkbox */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="private-only"
+                checked={searchParams?.get('private_only') === 'true'}
+                onChange={handlePrivateOnlyChange}
+                className="h-4 w-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 transition-colors duration-200 cursor-pointer"
+              />
+              <label htmlFor="private-only" className="text-sm font-medium text-gray-700 flex items-center cursor-pointer">
+                <svg className="h-4 w-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                {t('privateSellersOnly')}
+              </label>
             </div>
 
             {/* Sort Filter */}
@@ -581,6 +640,22 @@ function SearchResultsPageContent() {
                                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                 </svg>
                                 Partner
+                              </span>
+                            )}
+                            {!listing.is_external && listing.user_type === 'individual' && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border border-blue-200 flex-shrink-0">
+                                <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                Private
+                              </span>
+                            )}
+                            {!listing.is_external && listing.user_type === 'dealer' && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border border-purple-200 flex-shrink-0">
+                                <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+                                </svg>
+                                Dealer
                               </span>
                             )}
                           </div>

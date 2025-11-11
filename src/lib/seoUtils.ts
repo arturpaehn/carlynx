@@ -121,3 +121,122 @@ export function updateMetaTags(title: string, description: string, keywords: str
     }
   }
 }
+
+/**
+ * Generate Schema.org structured data (JSON-LD) for a vehicle listing
+ * This helps search engines understand and display rich snippets
+ */
+export function generateVehicleStructuredData(listing: ListingSEO): object {
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://carlynx.us';
+  const listingUrl = `${baseUrl}/listing/${listing.id}`;
+  
+  // Build structured data object
+  const structuredData: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: listing.title,
+    description: listing.description || generateListingDescription(listing),
+    url: listingUrl,
+    category: listing.vehicle_type === 'motorcycle' ? 'Motorcycles' : 'Automobiles',
+  };
+
+  // Add brand if available
+  if (listing.brand_name) {
+    structuredData.brand = {
+      '@type': 'Brand',
+      name: listing.brand_name,
+    };
+  }
+
+  // Add model if available
+  if (listing.model) {
+    structuredData.model = listing.model;
+  }
+
+  // Add year as vehicleModelDate
+  if (listing.year) {
+    structuredData.vehicleModelDate = listing.year.toString();
+  }
+
+  // Add image
+  if (listing.image_url) {
+    structuredData.image = listing.image_url;
+  }
+
+  // Add offer details
+  const offerData: Record<string, unknown> = {
+    '@type': 'Offer',
+    price: listing.price.toString(),
+    priceCurrency: 'USD',
+    availability: 'https://schema.org/InStock',
+    url: listingUrl,
+  };
+
+  // Add seller location if available
+  if (listing.state) {
+    offerData.availableAtOrFrom = {
+      '@type': 'Place',
+      address: {
+        '@type': 'PostalAddress',
+        addressRegion: listing.state.code,
+        addressCountry: listing.state.country_code || 'US',
+      },
+    };
+  }
+
+  structuredData.offers = offerData;
+
+  // Add additional vehicle details
+  const additionalProperties: Array<Record<string, string>> = [];
+
+  if (listing.transmission) {
+    additionalProperties.push({
+      '@type': 'PropertyValue',
+      name: 'Transmission',
+      value: listing.transmission,
+    });
+  }
+
+  if (listing.fuel_type) {
+    additionalProperties.push({
+      '@type': 'PropertyValue',
+      name: 'Fuel Type',
+      value: listing.fuel_type,
+    });
+  }
+
+  if (listing.engine_size) {
+    additionalProperties.push({
+      '@type': 'PropertyValue',
+      name: 'Engine Size',
+      value: listing.vehicle_type === 'motorcycle' 
+        ? `${listing.engine_size} cc` 
+        : `${(listing.engine_size / 1000).toFixed(1)}L`,
+    });
+  }
+
+  if (additionalProperties.length > 0) {
+    structuredData.additionalProperty = additionalProperties;
+  }
+
+  return structuredData;
+}
+
+/**
+ * Insert structured data script into document head
+ */
+export function insertStructuredData(data: object) {
+  if (typeof document === 'undefined') return;
+
+  // Remove existing structured data if any
+  const existingScript = document.querySelector('script[type="application/ld+json"]');
+  if (existingScript) {
+    existingScript.remove();
+  }
+
+  // Create and insert new script
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.text = JSON.stringify(data);
+  document.head.appendChild(script);
+}
