@@ -6,7 +6,7 @@ import { useTranslation } from '@/components/I18nProvider';
 // Payment settings
 const IS_FREE_TRIAL = false; // ← ПЛАТНЫЙ РЕЖИМ ($2.50 за 14 дней)
 const LISTING_PRICE = 2.50; // Price in dollars
-const LISTING_DURATION_DAYS = 14; // Duration in days
+// const LISTING_DURATION_DAYS = 14; // Duration in days (currently unused)
 
 interface ListingDetails {
   title: string;
