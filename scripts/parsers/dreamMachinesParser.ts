@@ -294,7 +294,11 @@ async function fetchListings(testMode = TEST_MODE): Promise<ScrapedListing[]> {
             // Skip boats - we only want motorcycles
             if (make && (make.toLowerCase().includes('boat') || make.toLowerCase().includes('watercraft'))) {
               console.log(`      ⏭️  Skipping - not a motorcycle`);
-              await detailPage.close();
+              try {
+                await detailPage.close();
+              } catch {
+                // Ignore close errors
+              }
               continue;
             }
             
@@ -333,7 +337,11 @@ async function fetchListings(testMode = TEST_MODE): Promise<ScrapedListing[]> {
             // Skip if no price found - price is required
             if (!price) {
               console.log(`      ⚠️  Skipping - no price found`);
-              await detailPage.close();
+              try {
+                await detailPage.close();
+              } catch {
+                // Ignore close errors
+              }
               continue;
             }
             
@@ -351,7 +359,11 @@ async function fetchListings(testMode = TEST_MODE): Promise<ScrapedListing[]> {
             // Image already extracted from card, skip if none
             if (imageUrls.length === 0) {
               console.log(`      ⏭️  Skipping - no images found`);
-              await detailPage.close();
+              try {
+                await detailPage.close();
+              } catch {
+                // Ignore close errors
+              }
               
               // In test mode, stop after max attempts
               if (testMode && attemptCount >= maxAttempts) {
@@ -383,7 +395,11 @@ async function fetchListings(testMode = TEST_MODE): Promise<ScrapedListing[]> {
             
             if (testMode) {
               console.log(`✅ TEST MODE: Processed 1 motorcycle. Stopping immediately.`);
-              await detailPage.close();
+              try {
+                await detailPage.close();
+              } catch {
+                // Ignore close errors
+              }
               shouldStop = true;
               break; // Exit the for loop immediately
             }
@@ -392,7 +408,11 @@ async function fetchListings(testMode = TEST_MODE): Promise<ScrapedListing[]> {
             console.error(`      ❌ Error processing detail page: ${error}`);
           } finally {
             if (!TEST_MODE || !shouldStop) {
-              await detailPage.close();
+              try {
+                await detailPage.close();
+              } catch {
+                // Ignore close errors - page might already be closed
+              }
             }
           }
         }
@@ -400,14 +420,22 @@ async function fetchListings(testMode = TEST_MODE): Promise<ScrapedListing[]> {
       } catch (error) {
         console.error(`   ❌ Error fetching page ${currentPage}:`, error);
       } finally {
-        await page.close();
+        try {
+          await page.close();
+        } catch {
+          // Ignore close errors - page might already be closed
+        }
       }
       
       if (TEST_MODE) break; // Stop after first page in test mode
     }
     
   } finally {
-    await browser.close();
+    try {
+      await browser.close();
+    } catch {
+      // Ignore close errors - browser might already be closed
+    }
   }
   
   console.log(`\n✅ Total listings scraped: ${allListings.length}`);
