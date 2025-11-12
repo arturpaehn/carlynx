@@ -13,6 +13,7 @@ interface ListingDetails {
   year: number;
   price: number;
   mileage: string;
+  vin: string;
   images: File[];
 }
 
@@ -162,6 +163,10 @@ const PaymentConfirmModal: React.FC<PaymentConfirmModalProps> = ({
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('mileage')}:</span>
                 <span className="font-medium text-gray-900">{listingDetails.mileage}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t('vin')}:</span>
+                <span className="font-medium text-gray-900">{listingDetails.vin}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('images')}:</span>

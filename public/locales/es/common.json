@@ -151,7 +151,6 @@
   "apply": "Aplicar",
   "modelNotAvailableMotorcycles": "Campo modelo no disponible para motocicletas",
   "color": "Color",
-  "vin": "VIN",
   "optional": "opcional",
   "city": "Ciudad",
   "state": "Estado",
@@ -562,6 +561,11 @@
   "boaApply": "Bank of America — Solicitar Ahora",
   "carsDirectApply": "CarsDirect — Obtener Financiamiento",
   "lenderOptions": "Opciones de Prestamistas",
-  "compareMultipleLenders": "Comparar múltiples prestamistas"
+  "compareMultipleLenders": "Comparar múltiples prestamistas",
+  "vin": "VIN (Número de Identificación del Vehículo)",
+  "vinPlaceholder": "Ingrese VIN de 17 caracteres",
+  "vinRequired": "El código VIN es obligatorio",
+  "vinInvalid": "El VIN debe tener exactamente 17 caracteres",
+  "vinHelp": "Código de 17 caracteres que se encuentra en el registro o tablero del vehículo"
 }
 

@@ -10,6 +10,7 @@ import { syncAutoBoutique } from './parsers/autoBoutiqueParser';
 import { syncPreOwnedPlus } from './parsers/preOwnedPlusParser';
 import { syncLeifJohnson } from './parsers/leifJohnsonParser';
 import { syncAutoCenterTexas } from './parsers/autoCenterTexasParser';
+import { syncDreamMachines } from './parsers/dreamMachinesParser';
 
 async function runAllParsers() {
   console.log('🚀 Starting all parsers sync...');
@@ -21,7 +22,8 @@ async function runAllParsers() {
     autoBoutique: { success: false, error: null as string | null },
     preOwnedPlus: { success: false, error: null as string | null },
     leifJohnson: { success: false, error: null as string | null },
-    autoCenterTexas: { success: false, error: null as string | null }
+    autoCenterTexas: { success: false, error: null as string | null },
+    dreamMachines: { success: false, error: null as string | null }
   };
 
   // Get Supabase credentials from environment
@@ -40,7 +42,7 @@ async function runAllParsers() {
 
   // 1. Mars Dealership
   try {
-    console.log('\n🚗 [1/4] Mars Dealership...');
+    console.log('\n🚗 [1/6] Mars Dealership...');
     await syncMarsDealer(supabaseUrl, supabaseKey);
     results.marsDealer.success = true;
     console.log('✅ Mars Dealership completed');
@@ -51,7 +53,7 @@ async function runAllParsers() {
 
   // 2. Auto Boutique Texas
   try {
-    console.log('\n🚗 [2/4] Auto Boutique Texas...');
+    console.log('\n🚗 [2/6] Auto Boutique Texas...');
     await syncAutoBoutique(supabaseUrl, supabaseKey);
     results.autoBoutique.success = true;
     console.log('✅ Auto Boutique Texas completed');
@@ -62,7 +64,7 @@ async function runAllParsers() {
 
   // 3. Pre-owned Plus (Puppeteer)
   try {
-    console.log('\n🚗 [3/4] Pre-owned Plus...');
+    console.log('\n🚗 [3/6] Pre-owned Plus...');
     await syncPreOwnedPlus(supabaseUrl, supabaseKey);
     results.preOwnedPlus.success = true;
     console.log('✅ Pre-owned Plus completed');
@@ -73,7 +75,7 @@ async function runAllParsers() {
 
   // 4. Leif Johnson (Puppeteer)
   try {
-    console.log('\n🚗 [4/5] Leif Johnson...');
+    console.log('\n🚗 [4/6] Leif Johnson...');
     await syncLeifJohnson(supabaseUrl, supabaseKey);
     results.leifJohnson.success = true;
     console.log('✅ Leif Johnson completed');
@@ -84,13 +86,24 @@ async function runAllParsers() {
 
   // 5. Auto Center of Texas
   try {
-    console.log('\n🚗 [5/5] Auto Center of Texas...');
+    console.log('\n🚗 [5/6] Auto Center of Texas...');
     await syncAutoCenterTexas(supabaseUrl, supabaseKey);
     results.autoCenterTexas.success = true;
     console.log('✅ Auto Center of Texas completed');
   } catch (error) {
     results.autoCenterTexas.error = error instanceof Error ? error.message : 'Unknown error';
     console.error('❌ Auto Center of Texas failed:', error);
+  }
+
+  // 6. Dream Machines of Texas (Motorcycles)
+  try {
+    console.log('\n🏍️  [6/6] Dream Machines of Texas...');
+    await syncDreamMachines(supabaseUrl, supabaseKey);
+    results.dreamMachines.success = true;
+    console.log('✅ Dream Machines of Texas completed');
+  } catch (error) {
+    results.dreamMachines.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Dream Machines of Texas failed:', error);
   }
 
   // Summary
@@ -102,13 +115,14 @@ async function runAllParsers() {
   console.log(`Pre-owned Plus:       ${results.preOwnedPlus.success ? '✅ Success' : '❌ Failed'}`);
   console.log(`Leif Johnson:         ${results.leifJohnson.success ? '✅ Success' : '❌ Failed'}`);
   console.log(`Auto Center of Texas: ${results.autoCenterTexas.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Dream Machines TX:    ${results.dreamMachines.success ? '✅ Success' : '❌ Failed'}`);
   console.log('='.repeat(60));
 
   const successCount = Object.values(results).filter(r => r.success).length;
-  console.log(`\n🎉 Completed: ${successCount}/5 parsers successful`);
+  console.log(`\n🎉 Completed: ${successCount}/6 parsers successful`);
 
   // Exit with error if any parser failed
-  if (successCount < 5) {
+  if (successCount < 6) {
     console.error('\n⚠️  Some parsers failed - check logs above');
     process.exit(1);
   }

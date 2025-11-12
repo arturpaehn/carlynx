@@ -522,6 +522,11 @@
   "boaApply": "Bank of America — Apply Now",
   "carsDirectApply": "CarsDirect — Get Financing",
   "lenderOptions": "Lender Options",
-  "compareMultipleLenders": "Compare multiple lenders"
+  "compareMultipleLenders": "Compare multiple lenders",
+  "vin": "VIN (Vehicle Identification Number)",
+  "vinPlaceholder": "Enter 17-character VIN",
+  "vinRequired": "VIN code is required",
+  "vinInvalid": "VIN must be exactly 17 characters",
+  "vinHelp": "17-character code found on registration or vehicle dashboard"
 }
 

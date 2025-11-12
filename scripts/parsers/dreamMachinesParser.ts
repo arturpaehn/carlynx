@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as cheerio from 'cheerio';
 import puppeteer from 'puppeteer';
 import * as dotenv from 'dotenv';
@@ -39,7 +39,8 @@ interface ScrapedListing {
 }
 
 // TEST MODE: Set to true to parse only 1 motorcycle for testing
-const TEST_MODE = true; // Set to true for testing, false for full parsing (10 pages)
+// Note: In production (GitHub Actions), this is always false
+const TEST_MODE = process.env.NODE_ENV !== 'production' && process.env.TEST_MODE !== 'false';
 
 // Parse year, make, model from title
 function parseVehicleInfo(title: string): { year?: number; make?: string; model?: string } {
@@ -120,6 +121,14 @@ function parseMileage(description: string): number | undefined {
 // Download image and upload to Supabase Storage
 async function downloadAndUploadImage(imageUrl: string, externalId: string): Promise<string | null> {
   const supabase = getSupabase();
+  return downloadAndUploadImageWithClient(imageUrl, externalId, supabase);
+}
+
+async function downloadAndUploadImageWithClient(
+  imageUrl: string, 
+  externalId: string, 
+  supabase: SupabaseClient
+): Promise<string | null> {
   try {
     console.log(`      📥 Downloading image...`);
     
@@ -580,6 +589,153 @@ async function main() {
 // Run if called directly
 if (require.main === module) {
   main();
+}
+
+// Export for GitHub Actions
+export async function syncDreamMachines(supabaseUrl: string, supabaseKey: string) {
+  console.log('🏍️  Dream Machines of Texas Parser');
+  console.log('📍 Mode: PRODUCTION (all listings)');
+  console.log('=' .repeat(50));
+  
+  try {
+    const listings = await fetchListings();
+    
+    if (listings.length > 0) {
+      // Override getSupabase to use provided credentials
+      const supabase = createClient(supabaseUrl, supabaseKey, {
+        db: { schema: 'public' },
+        auth: { persistSession: false, autoRefreshToken: false }
+      });
+      
+      // Save listings with provided Supabase client
+      await saveListingsWithClient(listings, supabase);
+    } else {
+      console.log('\n⚠️  No listings found');
+    }
+    
+    console.log('\n✅ Dream Machines parser completed successfully');
+  } catch (error) {
+    console.error('\n❌ Dream Machines parser failed:', error);
+    throw error;
+  }
+}
+
+// Helper function to save listings with a specific Supabase client
+async function saveListingsWithClient(
+  listings: ScrapedListing[], 
+  supabase: SupabaseClient
+) {
+  console.log(`\n💾 Saving ${listings.length} listing(s) to Supabase...`);
+  
+  let savedCount = 0;
+  let updatedCount = 0;
+  let errorCount = 0;
+  
+  // Get state_id and city_id
+  const { data: stateData } = await supabase
+    .from('states')
+    .select('id')
+    .eq('name', 'Texas')
+    .single();
+  
+  if (!stateData) throw new Error('Texas state not found');
+  console.log(`   Texas state_id: ${stateData.id}`);
+  
+  const { data: cityData } = await supabase
+    .from('cities')
+    .select('id')
+    .eq('name', 'Dallas')
+    .eq('state_id', stateData.id)
+    .single();
+  
+  if (!cityData) throw new Error('Dallas city not found');
+  console.log(`   Dallas city_id: ${cityData.id}`);
+  
+  for (const listing of listings) {
+    try {
+      // Upload image to Supabase Storage
+      let imageUrl: string | null = null;
+      
+      if (listing.imageUrls && listing.imageUrls.length > 0) {
+        console.log(`   📥 Uploading image for ${listing.externalUrl}...`);
+        imageUrl = await downloadAndUploadImageWithClient(listing.imageUrls[0], listing.externalId, supabase);
+      }
+      
+      if (!imageUrl) {
+        console.log(`   ⚠️  No image uploaded for ${listing.externalId}`);
+      } else {
+        console.log(`   ✅ Image ready for ${listing.externalUrl}`);
+      }
+      
+      const listingData = {
+        external_id: listing.externalId,
+        external_url: listing.externalUrl,
+        source: 'dream_machines_texas',
+        year: listing.year,
+        brand: listing.make || 'Unknown',
+        model: listing.model || 'Unknown',
+        price: listing.price,
+        mileage: listing.mileage,
+        transmission: listing.transmission,
+        fuel_type: listing.fuelType,
+        vehicle_type: listing.vehicleType || 'motorcycle',
+        description: listing.description,
+        image_url: imageUrl,
+        image_url_2: null,
+        image_url_3: null,
+        image_url_4: null,
+        state_id: stateData.id,
+        city_id: cityData.id,
+        last_seen_at: new Date().toISOString()
+      };
+      
+      // Check if listing exists
+      const { data: existingListing } = await supabase
+        .from('external_listings')
+        .select('id')
+        .eq('external_id', listing.externalId)
+        .eq('source', 'dream_machines_texas')
+        .single();
+      
+      if (existingListing) {
+        // Update existing listing
+        const { error: updateError } = await supabase
+          .from('external_listings')
+          .update(listingData)
+          .eq('id', existingListing.id);
+        
+        if (updateError) {
+          console.error(`   ❌ Error updating listing ${listing.externalId}:`, updateError.message);
+          errorCount++;
+        } else {
+          console.log(`   ✅ Updated: ${listing.make} ${listing.model}`);
+          updatedCount++;
+        }
+      } else {
+        // Insert new listing
+        const { error: insertError } = await supabase
+          .from('external_listings')
+          .insert(listingData);
+        
+        if (insertError) {
+          console.error(`   ❌ Error inserting listing ${listing.externalId}:`, insertError.message);
+          errorCount++;
+        } else {
+          console.log(`   ✅ Saved: ${listing.make} ${listing.model}`);
+          savedCount++;
+        }
+      }
+      
+    } catch (error) {
+      console.error(`   ❌ Error processing listing ${listing.externalId}:`, error);
+      errorCount++;
+    }
+  }
+  
+  console.log('\n📊 Summary:');
+  console.log(`   ✅ New listings saved: ${savedCount}`);
+  console.log(`   🔄 Listings updated: ${updatedCount}`);
+  console.log(`   ❌ Errors: ${errorCount}`);
 }
 
 export { fetchListings, saveListings };

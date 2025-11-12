@@ -16,6 +16,7 @@ interface ListingForm {
   transmission: string
   fuelType: string
   mileage: string
+  vin: string
   year: string
   engineSize: string
   engineSizeWhole: string
@@ -43,6 +44,7 @@ interface ExcelRow {
   transmission?: string
   fuelType?: string
   mileage?: string | number
+  vin?: string
   year?: string | number
   engineSize?: string | number
   state?: string
@@ -70,6 +72,7 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, states }: 
         mileage: 45000,
         year: 2020,
         engineSize: '2.0L', // Cars: 2.0L, 3.5L, 5.7L | Motorcycles: 250cc, 600cc, 1000cc
+        vin: '1HGBH41JXMN109186', // REQUIRED: 17 characters
         state: 'TX', // State code like TX, CA, FL
         city: 'Houston'
       }
@@ -88,6 +91,7 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, states }: 
         mileage: 'Mileage in miles: 45000',
         year: 'Year: 2020',
         engineSize: 'Cars: 2.0L, 3.5L | Motorcycles: 250cc, 600cc',
+        vin: 'REQUIRED: 17 characters',
         state: 'State code: TX, CA, FL',
         city: 'City: Houston'
       },
@@ -179,8 +183,15 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, states }: 
 
   const validateAndConvertRow = async (row: ExcelRow, rowNum: number, errors: string[]): Promise<ListingForm | null> => {
     // Required fields validation
-    if (!row.vehicleType || !row.title || !row.model || !row.price || !row.year || !row.state) {
-      errors.push(`Row ${rowNum}: Missing required fields (vehicleType, title, model, price, year, state)`)
+    if (!row.vehicleType || !row.title || !row.model || !row.price || !row.year || !row.state || !row.vin) {
+      errors.push(`Row ${rowNum}: Missing required fields (vehicleType, title, model, price, year, state, vin)`)
+      return null
+    }
+
+    // VIN validation - REQUIRED, exactly 17 characters
+    const vinStr = String(row.vin).trim().toUpperCase()
+    if (vinStr.length !== 17) {
+      errors.push(`Row ${rowNum}: VIN must be exactly 17 characters`)
       return null
     }
 
@@ -327,6 +338,7 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, states }: 
       transmission: row.transmission ? normalizeTransmission(String(row.transmission)) : '',
       fuelType: row.fuelType ? normalizeFuelType(String(row.fuelType)) : '',
       mileage: mileageStr,
+      vin: vinStr,
       year: String(year),
       engineSize: engineSizeStr,
       engineSizeWhole: engineSizeWhole,

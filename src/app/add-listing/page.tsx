@@ -91,6 +91,7 @@ function AddListingContent() {
   const [transmission, setTransmission] = useState('')
   const [fuelType, setFuelType] = useState('')
   const [mileage, setMileage] = useState('')
+  const [vin, setVin] = useState('')
   const [year, setYear] = useState('')
   // Новое поле для мотоциклов - объём двигателя
   const [engineSize, setEngineSize] = useState('')
@@ -312,6 +313,7 @@ function AddListingContent() {
         transmission: vehicleType === 'car' ? (transmission || null) : null,
         fuel_type: fuelType || null,
         mileage: mileage ? Number(mileage) : null,
+        vin: vin || null,
         description: description || null,
         contact_by_phone: contactByPhone,
         contact_by_email: contactByEmail,
@@ -394,6 +396,7 @@ function AddListingContent() {
     setTransmission('');
     setFuelType('');
     setMileage('');
+    setVin('');
     setYear('');
     setEngineSize('');
     setEngineSizeWhole('');
@@ -512,6 +515,7 @@ function AddListingContent() {
       transmission: vehicleType === 'car' ? (transmission || null) : null,
       fuel_type: fuelType || null,
       mileage: mileage ? Number(mileage) : null,
+      vin: vin || null,
       description: description || null,
       contact_by_phone: contactByPhone,
       contact_by_email: contactByEmail,
@@ -599,6 +603,12 @@ function AddListingContent() {
     // Проверки до показа модалки
     if (!title || !year || !stateId || !price || !vehicleType) {
       setMessage('Please fill in all required fields.');
+      return;
+    }
+    
+    // VIN validation - REQUIRED
+    if (!vin || vin.length !== 17) {
+      setMessage(t('vinInvalid'));
       return;
     }
     
@@ -699,6 +709,7 @@ function AddListingContent() {
               year: Number(year),
               price: Number(price),
               mileage: mileage ? `${Number(mileage).toLocaleString()} miles` : 'Not provided',
+              vin: vin || 'Not provided',
               images: images,
             }}
           />
@@ -961,6 +972,31 @@ function AddListingContent() {
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
                   />
                 </div>
+              </div>
+
+              {/* VIN */}
+              <div className="space-y-1">
+                <label htmlFor="vin" className="block text-sm font-medium text-gray-700">
+                  {t('vin')} <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                    </svg>
+                  </div>
+                  <input
+                    id="vin"
+                    type="text"
+                    placeholder={t('vinPlaceholder')}
+                    value={vin}
+                    onChange={(e) => setVin(e.target.value.toUpperCase())}
+                    maxLength={17}
+                    required
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 uppercase"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{t('vinHelp')}</p>
               </div>
 
               {/* Location */}

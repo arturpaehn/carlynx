@@ -320,7 +320,8 @@ type TranslationKey =
   | 'downPayment' | 'downPaymentPlaceholder' | 'loanTerm' | 'loanTermPlaceholder'
   | 'interestRate' | 'interestRatePlaceholder' | 'monthlyPayment' | 'totalPayment'
   | 'totalInterest' | 'resetToRecommended' | 'applyForLoan' | 'lendingTreeApply'
-  | 'boaApply' | 'carsDirectApply' | 'lenderOptions' | 'compareMultipleLenders';
+  | 'boaApply' | 'carsDirectApply' | 'lenderOptions' | 'compareMultipleLenders'
+  | 'vin' | 'vinPlaceholder' | 'vinRequired' | 'vinInvalid' | 'vinHelp';
 
 interface Translations {
   [key: string]: string;

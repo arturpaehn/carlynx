@@ -51,6 +51,7 @@ interface ListingForm {
   transmission: string
   fuelType: string
   mileage: string
+  vin: string
   year: string
   engineSize: string
   engineSizeWhole: string
@@ -107,6 +108,7 @@ function DealerAddListingContent() {
     transmission: '',
     fuelType: '',
     mileage: '',
+    vin: '',
     year: '',
     engineSize: '',
     engineSizeWhole: '',
@@ -218,6 +220,7 @@ function DealerAddListingContent() {
       transmission: '',
       fuelType: '',
       mileage: '',
+      vin: '',
       year: '',
       engineSize: '',
       engineSizeWhole: '',
@@ -419,6 +422,12 @@ function DealerAddListingContent() {
         return
       }
 
+      // VIN validation - REQUIRED
+      if (!listing.vin || listing.vin.length !== 17) {
+        setMessage(`${t('listing')} #${listingNum}: ${t('vinInvalid')}`)
+        return
+      }
+
       // Harmful content - check only Description field
       if (listing.description && listing.description.trim().length > 0) {
         const badWord = findHarmfulContent(listing.description)
@@ -508,6 +517,7 @@ function DealerAddListingContent() {
           transmission: listing.transmission,
           fuel_type: listing.fuelType,
           mileage: listing.mileage ? Number(listing.mileage) : null,
+          vin: listing.vin || null,
           engine_size: engineSizeValue,
           vehicle_type: listing.vehicleType,
           contact_by_phone: true,
@@ -895,6 +905,21 @@ function DealerAddListingContent() {
                       onChange={(e) => updateListing(listing.id, 'mileage', e.target.value)}
                       min="0"
                       className="w-full px-1.5 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* VIN */}
+                  <div style={{width: '140px'}}>
+                    <label className="block text-[10px] font-semibold text-gray-700 mb-0.5">
+                      {t('vin')} <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={listing.vin}
+                      onChange={(e) => updateListing(listing.id, 'vin', e.target.value.toUpperCase())}
+                      maxLength={17}
+                      required
+                      className="w-full px-1.5 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-transparent uppercase"
                     />
                   </div>
 
