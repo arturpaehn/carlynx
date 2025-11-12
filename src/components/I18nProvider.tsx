@@ -321,7 +321,11 @@ type TranslationKey =
   | 'interestRate' | 'interestRatePlaceholder' | 'monthlyPayment' | 'totalPayment'
   | 'totalInterest' | 'resetToRecommended' | 'applyForLoan' | 'lendingTreeApply'
   | 'boaApply' | 'carsDirectApply' | 'lenderOptions' | 'compareMultipleLenders'
-  | 'vin' | 'vinPlaceholder' | 'vinRequired' | 'vinInvalid' | 'vinHelp';
+  | 'trustedAutoFinancing' | 'partner'
+  | 'vin' | 'vinPlaceholder' | 'vinRequired' | 'vinInvalid' | 'vinHelp'
+  | 'checkVin' | 'vinCheckNicb' | 'vinCheckNhtsa' | 'vinCheckIseecars'
+  | 'vinCheckNicbTooltip' | 'vinCheckNhtsaTooltip' | 'vinCheckIseecarsTooltip'
+  | 'vinCopied' | 'vinCopiedPaste';
 
 interface Translations {
   [key: string]: string;

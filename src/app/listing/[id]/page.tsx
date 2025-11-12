@@ -20,6 +20,7 @@ type Listing = {
   vehicle_type?: string
   engine_size?: number
   mileage?: number | null
+  vin?: string | null
   description: string | null
   user_id: string
   contact_by_phone: boolean
@@ -65,7 +66,17 @@ export default function ListingDetailPage() {
   const [error, setError] = useState('')
   const [ownerInfo, setOwnerInfo] = useState<UserInfo | null>(null)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
+  const [showVinCopiedToast, setShowVinCopiedToast] = useState(false)
+  const [vinCopiedButton, setVinCopiedButton] = useState(false)
   const hasIncrementedViews = useRef(false)
+
+  // Helper function to translate transmission and fuel type
+  const translateVehicleSpec = (value: string): string => {
+    if (!value) return '';
+    const lowerValue = value.toLowerCase();
+    const translationKey = lowerValue as 'automatic' | 'manual' | 'gasoline' | 'diesel' | 'electric' | 'hybrid';
+    return t(translationKey);
+  };
 
   // Сброс флага при смене ID
   useEffect(() => {
@@ -117,6 +128,7 @@ export default function ListingDetailPage() {
             vehicle_type,
             engine_size,
             mileage,
+            vin,
             description,
             user_id,
             contact_by_phone,
@@ -160,6 +172,7 @@ export default function ListingDetailPage() {
               fuel_type,
               vehicle_type,
               mileage,
+              vin,
               image_url,
               image_url_2,
               image_url_3,
@@ -216,6 +229,7 @@ export default function ListingDetailPage() {
             fuel_type: externalData.fuel_type,
             vehicle_type: externalData.vehicle_type,
             mileage: externalData.mileage,
+            vin: externalData.vin,
             description: null, // Не показываем description для внешних объявлений
             user_id: 'external',
             contact_by_phone: true,
@@ -802,17 +816,99 @@ useEffect(() => {
               {listing.transmission && (
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-600 font-medium">{t('transmission')}</span>
-                  <span className="text-gray-900 capitalize">{listing.transmission}</span>
+                  <span className="text-gray-900 capitalize">{translateVehicleSpec(listing.transmission)}</span>
                 </div>
               )}
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-600 font-medium">{t('fuelType')}</span>
-                <span className="text-gray-900 capitalize">{listing.fuel_type}</span>
+                <span className="text-gray-900 capitalize">{translateVehicleSpec(listing.fuel_type)}</span>
               </div>
               {listing.mileage && (
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-600 font-medium">{t('mileage')}</span>
                   <span className="text-gray-900">{listing.mileage.toLocaleString()} miles</span>
+                </div>
+              )}
+              {listing.vin && (
+                <div className="py-2 border-b border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <span className="text-gray-600 font-medium">{t('vin')}</span>
+                    <div className="flex flex-col sm:items-end gap-2">
+                      {/* VIN Code with Copy Button */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-900 font-mono text-sm">{listing.vin}</span>
+                        {listing.vin.length === 17 && (
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(listing.vin!);
+                              setVinCopiedButton(true);
+                              setShowVinCopiedToast(true);
+                              setTimeout(() => {
+                                setShowVinCopiedToast(false);
+                                setVinCopiedButton(false);
+                              }, 2000);
+                            }}
+                            className={`group relative p-2 rounded-lg transition-all duration-200 ${
+                              vinCopiedButton
+                                ? 'text-white bg-green-600'
+                                : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
+                            }`}
+                            title={t('vinCopied')}
+                          >
+                            {vinCopiedButton ? (
+                              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* VIN Check Buttons */}
+                      {listing.vin.length === 17 && (
+                        <div className="flex gap-2 flex-wrap">
+                          <span className="text-xs text-gray-500 self-center mr-1">{t('checkVin')}:</span>
+                          
+                          {/* NICB Button */}
+                          <a
+                            href="https://www.nicb.org/vincheck"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                            title={t('vinCheckNicbTooltip')}
+                          >
+                            {t('vinCheckNicb')}
+                          </a>
+
+                          {/* NHTSA Button */}
+                          <a
+                            href="https://www.nhtsa.gov/nhtsa-datasets-and-apis"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                            title={t('vinCheckNhtsaTooltip')}
+                          >
+                            {t('vinCheckNhtsa')}
+                          </a>
+
+                          {/* iSeeCars Button */}
+                          <a
+                            href="https://www.iseecars.com/vin-check"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                            title={t('vinCheckIseecarsTooltip')}
+                          >
+                            {t('vinCheckIseecars')}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
               {listing.engine_size && (
@@ -1044,6 +1140,18 @@ useEffect(() => {
         onClose={() => setIsCalculatorOpen(false)}
         vehiclePrice={listing?.price || 0}
       />
+
+      {/* VIN Copied Toast Notification */}
+      {showVinCopiedToast && (
+        <div className="fixed bottom-4 right-4 z-50 animate-fade-in">
+          <div className="bg-green-600 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3">
+            <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <span className="font-medium">{t('vinCopiedPaste')}</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -39,8 +39,8 @@ interface ScrapedListing {
 }
 
 // TEST MODE: Set to true to parse only 1 motorcycle for testing
-// Note: In production (GitHub Actions), this is always false
-const TEST_MODE = process.env.NODE_ENV !== 'production' && process.env.TEST_MODE !== 'false';
+// Note: When called via syncDreamMachines(), TEST_MODE is ignored (always processes all)
+const TEST_MODE = process.env.TEST_MODE !== 'false';
 
 // Parse year, make, model from title
 function parseVehicleInfo(title: string): { year?: number; make?: string; model?: string } {
@@ -167,11 +167,11 @@ async function downloadAndUploadImageWithClient(
 }
 
 // Fetch and parse Dream Machines of Texas listings from multiple pages
-async function fetchListings(): Promise<ScrapedListing[]> {
+async function fetchListings(testMode = TEST_MODE): Promise<ScrapedListing[]> {
   console.log('🔍 Fetching Dream Machines of Texas listings...');
   
   const allListings: ScrapedListing[] = [];
-  const maxPages = TEST_MODE ? 1 : 10; // Test mode: only 1 page
+  const maxPages = testMode ? 1 : 10; // Test mode: only 1 page
   const processedUrls = new Set<string>(); // Track processed URLs to avoid duplicates
   let shouldStop = false; // Flag to stop all processing
   
@@ -204,9 +204,9 @@ async function fetchListings(): Promise<ScrapedListing[]> {
         console.log(`   Found ${listingCards.length} listings on page ${currentPage}`);
         
         let processedCount = 0;
-        const maxListings = TEST_MODE ? 1 : listingCards.length;
+        const maxListings = testMode ? 1 : listingCards.length;
         let attemptCount = 0; // Track total attempts to avoid infinite loop
-        const maxAttempts = TEST_MODE ? 10 : listingCards.length; // Max 10 attempts in test mode
+        const maxAttempts = testMode ? 10 : listingCards.length; // Max 10 attempts in test mode
         
         for (let i = 0; i < listingCards.length; i++) {
           // Stop if we've processed enough listings OR tried too many times OR shouldStop flag is set
@@ -255,7 +255,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
           }
           
           // Skip boats in test mode - look for actual motorcycles
-          if (TEST_MODE && fullUrl.includes('Howard-Custom-Boats')) {
+          if (testMode && fullUrl.includes('Howard-Custom-Boats')) {
             console.log(`\n   ⏭️  Skipping boat: ${fullUrl}`);
             continue;
           }
@@ -354,7 +354,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
               await detailPage.close();
               
               // In test mode, stop after max attempts
-              if (TEST_MODE && attemptCount >= maxAttempts) {
+              if (testMode && attemptCount >= maxAttempts) {
                 console.log(`\n⚠️  TEST MODE: Reached max attempts (${maxAttempts}). Stopping.`);
                 break;
               }
@@ -381,7 +381,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
             
             console.log(`\n✅ Processed ${processedCount} listing(s)`);
             
-            if (TEST_MODE) {
+            if (testMode) {
               console.log(`✅ TEST MODE: Processed 1 motorcycle. Stopping immediately.`);
               await detailPage.close();
               shouldStop = true;
@@ -598,7 +598,8 @@ export async function syncDreamMachines(supabaseUrl: string, supabaseKey: string
   console.log('=' .repeat(50));
   
   try {
-    const listings = await fetchListings();
+    // Always run in production mode (testMode = false)
+    const listings = await fetchListings(false);
     
     if (listings.length > 0) {
       // Override getSupabase to use provided credentials
@@ -671,6 +672,8 @@ async function saveListingsWithClient(
         external_id: listing.externalId,
         external_url: listing.externalUrl,
         source: 'dream_machines_texas',
+        title: listing.title || listing.make || 'Unknown',
+        description: listing.description,
         year: listing.year,
         brand: listing.make || 'Unknown',
         model: listing.model || 'Unknown',
@@ -679,7 +682,6 @@ async function saveListingsWithClient(
         transmission: listing.transmission,
         fuel_type: listing.fuelType,
         vehicle_type: listing.vehicleType || 'motorcycle',
-        description: listing.description,
         image_url: imageUrl,
         image_url_2: null,
         image_url_3: null,

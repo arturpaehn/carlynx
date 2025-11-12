@@ -3,8 +3,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from '@/components/I18nProvider';
 
-// Free trial flag - set to false when Stripe is ready
-const IS_FREE_TRIAL = true; // ← БЕСПЛАТНЫЙ РЕЖИМ (FREE TRIAL)
+// Payment settings
+const IS_FREE_TRIAL = false; // ← ПЛАТНЫЙ РЕЖИМ ($2.50 за 14 дней)
+const LISTING_PRICE = 2.50; // Price in dollars
+const LISTING_DURATION_DAYS = 14; // Duration in days
 
 interface ListingDetails {
   title: string;
@@ -63,7 +65,7 @@ const PaymentConfirmModal: React.FC<PaymentConfirmModalProps> = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             listingTitle: listingDetails.title,
-            amount: LISTING_PRICE * 100, // Convert to cents (500 = $5)
+            amount: LISTING_PRICE * 100, // Convert to cents (250 = $2.50)
             userId: userId,
             userEmail: userEmail,
             listingId: listingId, // Pass listing_id to track in payment-success
@@ -86,8 +88,6 @@ const PaymentConfirmModal: React.FC<PaymentConfirmModalProps> = ({
       setIsProcessing(false);
     }
   };
-
-  const LISTING_PRICE = 5; // USD per listing
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

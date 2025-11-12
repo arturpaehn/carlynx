@@ -16,6 +16,7 @@ type Listing = {
   year: number
   transmission: string
   fuel_type: string
+  vin?: string | null
   is_active: boolean
   created_at: string
   image_url: string | null

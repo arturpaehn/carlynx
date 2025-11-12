@@ -45,6 +45,18 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'cdn.dealerspike.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.lendingtree.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.carsdirect.com',
+      },
     ],
   },
 };

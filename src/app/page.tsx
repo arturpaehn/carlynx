@@ -21,6 +21,7 @@ type Listing = {
   model?: string
   year?: number
   price: number
+  vin?: string | null
   created_at: string
   state?: {
     name: string

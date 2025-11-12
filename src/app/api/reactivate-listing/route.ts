@@ -14,7 +14,7 @@ function getStripe() {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 create-checkout-session called');
+    console.log('🚀 reactivate-listing API called');
     console.log('📝 Environment check:', {
       hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
       keyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 7),
@@ -25,21 +25,21 @@ export async function POST(request: NextRequest) {
     console.log('✅ Stripe initialized');
     
     const body = await request.json();
-    const { amount, listingTitle, userId, userEmail, listingId } = body;
+    const { listingId, listingTitle, userId, userEmail } = body;
 
-    console.log('📦 Received checkout request:', { amount, listingTitle, userId, userEmail, listingId });
+    console.log('📦 Received reactivation request:', { listingId, listingTitle, userId, userEmail });
 
     // Validate input
-    if (!amount || !listingTitle || !userId || !listingId) {
-      console.error('Missing required fields:', { amount: !!amount, listingTitle: !!listingTitle, userId: !!userId, listingId: !!listingId });
+    if (!listingId || !listingTitle || !userId) {
+      console.error('Missing required fields:', { listingId: !!listingId, listingTitle: !!listingTitle, userId: !!userId });
       return NextResponse.json(
-        { error: 'Missing required fields', received: { amount: !!amount, listingTitle: !!listingTitle, userId: !!userId, listingId: !!listingId } },
+        { error: 'Missing required fields', received: { listingId: !!listingId, listingTitle: !!listingTitle, userId: !!userId } },
         { status: 400 }
       );
     }
 
-    // Create Stripe Checkout Session
-    console.log('💳 Creating Stripe session...');
+    // Create Stripe Checkout Session for reactivation
+    console.log('💳 Creating Stripe session for reactivation...');
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -47,33 +47,34 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: 'CarLynx Vehicle Listing',
-              description: `14-day listing: ${listingTitle}`,
+              name: 'CarLynx Listing Reactivation',
+              description: `14-day reactivation: ${listingTitle}`,
               images: ['https://carlynx.us/logo.png'], // Your logo URL
             },
-            unit_amount: amount, // Amount in cents (500 = $5.00)
+            unit_amount: 250, // $2.50 in cents
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
       success_url: `${request.headers.get('origin')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${request.headers.get('origin')}/add-listing?cancelled=true`,
+      cancel_url: `${request.headers.get('origin')}/my-listings?cancelled=true`,
       metadata: {
         userId: userId,
         listingTitle: listingTitle,
-        listingId: listingId, // Store listing_id to activate after payment
+        listingId: listingId,
+        isReactivation: 'true', // Flag to identify reactivation flow
       },
       customer_email: userEmail,
     });
 
-    console.log('✅ Stripe session created:', session.id);
+    console.log('✅ Stripe reactivation session created:', session.id);
     return NextResponse.json({ 
       sessionId: session.id,
       url: session.url // Return URL for redirect
     });
   } catch (error) {
-    console.error('❌ Error creating checkout session:', error);
+    console.error('❌ Error creating reactivation checkout session:', error);
     console.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json(
       { 
-        error: 'Failed to create checkout session',
+        error: 'Failed to create reactivation checkout session',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

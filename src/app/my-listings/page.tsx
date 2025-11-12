@@ -16,6 +16,7 @@ type Listing = {
   year: number
   transmission: string
   fuel_type: string
+  vin?: string | null
   is_active: boolean
   payment_status: string | null
   image_url: string | null
@@ -43,6 +44,14 @@ function MyListingsContent() {
   const [states, setStates] = useState<State[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  // Helper function to translate transmission and fuel type
+  const translateVehicleSpec = (value: string): string => {
+    if (!value) return '';
+    const lowerValue = value.toLowerCase();
+    const translationKey = lowerValue as 'automatic' | 'manual' | 'gasoline' | 'diesel' | 'electric' | 'hybrid';
+    return t(translationKey);
+  };
 
   useEffect(() => {
     const fetchMyListings = async () => {
@@ -115,7 +124,7 @@ function MyListingsContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: 500, // $5.00 in cents
+          amount: 250, // $2.50 in cents
           listingTitle: listingTitle,
           userId: currentUser.id,
           userEmail: currentUser.email,
@@ -137,6 +146,46 @@ function MyListingsContent() {
     } catch (error) {
       console.error('Error completing payment:', error)
       alert('Failed to start payment. Please try again.')
+    }
+  }
+
+  const handleReactivateListing = async (listingId: number, listingTitle: string) => {
+    try {
+      // Get user data
+      const { data: userData } = await supabase.auth.getUser()
+      const currentUser = userData?.user
+
+      if (!currentUser) {
+        alert('Please log in to reactivate listing')
+        return
+      }
+
+      // Create Stripe checkout session for reactivation
+      const response = await fetch('/api/reactivate-listing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listingId: listingId.toString(),
+          listingTitle: listingTitle,
+          userId: currentUser.id,
+          userEmail: currentUser.email,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create reactivation checkout session')
+      }
+
+      const { url } = await response.json()
+
+      if (url) {
+        window.location.href = url // Redirect to Stripe Checkout
+      } else {
+        throw new Error('No checkout URL returned')
+      }
+    } catch (error) {
+      console.error('Error reactivating listing:', error)
+      alert('Failed to start reactivation payment. Please try again.')
     }
   }
 
@@ -290,13 +339,13 @@ function MyListingsContent() {
                               <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                               </svg>
-                              <span className="text-xs">{listing.fuel_type}</span>
+                              <span className="text-xs">{translateVehicleSpec(listing.fuel_type)}</span>
                             </div>
                             <div className="flex items-center text-sm text-gray-500">
                               <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                               </svg>
-                              <span className="text-xs">{listing.transmission}</span>
+                              <span className="text-xs">{translateVehicleSpec(listing.transmission)}</span>
                             </div>
                           </div>
                           <button
@@ -423,13 +472,13 @@ function MyListingsContent() {
                                   <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                   </svg>
-                                  <span className="text-xs">{listing.fuel_type}</span>
+                                  <span className="text-xs">{translateVehicleSpec(listing.fuel_type)}</span>
                                 </div>
                                 <div className="flex items-center text-sm text-gray-400">
                                   <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                   </svg>
-                                  <span className="text-xs">{listing.transmission}</span>
+                                  <span className="text-xs">{translateVehicleSpec(listing.transmission)}</span>
                                 </div>
                               </div>
                               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
@@ -451,9 +500,22 @@ function MyListingsContent() {
                                       <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                       </svg>
-                                      Complete Payment ($5)
+                                      Complete Payment ($2.50)
                                     </button>
                                   </>
+                                ) : listing.payment_status === 'paid' && !listing.is_active ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleReactivateListing(listing.id, listing.title)
+                                    }}
+                                    className="flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg font-medium hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 transform hover:scale-105 shadow-md"
+                                  >
+                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    Reactivate for $2.50
+                                  </button>
                                 ) : (
                                   <>
                                     <svg className="h-4 w-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

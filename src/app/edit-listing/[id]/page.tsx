@@ -102,6 +102,7 @@ export default function EditListingPage() {
   const [transmission, setTransmission] = useState('')
   const [fuelType, setFuelType] = useState('')
   const [mileage, setMileage] = useState('')
+  const [vin, setVin] = useState('')
   const [year, setYear] = useState('')
   
   // Новые поля для поддержки мотоциклов
@@ -130,6 +131,7 @@ export default function EditListingPage() {
     transmission: string | null;
     fuel_type: string | null;
     mileage: number | null;
+    vin: string | null;
     year: number | null;
     vehicle_type: string | null;
     engine_size: number | null;
@@ -167,6 +169,7 @@ export default function EditListingPage() {
       setTransmission(data.transmission || '');
       setFuelType(data.fuel_type || '');
       setMileage(data.mileage?.toString() || '');
+      setVin(data.vin || '');
       setYear(data.year?.toString() || '');
       
       // Обработка новых полей для мотоциклов
@@ -359,6 +362,7 @@ export default function EditListingPage() {
         transmission: vehicleType === 'car' ? (transmission.trim() === '' ? null : transmission) : null,
         fuel_type: fuelType.trim() === '' ? null : fuelType,
         mileage: mileage.trim() === '' ? null : Number(mileage),
+        vin: vin.trim() === '' ? null : vin.trim().toUpperCase(),
         year: Number(year),
         city_id,
         city_name,
@@ -609,6 +613,31 @@ export default function EditListingPage() {
               </div>
             </div>
           </div>
+
+          {/* VIN */}
+          <div className="space-y-1">
+            <label htmlFor="vin" className="block text-sm font-medium text-gray-700">
+              {t('vin')} ({t('optional')})
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                </svg>
+              </div>
+              <input
+                id="vin"
+                type="text"
+                placeholder={t('vinPlaceholder')}
+                value={vin}
+                onChange={(e) => setVin(e.target.value.toUpperCase())}
+                maxLength={17}
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 uppercase"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">{t('vinHelp')}</p>
+          </div>
+
           {/* State */}
           <div className="space-y-1">
             <label htmlFor="state" className="block text-sm font-medium text-gray-700">

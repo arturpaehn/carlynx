@@ -388,16 +388,16 @@ export default function Header() {
               dangerouslySetInnerHTML={{
                 __html: announcements[announcementIndex]
                   .replace(
-                    'Currently FREE', 
-                    '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Currently FREE</span>'
+                    '$2.50', 
+                    '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">$2.50</span>'
                   )
                   .replace(
-                    'zero fees',
-                    '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">zero fees</span>'
+                    '14 days',
+                    '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">14 days</span>'
                   )
                   .replace(
-                    '$5',
-                    '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">$5</span>'
+                    '14 días',
+                    '<span style="color: #fbbf24; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">14 días</span>'
                   )
               }}
             />

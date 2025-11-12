@@ -482,7 +482,7 @@ function AddListingContent() {
       .from('individual_payments')
       .insert([{
         user_id: userProfile.user_id,
-        amount: 5.00,
+        amount: 2.50,
         currency: 'USD',
         payment_status: 'pending',
         payment_method: 'card', // Changed from 'stripe' to 'card' to match DB constraint

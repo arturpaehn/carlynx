@@ -27,12 +27,13 @@ function PaymentSuccessContent() {
 
       const { paymentIntentId, metadata } = await response.json();
       const listingId = metadata?.listingId;
+      const isReactivation = metadata?.isReactivation === 'true';
 
       if (!listingId) {
         throw new Error('Listing ID not found in payment metadata');
       }
 
-      setMessage('Activating your listing...');
+      setMessage(isReactivation ? 'Reactivating your listing...' : 'Activating your listing...');
 
       // Step 2: Update payment record to 'paid' status
       const { error: paymentUpdateError } = await supabase
@@ -49,13 +50,29 @@ function PaymentSuccessContent() {
         console.error('Failed to update payment:', paymentUpdateError);
       }
 
-      // Step 3: Activate the listing (set is_active=true and payment_status='paid')
+      // Step 3: Activate the listing and update expires_at to 14 days from now
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 14); // 14 days from now
+
+      const updateData: {
+        is_active: boolean;
+        payment_status: string;
+        expires_at: string;
+        created_at?: string;
+      } = {
+        is_active: true,
+        payment_status: 'paid',
+        expires_at: expiresAt.toISOString(),
+      };
+
+      // If reactivation, update created_at to push to top of search results
+      if (isReactivation) {
+        updateData.created_at = new Date().toISOString();
+      }
+
       const { error: listingUpdateError } = await supabase
         .from('listings')
-        .update({
-          is_active: true,
-          payment_status: 'paid',
-        })
+        .update(updateData)
         .eq('id', listingId);
 
       if (listingUpdateError) {
@@ -63,7 +80,9 @@ function PaymentSuccessContent() {
       }
 
       setStatus('success');
-      setMessage('Payment successful! Your listing is now live.');
+      setMessage(isReactivation 
+        ? 'Listing reactivated successfully! It\'s now live for 14 days.' 
+        : 'Payment successful! Your listing is now live for 14 days.');
       setTimeout(() => router.push('/my-listings'), 3000);
 
     } catch (error) {
@@ -114,7 +133,7 @@ function PaymentSuccessContent() {
             <div className="text-sm text-gray-500">
               <p>✓ Payment processed</p>
               <p>✓ Listing activated</p>
-              <p>✓ Active for 30 days</p>
+              <p>✓ Active for 14 days</p>
             </div>
           </div>
         )}

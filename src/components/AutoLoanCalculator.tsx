@@ -348,30 +348,73 @@ export default function AutoLoanCalculator({ isOpen, onClose, vehiclePrice }: Au
               {t('lenderOptions')}
             </h3>
             <div className="space-y-3">
+              {/* LendingTree */}
               <a
                 href="https://www.lendingtree.com/auto/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full px-6 py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors text-center"
+                className="group flex items-center justify-between w-full px-6 py-4 bg-white hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 border-2 border-gray-200 hover:border-green-400 rounded-lg transition-all shadow-md hover:shadow-lg"
               >
-                {t('lendingTreeApply')}
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                    <svg className="w-7 h-7 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3.5 18.5L9.5 12.5L13.5 16.5L22 6M22 6H18M22 6V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-lg text-gray-900">LendingTree</div>
+                    <div className="text-sm text-gray-600">{t('compareMultipleLenders')}</div>
+                  </div>
+                </div>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </a>
+
+              {/* Bank of America */}
               <a
                 href="https://www.bankofamerica.com/auto-loans/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full px-6 py-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors text-center"
+                className="group flex items-center justify-between w-full px-6 py-4 bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-red-50 border-2 border-gray-200 hover:border-red-400 rounded-lg transition-all shadow-md hover:shadow-lg"
               >
-                {t('boaApply')}
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-red-100 flex items-center justify-center group-hover:from-blue-200 group-hover:to-red-200 transition-colors">
+                    <svg className="w-7 h-7 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-lg text-gray-900">Bank of America</div>
+                    <div className="text-sm text-gray-600">{t('trustedAutoFinancing')}</div>
+                  </div>
+                </div>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </a>
+
+              {/* CarsDirect */}
               <a
                 href="https://www.carsdirect.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors text-center relative"
+                className="group flex items-center justify-between w-full px-6 py-4 bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 border-2 border-gray-200 hover:border-blue-400 rounded-lg transition-all shadow-md hover:shadow-lg"
               >
-                <span className="block">{t('carsDirectApply')}</span>
-                <span className="block text-xs text-blue-100 mt-1">{t('compareMultipleLenders')}</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                    <svg className="w-7 h-7 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19 9h-1.5c0-2.21-1.79-4-4-4H10v6H6l-3 9h12c2.21 0 4-1.79 4-4v-7zm-6 10H5.5l2-6H10v-4h3.5c1.1 0 2 .9 2 2H17v8c0 1.1-.9 2-2 2z"/>
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-lg text-gray-900">CarsDirect</div>
+                    <div className="text-sm text-gray-600">{t('compareMultipleLenders')}</div>
+                  </div>
+                </div>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </a>
             </div>
           </div>
