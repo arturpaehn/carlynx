@@ -456,7 +456,7 @@ async function syncListings(
       // Check if listing already exists
       const { data: existing } = await supabase
         .from('external_listings')
-        .select('id, image_url, image_url_2, image_url_3, image_url_4')
+        .select('id, image_url, image_url_2, image_url_3, image_url_4, views')
         .eq('source', SOURCE)
         .eq('external_url', listing.url)
         .single();
@@ -511,7 +511,8 @@ async function syncListings(
         contact_email: COMPANY_EMAIL,
         is_active: true,
         last_seen_at: currentTime,
-        vehicle_type: 'car' // Default to car
+        vehicle_type: 'car', // Default to car
+        views: existing?.views || 0
       };
 
       if (existing) {

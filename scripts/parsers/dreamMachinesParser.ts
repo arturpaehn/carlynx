@@ -498,7 +498,7 @@ async function saveListings(listings: ScrapedListing[]) {
       // Check if listing already exists
       const { data: existing } = await supabase
         .from('external_listings')
-        .select('id, image_url, image_url_2, image_url_3, image_url_4')
+        .select('id, image_url, image_url_2, image_url_3, image_url_4, views')
         .eq('external_id', listing.externalId)
         .eq('source', 'dream_machines_texas')
         .single();
@@ -548,7 +548,8 @@ async function saveListings(listings: ScrapedListing[]) {
         image_url_3: null,
         image_url_4: null,
         last_seen_at: new Date().toISOString(),
-        is_active: true
+        is_active: true,
+        views: existing?.views || 0
       };
       
       if (existing) {
@@ -696,6 +697,14 @@ async function saveListingsWithClient(
         console.log(`   ✅ Image ready for ${listing.externalUrl}`);
       }
       
+      // Check if listing exists
+      const { data: existingListing } = await supabase
+        .from('external_listings')
+        .select('id, views')
+        .eq('external_id', listing.externalId)
+        .eq('source', 'dream_machines_texas')
+        .single();
+      
       const listingData = {
         external_id: listing.externalId,
         external_url: listing.externalUrl,
@@ -716,16 +725,9 @@ async function saveListingsWithClient(
         image_url_4: null,
         state_id: stateData.id,
         city_id: cityData.id,
-        last_seen_at: new Date().toISOString()
+        last_seen_at: new Date().toISOString(),
+        views: existingListing?.views || 0
       };
-      
-      // Check if listing exists
-      const { data: existingListing } = await supabase
-        .from('external_listings')
-        .select('id')
-        .eq('external_id', listing.externalId)
-        .eq('source', 'dream_machines_texas')
-        .single();
       
       if (existingListing) {
         // Update existing listing
