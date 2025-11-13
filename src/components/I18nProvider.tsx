@@ -335,6 +335,7 @@ interface I18nContextType {
   currentLanguage: string;
   setLanguage: (lang: string) => void;
   t: (key: TranslationKey) => string;
+  tn: (key: string) => string;
 }
 
 // Переводы статически импортированы для мгновенной доступности
@@ -390,8 +391,33 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return value || key;
   }, [currentLanguage]);
 
+  // Функция для доступа к вложенным переводам (например 'priceBadge.good')
+  const tn = useCallback((key: string): string => {
+    const parts = key.split('.');
+    let value: string | { [key: string]: string } | Translations | undefined = translations[currentLanguage] || translations['en'];
+    
+    for (const part of parts) {
+      if (value && typeof value === 'object' && part in value) {
+        value = value[part];
+      } else {
+        // Fallback to English
+        value = translations['en'];
+        for (const p of parts) {
+          if (value && typeof value === 'object' && p in value) {
+            value = value[p];
+          } else {
+            return key; // Return key if not found
+          }
+        }
+        break;
+      }
+    }
+    
+    return typeof value === 'string' ? value : key;
+  }, [currentLanguage]);
+
   return (
-    <I18nContext.Provider value={{ currentLanguage, setLanguage, t }}>
+    <I18nContext.Provider value={{ currentLanguage, setLanguage, t, tn }}>
       {children}
     </I18nContext.Provider>
   );

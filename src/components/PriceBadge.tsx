@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from './I18nProvider';
 
 interface PriceBadgeProps {
   brand: string | null | undefined;
@@ -32,7 +32,7 @@ type BadgeType = 'good' | 'fair' | 'high' | null;
  * @param className - Optional CSS classes
  */
 export default function PriceBadge({ brand, model, year, price, className = '' }: PriceBadgeProps) {
-  const { t } = useTranslation('common');
+  const { tn } = useTranslation();
   const [badge, setBadge] = useState<BadgeType>(null);
   const [loading, setLoading] = useState(true);
 
@@ -86,21 +86,21 @@ export default function PriceBadge({ brand, model, year, price, className = '' }
       text: 'text-green-800',
       border: 'border-green-300',
       icon: '💚',
-      label: t('priceBadge.good') || 'Good Price'
+      label: tn('priceBadge.good')
     },
     fair: {
       bg: 'bg-blue-100',
       text: 'text-blue-800',
       border: 'border-blue-300',
       icon: '👍',
-      label: t('priceBadge.fair') || 'Fair Price'
+      label: tn('priceBadge.fair')
     },
     high: {
       bg: 'bg-orange-100',
       text: 'text-orange-800',
       border: 'border-orange-300',
       icon: '⚠️',
-      label: t('priceBadge.high') || 'High Price'
+      label: tn('priceBadge.high')
     }
   };
 
@@ -109,7 +109,7 @@ export default function PriceBadge({ brand, model, year, price, className = '' }
   return (
     <div
       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${style.bg} ${style.text} ${style.border} font-medium text-sm shadow-sm ${className}`}
-      title={t(`priceBadge.${badge}Description`)}
+      title={tn(`priceBadge.${badge}Description`)}
     >
       <span className="text-base">{style.icon}</span>
       <span>{style.label}</span>
