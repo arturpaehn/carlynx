@@ -328,7 +328,7 @@ type TranslationKey =
   | 'vinCopied' | 'vinCopiedPaste';
 
 interface Translations {
-  [key: string]: string;
+  [key: string]: string | { [key: string]: string };
 }
 
 interface I18nContextType {
@@ -382,7 +382,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback((key: TranslationKey): string => {
     // Переводы доступны мгновенно через статический импорт
-    return translations[currentLanguage]?.[key] || translations['en']?.[key] || key;
+    const value = translations[currentLanguage]?.[key] || translations['en']?.[key];
+    // Если значение это вложенный объект (например priceBadge), возвращаем ключ как есть
+    if (typeof value === 'object') {
+      return key;
+    }
+    return value || key;
   }, [currentLanguage]);
 
   return (
