@@ -49,6 +49,7 @@ export async function GET() {
           id,
           title,
           model,
+          brand,
           year,
           price,
           state_id,
@@ -119,6 +120,7 @@ export async function GET() {
           id: item.id,
           title: item.title,
           model: item.model ?? '',
+          brand: item.title?.split(' ')[0] || null, // Extract first word as brand
           year: item.year ?? undefined,
           price: item.price,
           created_at: item.created_at,
@@ -191,6 +193,7 @@ export async function GET() {
           id: `ext-${item.id}`,
           title: item.title,
           model: item.model ?? '',
+          brand: item.brand || null,
           year: item.year ?? undefined,
           price: item.price,
           created_at: item.created_at,

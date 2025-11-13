@@ -592,6 +592,14 @@
   "vinCheckNhtsaTooltip": "Verificar retiros del mercado y decodificar VIN",
   "vinCheckIseecarsTooltip": "Obtener informe gratuito del historial del vehículo",
   "vinCopied": "Copiar VIN",
-  "vinCopiedPaste": "¡VIN copiado al portapapeles!"
+  "vinCopiedPaste": "¡VIN copiado al portapapeles!",
+  "priceBadge": {
+    "good": "Buen Precio",
+    "fair": "Precio Justo",
+    "high": "Precio Alto",
+    "goodDescription": "Este precio está por debajo del promedio del mercado - ¡una gran oferta!",
+    "fairDescription": "Este precio está dentro del rango normal del mercado",
+    "highDescription": "Este precio está por encima del promedio del mercado"
+  }
 }
 

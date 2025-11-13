@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useUser } from '@/hooks/useUser'
 import { monitor } from '@/lib/monitoring'
 import { useTranslation } from '@/components/I18nProvider'
+import PriceBadge from '@/components/PriceBadge'
 
 // SEO metadata will be handled by layout.tsx for this page
 
@@ -34,6 +35,7 @@ type Listing = {
   external_source?: string
   external_url?: string
   user_type?: string
+  brand?: string | null
 }
 
 export default function Home() {
@@ -224,6 +226,19 @@ export default function Home() {
                         {item.title}
                         {item.model ? ` ${item.model}` : ''}
                       </h3>
+
+                      {/* Price Badge */}
+                      {item.brand && item.model && item.year && item.price && (
+                        <div className="mb-2">
+                          <PriceBadge 
+                            brand={item.brand}
+                            model={item.model}
+                            year={item.year}
+                            price={item.price}
+                            className="text-xs"
+                          />
+                        </div>
+                      )}
 
                       {item.year && (
                         <div className="flex items-center text-orange-600 mb-1">

@@ -8,6 +8,7 @@ import { getCacheBuster } from '@/lib/cacheUtils'
 import { generateListingTitle, generateListingDescription, generateListingKeywords, updateMetaTags, generateVehicleStructuredData, insertStructuredData } from '@/lib/seoUtils'
 import { useTranslation } from '@/components/I18nProvider'
 import AutoLoanCalculator from '@/components/AutoLoanCalculator'
+import PriceBadge from '@/components/PriceBadge'
 
 type Listing = {
   id: number
@@ -114,51 +115,16 @@ export default function ListingDetailPage() {
       console.log('Cache buster:', cacheBuster)
 
       try {
-        // Сначала пробуем обычные listings
-        const { data, error } = await supabase
-          .from('listings')
-          .select(`
-            id,
-            title,
-            model,
-            price,
-            year,
-            transmission,
-            fuel_type,
-            vehicle_type,
-            engine_size,
-            mileage,
-            vin,
-            description,
-            user_id,
-            contact_by_phone,
-            contact_by_email,
-            views,
-            created_at,
-            state_id,
-            city_id,
-            city_name,
-            states (id, name, code, country_code),
-            cities (id, name)
-          `)
-          .eq('id', id)
-          .eq('is_active', true)
-          .single()
+        // Проверяем префикс "ext-" чтобы сразу идти в external_listings
+        const isExternal = String(id).startsWith('ext-');
+        const cleanId = isExternal ? String(id).substring(4) : id;
 
-        console.log('Regular listing response:')
-        console.log('Data:', data)
-        console.log('Error:', error)
+        console.log('Is external listing:', isExternal)
+        console.log('Clean ID:', cleanId)
 
-        // Проверяем, не был ли запрос отменен
-        if (cancelled) return;
-
-        // Если обычное объявление не найдено, пробуем external_listings
-        if (error || !data) {
-          console.log('Regular listing not found, trying external_listings...')
-          
-          // Убираем префикс "ext-" если он есть
-          const cleanId = String(id).startsWith('ext-') ? String(id).substring(4) : id;
-          console.log('Looking for external listing with clean ID:', cleanId)
+        // Если это external listing, сразу идём в external_listings
+        if (isExternal) {
+          console.log('Fetching external listing...')
           
           const { data: externalData, error: externalError } = await supabase
             .from('external_listings')
@@ -296,6 +262,53 @@ export default function ListingDetailPage() {
           return;
         }
 
+        // Обычное объявление из listings
+        const { data, error } = await supabase
+          .from('listings')
+          .select(`
+            id, 
+            title, 
+            price, 
+            year, 
+            mileage, 
+            transmission, 
+            description, 
+            vin, 
+            condition, 
+            vehicle_type, 
+            user_id,
+            state_id, 
+            city_id,
+            city_name,
+            created_at,
+            model,
+            exterior_color,
+            interior_color,
+            fuel_type,
+            drive_type,
+            body_style,
+            cylinders,
+            engine_size,
+            horse_power,
+            stock_number,
+            door_count,
+            seating_capacity,
+            states (name, code, country_code),
+            cities (name)
+          `)
+          .eq('id', id)
+          .single()
+
+        if (error || !data) {
+          console.error('Error loading listing:', error)
+          setError('Listing not found.')
+          setLoading(false)
+          return
+        }
+
+        // Проверяем, не был ли запрос отменен
+        if (cancelled) return;
+
         // Форматируем как на главной
         let stateObj: { name: string; code: string; country_code: string } | null = null;
         if (data.states) {
@@ -347,8 +360,13 @@ export default function ListingDetailPage() {
           state: stateObj,
           city,
           brand_name: brandName,
-          user_type: userType
-        } as Listing;        setListing(formattedListing);
+          user_type: userType,
+          contact_by_phone: true,
+          contact_by_email: true,
+          views: 0
+        } as Listing;
+        
+        setListing(formattedListing);
 
         // Проверяем, не был ли запрос отменен перед загрузкой изображений
         if (cancelled) return;
@@ -709,6 +727,16 @@ useEffect(() => {
                     </svg>
                     <span className="text-2xl sm:text-3xl font-bold text-orange-600">${listing.price.toLocaleString()}</span>
                   </div>
+                  
+                  {/* Price Badge */}
+                  {listing.brand_name && listing.model && listing.year && (
+                    <PriceBadge 
+                      brand={listing.brand_name}
+                      model={listing.model}
+                      year={listing.year}
+                      price={listing.price}
+                    />
+                  )}
                   
                   {/* Auto Loan Calculator Button */}
                   <button

@@ -538,6 +538,14 @@
   "vinCheckNhtsaTooltip": "Check recalls and decode VIN",
   "vinCheckIseecarsTooltip": "Get free vehicle history report",
   "vinCopied": "Copy VIN",
-  "vinCopiedPaste": "VIN copied to clipboard!"
+  "vinCopiedPaste": "VIN copied to clipboard!",
+  "priceBadge": {
+    "good": "Good Price",
+    "fair": "Fair Price",
+    "high": "High Price",
+    "goodDescription": "This price is below market average - a great deal!",
+    "fairDescription": "This price is within the normal market range",
+    "highDescription": "This price is above market average"
+  }
 }
 
