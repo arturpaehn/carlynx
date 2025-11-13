@@ -36,21 +36,23 @@ interface ScrapedListing {
   fuelType?: string;
   vehicleType?: string;
   imageUrls?: string[]; // Changed to array for multiple images (up to 4)
+  vin?: string; // VIN code from detail page
 }
 
-// Fetch images from vehicle detail page using Puppeteer (up to 4)
+// Fetch images and VIN from vehicle detail page using Puppeteer (up to 4 images + VIN)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchImagesFromDetailPage(detailUrl: string, browser: any): Promise<string[]> {
+async function fetchImagesAndVinFromDetailPage(detailUrl: string, browser: any): Promise<{ imageUrls: string[]; vin: string | null }> {
   let page = null;
   try {
     page = await browser.newPage();
     await page.goto(detailUrl, { waitUntil: 'networkidle2', timeout: 30000 });
     
-    // Wait for images to load
+    // Wait for content to load
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    const imageUrls = await page.evaluate(() => {
+    const result = await page.evaluate(() => {
       const foundUrls: string[] = [];
+      let vinCode: string | null = null;
       
       // Find all images in the vehicle gallery
       const images = Array.from(document.querySelectorAll('img'));
@@ -75,19 +77,49 @@ async function fetchImagesFromDetailPage(detailUrl: string, browser: any): Promi
         }
       }
       
-      return foundUrls;
+      // Try to find VIN code
+      // Look for common patterns: "VIN:", "VIN#:", "Vehicle ID:", etc.
+      const allText = document.body.innerText;
+      const vinPatterns = [
+        /VIN[:\s#]*([A-HJ-NPR-Z0-9]{17})/i,
+        /Vehicle\s+Identification\s+Number[:\s#]*([A-HJ-NPR-Z0-9]{17})/i,
+        /Stock[:\s#]*([A-HJ-NPR-Z0-9]{17})/i
+      ];
+      
+      for (const pattern of vinPatterns) {
+        const match = allText.match(pattern);
+        if (match && match[1]) {
+          vinCode = match[1].toUpperCase();
+          break;
+        }
+      }
+      
+      // Also check meta tags or data attributes
+      if (!vinCode) {
+        const vinMeta = document.querySelector('[data-vin], [itemprop="vehicleIdentificationNumber"]');
+        if (vinMeta) {
+          const vinValue = vinMeta.getAttribute('data-vin') || 
+                          vinMeta.getAttribute('content') || 
+                          vinMeta.textContent;
+          if (vinValue && /^[A-HJ-NPR-Z0-9]{17}$/.test(vinValue.trim())) {
+            vinCode = vinValue.trim().toUpperCase();
+          }
+        }
+      }
+      
+      return { imageUrls: foundUrls, vin: vinCode };
     });
     
     await page.close();
-    return imageUrls;
+    return result;
   } catch (error) {
-    console.error(`Error fetching images from ${detailUrl}:`, error);
+    console.error(`Error fetching data from ${detailUrl}:`, error);
     if (page) {
       try {
         await page.close();
       } catch {}
     }
-    return [];
+    return { imageUrls: [], vin: null };
   }
 }
 
@@ -242,12 +274,20 @@ async function fetchListings(): Promise<ScrapedListing[]> {
         const listing = allListings[i];
         try {
           console.log(`  [${i + 1}/${allListings.length}] ${listing.title}...`);
-          const imageUrls = await fetchImagesFromDetailPage(listing.externalUrl, browser);
-          if (imageUrls.length > 0) {
-            listing.imageUrls = imageUrls;
-            console.log(`    ✅ Got ${imageUrls.length} image(s)`);
+          const result = await fetchImagesAndVinFromDetailPage(listing.externalUrl, browser);
+          
+          if (result.imageUrls.length > 0) {
+            listing.imageUrls = result.imageUrls;
+            console.log(`    ✅ Got ${result.imageUrls.length} image(s)`);
           } else {
             console.log(`    ⚠️  No images found`);
+          }
+          
+          if (result.vin) {
+            listing.vin = result.vin;
+            console.log(`    ✅ Got VIN: ${result.vin}`);
+          } else {
+            console.log(`    ⚠️  No VIN found`);
           }
           
           // Small delay between requests
@@ -403,6 +443,7 @@ async function syncListings(listings: ScrapedListing[]) {
         mileage: listing.mileage,
         fuel_type: listing.fuelType,
         vehicle_type: listing.vehicleType || 'car',
+        vin: listing.vin || null,
         image_url: uploadedImageUrls[0],
         image_url_2: uploadedImageUrls[1],
         image_url_3: uploadedImageUrls[2],
