@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { getCacheBuster } from '@/lib/cacheUtils'
 import { useTranslation } from '@/components/I18nProvider'
+import PriceBadge from '@/components/PriceBadge'
 
 // SEO функция для поиска
 function updateSearchSEO(searchParams: URLSearchParams | null) {
@@ -670,18 +671,25 @@ function SearchResultsPageContent() {
                           </div>
                           {listing.model && (
                             <p className="text-xs sm:text-sm text-gray-600 truncate">{listing.model}</p>
-                          )}
-                        </div>
-                        {listing.price && (
-                          <div className="text-right flex-shrink-0">
-                            <div className="text-base sm:text-lg font-bold text-green-600">${listing.price.toLocaleString()}</div>
-                          </div>
                         )}
                       </div>
+                      {listing.price && (
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-base sm:text-lg font-bold text-green-600">${listing.price.toLocaleString()}</div>
+                          <PriceBadge 
+                            brand={listing.title ? listing.title.split(' ')[0] : null}
+                            model={listing.model}
+                            year={listing.year}
+                            price={listing.price}
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
+                    </div>
 
-                      {/* Compact Details - Single Row */}
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
-                        {listing.vehicle_type && (
+                    {/* Compact Details - Single Row */}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+                      {listing.vehicle_type && (
                           <div className="flex items-center">
                             <span className="font-medium text-orange-600">
                               {listing.vehicle_type === 'motorcycle' ? '🏍️' : '🚗'}
