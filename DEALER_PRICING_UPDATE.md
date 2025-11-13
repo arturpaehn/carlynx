@@ -5,12 +5,12 @@
 Based on number of listings per month:
 
 | Listings | Monthly Price |
-|----------|--------------|
-| Up to 100 | $400 |
-| Up to 250 | $800 |
-| Up to 500 | $1,250 |
-| Up to 1,000 | $2,000 |
-| 1,000+ (Unlimited) | $3,000 |
+|----------|------------|
+| Up to 100 | $29 |
+| Up to 250 | $49 |
+| Up to 500 | $79 |
+| Up to 1,000 | $129 |
+| 1,000+ (Unlimited) | $199 |
 
 ## What Changed
 
@@ -20,11 +20,11 @@ Based on number of listings per month:
 - Enterprise: $800/mo - Unlimited
 
 ### After:
-- tier_100: $400/mo - 100 listings
-- tier_250: $800/mo - 250 listings
-- tier_500: $1,250/mo - 500 listings
-- tier_1000: $2,000/mo - 1,000 listings
-- tier_unlimited: $3,000/mo - Unlimited
+- tier_100: $29/mo - 100 listings
+- tier_250: $49/mo - 250 listings
+- tier_500: $79/mo - 500 listings
+- tier_1000: $129/mo - 1,000 listings
+- tier_unlimited: $199/mo - Unlimited
 
 ## Files Updated
 
@@ -62,8 +62,8 @@ Just run the updated main migration:
 ## Registration Form
 
 The registration form now shows:
-- **EN**: "From $400/month (up to 100 listings)"
-- **ES**: "Desde $400/mes (hasta 100 anuncios)"
+- **EN**: "From $29/month (up to 100 listings)"
+- **ES**: "Desde $29/mes (hasta 100 anuncios)"
 
 ## Testing
 
@@ -78,11 +78,11 @@ ORDER BY COALESCE(listing_limit, 999999);
 
 Expected output:
 ```
-tier_100       | Up to 100 listings  | 400.00  | 100
-tier_250       | Up to 250 listings  | 800.00  | 250
-tier_500       | Up to 500 listings  | 1250.00 | 500
-tier_1000      | Up to 1000 listings | 2000.00 | 1000
-tier_unlimited | Unlimited listings  | 3000.00 | NULL
+tier_100       | Up to 100 listings  | 29.00   | 100
+tier_250       | Up to 250 listings  | 49.00   | 250
+tier_500       | Up to 500 listings  | 79.00   | 500
+tier_1000      | Up to 1000 listings | 129.00  | 1000
+tier_unlimited | Unlimited listings  | 199.00  | NULL
 ```
 
 ## Next Steps

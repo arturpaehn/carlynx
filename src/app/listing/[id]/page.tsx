@@ -9,6 +9,7 @@ import { generateListingTitle, generateListingDescription, generateListingKeywor
 import { useTranslation } from '@/components/I18nProvider'
 import AutoLoanCalculator from '@/components/AutoLoanCalculator'
 import PriceBadge from '@/components/PriceBadge'
+import SafetyRatingBadge from '@/components/SafetyRatingBadge'
 
 type Listing = {
   id: number
@@ -1048,6 +1049,17 @@ useEffect(() => {
             </div>
           </div>
         </div>
+
+        {/* NHTSA Safety Rating */}
+        {listing.year && listing.brand_name && listing.model && (
+          <div className="mb-6">
+            <SafetyRatingBadge 
+              year={listing.year}
+              brand={listing.brand_name}
+              model={listing.model}
+            />
+          </div>
+        )}
 
         {/* Description */}
         {listing.description && (

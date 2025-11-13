@@ -5,7 +5,7 @@
 1. ✅ SQL миграция с таблицами dealers, dealer_subscriptions, subscription_tiers
 2. ✅ Регистрация с выбором типа аккаунта (Individual/Dealer)
 3. ✅ API для сохранения user_type при регистрации
-4. ✅ 5 тарифов: $400 (100), $800 (250), $1250 (500), $2000 (1000), $3000 (unlimited)
+4. ✅ 5 тарифов: $29 (100), $49 (250), $79 (500), $129 (1000), $199 (unlimited)
 5. ✅ RLS для subscription_tiers и individual_payments
 
 ---

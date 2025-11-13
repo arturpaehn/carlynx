@@ -325,7 +325,8 @@ type TranslationKey =
   | 'vin' | 'vinPlaceholder' | 'vinRequired' | 'vinInvalid' | 'vinHelp'
   | 'checkVin' | 'vinCheckNicb' | 'vinCheckNhtsa' | 'vinCheckIseecars'
   | 'vinCheckNicbTooltip' | 'vinCheckNhtsaTooltip' | 'vinCheckIseecarsTooltip'
-  | 'vinCopied' | 'vinCopiedPaste';
+  | 'vinCopied' | 'vinCopiedPaste'
+  | 'safetyRating' | 'detailedRatings' | 'frontCrash' | 'sideCrash' | 'rollover' | 'safetyRatingDisclaimer';
 
 interface Translations {
   [key: string]: string | { [key: string]: string };

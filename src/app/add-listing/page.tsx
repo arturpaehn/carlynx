@@ -8,6 +8,13 @@ import { supabase } from '@/lib/supabaseClient'
 import { useTranslation } from '@/components/I18nProvider'
 import PaymentConfirmModal from '@/components/individual/PaymentConfirmModal'
 import IndividualGuard from '@/components/individual/IndividualGuard'
+import { 
+  decodeVIN, 
+  mapFuelType, 
+  mapTransmission, 
+  determineVehicleType, 
+  parseEngineSize 
+} from '@/utils/vinDecoder'
 
 const fuelOptions = ['gasoline', 'diesel', 'hybrid', 'electric', 'cng', 'lpg']
 const motorcycleFuelOptions = ['gasoline', 'electric']
@@ -100,6 +107,10 @@ function AddListingContent() {
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [message, setMessage] = useState('')
+
+  // VIN decoder state
+  const [isDecodingVIN, setIsDecodingVIN] = useState(false)
+  const [vinDecodeMessage, setVinDecodeMessage] = useState('')
 
   const [contactByPhone, setContactByPhone] = useState(true)
   const [contactByEmail, setContactByEmail] = useState(false)
@@ -227,6 +238,114 @@ function AddListingContent() {
       cancelled = true;
     }
   }, [title, brands])
+
+  // VIN Decoder Handler
+  const handleDecodeVIN = async () => {
+    if (!vin || vin.length !== 17) {
+      setVinDecodeMessage(t('vinInvalid'))
+      return
+    }
+
+    setIsDecodingVIN(true)
+    setVinDecodeMessage('')
+    setMessage('')
+
+    try {
+      const result = await decodeVIN(vin)
+
+      if (!result.success || !result.data) {
+        setVinDecodeMessage(result.error || 'Failed to decode VIN. Please check the VIN and try again.')
+        return
+      }
+
+      const vehicleData = result.data
+
+      // Determine vehicle type first
+      const detectedVehicleType = determineVehicleType(vehicleData.VehicleType, vehicleData.BodyClass)
+      setVehicleType(detectedVehicleType)
+
+      // Auto-fill brand
+      if (vehicleData.Make) {
+        // Load models for the brand
+        const brandList = detectedVehicleType === 'car' ? brands : motorcycleBrands
+        const selectedBrand = brandList.find((b) => 
+          b.name.toLowerCase() === vehicleData.Make?.toLowerCase() ||
+          vehicleData.Make?.toLowerCase().includes(b.name.toLowerCase())
+        )
+        
+        if (selectedBrand) {
+          // Set the exact brand name from our database
+          setTitle(selectedBrand.name)
+          
+          // Load models for this brand
+          const { data: modelsData } = await supabase
+            .from('car_models')
+            .select('name')
+            .eq('brand_id', selectedBrand.id)
+          if (modelsData) {
+            const unique = Array.from(new Set(modelsData.map((d) => d.name)))
+            setAvailableModels(unique)
+          }
+        } else {
+          // Brand not in our database, use API value
+          setTitle(vehicleData.Make)
+        }
+      }
+
+      // Auto-fill model
+      if (vehicleData.Model) {
+        setModel(vehicleData.Model)
+      }
+
+      // Auto-fill year
+      if (vehicleData.ModelYear) {
+        setYear(vehicleData.ModelYear)
+      }
+
+      // Auto-fill transmission
+      const transmissionValue = mapTransmission(vehicleData.TransmissionStyle)
+      if (transmissionValue) {
+        setTransmission(transmissionValue)
+      }
+
+      // Auto-fill fuel type
+      const fuelValue = mapFuelType(vehicleData.FuelTypePrimary)
+      if (fuelValue) {
+        setFuelType(fuelValue)
+      }
+
+      // Auto-fill engine size
+      console.log('VIN Decode - Engine data:', { 
+        DisplacementL: vehicleData.DisplacementL, 
+        DisplacementCC: vehicleData.DisplacementCC,
+        vehicleType: detectedVehicleType
+      })
+      
+      const engineData = parseEngineSize(
+        vehicleData.DisplacementL,
+        vehicleData.DisplacementCC,
+        detectedVehicleType
+      )
+      
+      console.log('VIN Decode - Parsed engine data:', engineData)
+
+      if (detectedVehicleType === 'motorcycle') {
+        if (engineData.cc) {
+          setEngineSize(engineData.cc)
+        }
+      } else {
+        if (engineData.whole) setEngineSizeWhole(engineData.whole)
+        if (engineData.decimal) setEngineSizeDecimal(engineData.decimal)
+      }
+
+      setVinDecodeMessage('✅ Vehicle information auto-filled successfully!')
+    } catch (error) {
+      console.error('VIN decode error:', error)
+      setVinDecodeMessage('Failed to decode VIN. Please try again.')
+    } finally {
+      setIsDecodingVIN(false)
+    }
+  }
 
   const MAX_IMAGES = 4;
   const MAX_IMAGE_SIZE = 3 * 1024 * 1024; // 3 MB
@@ -832,6 +951,83 @@ function AddListingContent() {
                 </div>
               </div>
 
+              {/* VIN Decoder - FIRST FIELD for Auto-fill */}
+              <div className="space-y-1 bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="vin-decoder" className="block text-sm font-medium text-gray-900">
+                    {t('vin')} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-xs text-blue-700 font-medium">Enter VIN to auto-fill details</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                      </svg>
+                    </div>
+                    <input
+                      id="vin-decoder"
+                      type="text"
+                      placeholder={t('vinPlaceholder')}
+                      value={vin}
+                      onChange={(e) => {
+                        setVin(e.target.value.toUpperCase())
+                        setVinDecodeMessage('')
+                      }}
+                      maxLength={17}
+                      required
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 uppercase font-mono"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDecodeVIN}
+                    disabled={!vin || vin.length !== 17 || isDecodingVIN}
+                    className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold text-sm hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 whitespace-nowrap flex items-center gap-2"
+                  >
+                    {isDecodingVIN ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Decoding VIN...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Auto-fill from VIN
+                      </>
+                    )}
+                  </button>
+                </div>
+                {vinDecodeMessage && (
+                  <div className={`flex items-center gap-2 text-sm mt-2 ${vinDecodeMessage.includes('success') || vinDecodeMessage.includes('exitosamente') ? 'text-green-700' : 'text-red-700'}`}>
+                    <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {vinDecodeMessage.includes('success') || vinDecodeMessage.includes('exitosamente') ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      )}
+                    </svg>
+                    <span>{vinDecodeMessage}</span>
+                  </div>
+                )}
+                <p className="text-xs text-blue-600 mt-2 flex items-start gap-1">
+                  <svg className="h-3 w-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Enter VIN and click &apos;Auto-fill&apos; to automatically populate vehicle details</span>
+                </p>
+              </div>
+
               {/* Brand */}
               <div className="space-y-1">
                 <label htmlFor="brand" className="block text-sm font-medium text-gray-700">
@@ -972,31 +1168,6 @@ function AddListingContent() {
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
                   />
                 </div>
-              </div>
-
-              {/* VIN */}
-              <div className="space-y-1">
-                <label htmlFor="vin" className="block text-sm font-medium text-gray-700">
-                  {t('vin')} <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                    </svg>
-                  </div>
-                  <input
-                    id="vin"
-                    type="text"
-                    placeholder={t('vinPlaceholder')}
-                    value={vin}
-                    onChange={(e) => setVin(e.target.value.toUpperCase())}
-                    maxLength={17}
-                    required
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 uppercase"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">{t('vinHelp')}</p>
               </div>
 
               {/* Location */}

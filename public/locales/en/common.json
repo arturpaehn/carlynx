@@ -346,7 +346,7 @@
   "individualUser": "Individual User",
   "individualUserDescription": "Pay $5 per listing",
   "dealerAccount": "Dealer Account",
-  "dealerAccountDescription": "Starting from $400/month",
+  "dealerAccountDescription": "Starting from $29/month",
   "pleaseSelectAccountType": "Please select an account type.",
   "dashboard": "Dashboard",
   "profile": "Profile",
@@ -539,6 +539,12 @@
   "vinCheckIseecarsTooltip": "Get free vehicle history report",
   "vinCopied": "Copy VIN",
   "vinCopiedPaste": "VIN copied to clipboard!",
+  "vinDecodeButton": "Auto-fill from VIN",
+  "vinDecoding": "Decoding VIN...",
+  "vinDecodeSuccess": "Vehicle information auto-filled successfully!",
+  "vinDecodeFailed": "Failed to decode VIN. Please check the VIN and try again.",
+  "vinDecodeHint": "Enter VIN and click 'Auto-fill' to automatically populate vehicle details",
+  "vinDecodeHintShort": "Enter VIN to auto-fill details",
   "priceBadge": {
     "good": "Good Price",
     "fair": "Fair Price",
@@ -546,6 +552,12 @@
     "goodDescription": "This price is below market average - a great deal!",
     "fairDescription": "This price is within the normal market range",
     "highDescription": "This price is above market average"
-  }
+  },
+  "safetyRating": "Safety Rating",
+  "detailedRatings": "Detailed Ratings",
+  "frontCrash": "Front Crash",
+  "sideCrash": "Side Crash",
+  "rollover": "Rollover",
+  "safetyRatingDisclaimer": "Ratings based on NHTSA crash tests. Not all trims tested."
 }
 

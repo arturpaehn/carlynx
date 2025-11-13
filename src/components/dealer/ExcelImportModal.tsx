@@ -26,6 +26,9 @@ interface ListingForm {
   cityInput: string
   images: File[]
   imagePreviews: string[]
+  // VIN decoder state
+  isDecodingVIN: boolean
+  vinDecodeMessage: string
 }
 
 interface ExcelImportModalProps {
@@ -347,7 +350,9 @@ export default function ExcelImportModal({ isOpen, onClose, onImport, states }: 
       cities: [],
       cityInput: row.city ? String(row.city) : '',
       images: [],
-      imagePreviews: []
+      imagePreviews: [],
+      isDecodingVIN: false,
+      vinDecodeMessage: ''
     }
 
     return listing
