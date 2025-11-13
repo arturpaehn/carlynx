@@ -229,7 +229,7 @@ function AddListingContent() {
   }, [title, brands])
 
   const MAX_IMAGES = 4;
-  const MAX_IMAGE_SIZE = 500 * 1024; // 500 KB
+  const MAX_IMAGE_SIZE = 3 * 1024 * 1024; // 3 MB
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -242,7 +242,7 @@ function AddListingContent() {
     }
     const tooLarge = supported.find((file) => file.size > MAX_IMAGE_SIZE);
     if (tooLarge) {
-      setMessage('One or more images are too large (max 500 KB each).');
+      setMessage('One or more images are too large (max 3 MB each).');
       return;
     }
     const newImages = [...images, ...supported];
