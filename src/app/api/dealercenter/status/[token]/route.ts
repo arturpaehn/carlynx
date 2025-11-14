@@ -31,12 +31,12 @@ function getSupabaseAdmin() {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   const supabase = getSupabaseAdmin()
 
   try {
-    const { token } = params
+    const { token } = await params
 
     if (!token) {
       return NextResponse.json(
