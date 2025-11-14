@@ -329,7 +329,7 @@ async function syncListings(listings: ScrapedListing[]) {
       // Check if listing already exists
       const { data: existing } = await supabase
         .from('external_listings')
-        .select('id, image_url, views')
+        .select('id, image_url')
         .eq('external_id', listing.externalId)
         .eq('source', 'auto_boutique_texas')
         .single();
@@ -368,8 +368,7 @@ async function syncListings(listings: ScrapedListing[]) {
         city_id: houstonCityId,
         city_name: 'Houston',
         last_seen_at: currentTime,
-        is_active: true,
-        views: existing?.views || 0
+        is_active: true
       };
       
       if (existing) {

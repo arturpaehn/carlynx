@@ -439,7 +439,7 @@ async function syncListings(listings: ScrapedListing[]) {
       // Check if listing already exists
       const { data: existing } = await supabase
         .from('external_listings')
-        .select('id, image_url, image_url_2, image_url_3, image_url_4, views')
+        .select('id, image_url, image_url_2, image_url_3, image_url_4')
         .eq('external_id', listing.externalId)
         .eq('source', 'auto_center_texas')
         .single();
@@ -495,8 +495,7 @@ async function syncListings(listings: ScrapedListing[]) {
         city_id: terrellCityId,
         city_name: 'Terrell',
         last_seen_at: currentTime,
-        is_active: true,
-        views: existing?.views || 0
+        is_active: true
       };
       
       if (existing) {

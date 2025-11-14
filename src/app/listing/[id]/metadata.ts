@@ -1,9 +1,7 @@
 import { Metadata } from 'next'
 import { supabase } from '@/lib/supabaseClient'
 
-export async function generateListingMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const { id } = await params
-  
+export async function generateListingMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   try {
     // Получаем данные объявления на сервере
     const { data: listing, error } = await supabase
@@ -27,7 +25,7 @@ export async function generateListingMetadata({ params }: { params: Promise<{ id
         state_id,
         states (id, name, code, country_code)
       `)
-      .eq('id', id)
+      .eq('id', params.id)
       .eq('is_active', true)
       .single()
 
@@ -35,7 +33,7 @@ export async function generateListingMetadata({ params }: { params: Promise<{ id
     const { data: images } = await supabase
       .from('listing_images')
       .select('image_url')
-      .eq('listing_id', id)
+      .eq('listing_id', params.id)
       .limit(1)
 
     if (error || !listing) {

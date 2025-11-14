@@ -11,9 +11,6 @@ import AutoLoanCalculator from '@/components/AutoLoanCalculator'
 import PriceBadge from '@/components/PriceBadge'
 import SafetyRatingBadge from '@/components/SafetyRatingBadge'
 
-// Export server-side metadata generation (runs on server even in 'use client')
-export { generateListingMetadata as generateMetadata } from './metadata'
-
 type Listing = {
   id: number
   title: string

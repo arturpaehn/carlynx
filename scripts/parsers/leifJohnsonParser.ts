@@ -304,7 +304,7 @@ export async function syncLeifJohnson(supabaseUrl?: string, supabaseKey?: string
         // Check if listing exists
         const { data: existing } = await supabase
           .from('external_listings')
-          .select('id, image_url, views')
+          .select('id, image_url')
           .eq('external_id', externalId)
           .eq('source', SOURCE)
           .single();
@@ -331,8 +331,7 @@ export async function syncLeifJohnson(supabaseUrl?: string, supabaseKey?: string
           contact_email: null,
           is_active: true,
           last_seen_at: new Date().toISOString(),
-          vehicle_type: 'car',
-          views: existing?.views || 0
+          vehicle_type: 'car'
         };
 
         if (existing) {
