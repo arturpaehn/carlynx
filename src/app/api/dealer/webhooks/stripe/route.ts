@@ -48,7 +48,12 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
-        await handleCheckoutCompleted(session)
+        // Check if this is DealerCenter activation payment
+        if (session.metadata?.type === 'dealercenter_activation') {
+          await handleDealerCenterActivation(session)
+        } else {
+          await handleCheckoutCompleted(session)
+        }
         break
       }
 
@@ -115,6 +120,47 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   // Subscription will be created via subscription.created event
   // Just log for now
+}
+
+// Handle DealerCenter one-time payment activation
+async function handleDealerCenterActivation(session: Stripe.Checkout.Session) {
+  const supabaseAdmin = getSupabaseAdmin()
+  const dealerId = session.metadata?.dealercenter_dealer_id
+  const activationToken = session.metadata?.activation_token
+  const tierId = session.metadata?.tier_id
+
+  if (!dealerId || !activationToken || !tierId) {
+    console.error('[DealerCenter Activation] Missing metadata:', session.metadata)
+    return
+  }
+
+  console.log(`[DealerCenter Activation] Dealer: ${dealerId}, Payment: ${session.payment_intent}`)
+
+  // Calculate expiration date (30 days from now)
+  const activationDate = new Date()
+  const expirationDate = new Date()
+  expirationDate.setDate(expirationDate.getDate() + 30)
+
+  // Update dealer as active
+  const { error } = await supabaseAdmin
+    .from('dealercenter_dealers')
+    .update({
+      subscription_status: 'active',
+      activation_date: activationDate.toISOString(),
+      expiration_date: expirationDate.toISOString(),
+      stripe_payment_intent_id: session.payment_intent as string
+    })
+    .eq('id', dealerId)
+
+  if (error) {
+    console.error('[DealerCenter Activation] Failed to update dealer:', error)
+    return
+  }
+
+  console.log(`[DealerCenter Activation] Success! Expires: ${expirationDate.toISOString()}`)
+
+  // TODO: Send activation confirmation email
+  // TODO: Send welcome email with instructions
 }
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
