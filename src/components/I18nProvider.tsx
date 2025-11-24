@@ -326,7 +326,8 @@ type TranslationKey =
   | 'checkVin' | 'vinCheckNicb' | 'vinCheckNhtsa' | 'vinCheckIseecars'
   | 'vinCheckNicbTooltip' | 'vinCheckNhtsaTooltip' | 'vinCheckIseecarsTooltip'
   | 'vinCopied' | 'vinCopiedPaste'
-  | 'safetyRating' | 'detailedRatings' | 'frontCrash' | 'sideCrash' | 'rollover' | 'safetyRatingDisclaimer';
+  | 'safetyRating' | 'detailedRatings' | 'frontCrash' | 'sideCrash' | 'rollover' | 'safetyRatingDisclaimer'
+  | 'forDealers';
 
 interface Translations {
   [key: string]: string | { [key: string]: string };

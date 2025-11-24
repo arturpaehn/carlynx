@@ -120,8 +120,8 @@ export default function DealersPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: '🔄', title: tn('dealers.whyAutoSync'), desc: tn('dealers.whyAutoSyncDesc') },
-              { icon: '✋', title: tn('dealers.whyNoManual'), desc: tn('dealers.whyNoManualDesc') },
+              { icon: '🎯', title: tn('dealers.whyReachBuyers'), desc: tn('dealers.whyReachBuyersDesc') },
+              { icon: '📊', title: tn('dealers.whyEasyManagement'), desc: tn('dealers.whyEasyManagementDesc') },
               { icon: '📈', title: tn('dealers.whyExtraExposure'), desc: tn('dealers.whyExtraExposureDesc') },
               { icon: '💰', title: tn('dealers.whySimplePricing'), desc: tn('dealers.whySimplePricingDesc') },
               { icon: '🚪', title: tn('dealers.whyCancelAnytime'), desc: tn('dealers.whyCancelAnytimeDesc') },
@@ -197,9 +197,9 @@ export default function DealersPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[
-              { num: '1', title: tn('dealers.step1Title'), desc: tn('dealers.step1Desc'), icon: '🔌' },
-              { num: '2', title: tn('dealers.step2Title'), desc: tn('dealers.step2Desc'), icon: '📡' },
-              { num: '3', title: tn('dealers.step3Title'), desc: tn('dealers.step3Desc'), icon: '📧' },
+              { num: '1', title: tn('dealers.step1Title'), desc: tn('dealers.step1Desc'), icon: '📧' },
+              { num: '2', title: tn('dealers.step2Title'), desc: tn('dealers.step2Desc'), icon: '📝' },
+              { num: '3', title: tn('dealers.step3Title'), desc: tn('dealers.step3Desc'), icon: '🚗' },
               { num: '4', title: tn('dealers.step4Title'), desc: tn('dealers.step4Desc'), icon: '🚀' },
             ].map((step) => (
               <div
@@ -232,6 +232,23 @@ export default function DealersPage() {
             <p className="text-gray-700 leading-relaxed text-center max-w-3xl mx-auto">
               {tn('dealers.limitsDescription')}
             </p>
+          </div>
+        </section>
+
+        {/* Future Integration Section */}
+        <section className="mb-12 sm:mb-16">
+          <div className="bg-gradient-to-br from-blue-50/80 via-indigo-50/80 to-blue-100/80 backdrop-blur-sm rounded-2xl shadow-lg border border-blue-200/50 p-8">
+            <div className="flex items-start gap-4">
+              <div className="text-4xl">🔮</div>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-3">
+                  {tn('dealers.futureIntegrationTitle')}
+                </h3>
+                <p className="text-gray-700 leading-relaxed">
+                  {tn('dealers.futureIntegrationDesc')}
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 

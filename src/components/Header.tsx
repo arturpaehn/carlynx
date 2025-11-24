@@ -748,6 +748,14 @@ export default function Header() {
                     {t('register')}
                   </span>
                 </Link>
+                <Link href="/dealers" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium hover:scale-105">
+                  <span className="inline-flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    {t('forDealers')}
+                  </span>
+                </Link>
               </div>
               <div className="relative sm:hidden">
                 <button
@@ -769,6 +777,9 @@ export default function Header() {
                     </Link>
                     <Link href="/register" className="px-4 py-2 hover:bg-orange-100" onClick={() => setShowMenu(false)}>
                       {t('register')}
+                    </Link>
+                    <Link href="/dealers" className="px-4 py-2 hover:bg-blue-100 text-blue-700 font-semibold" onClick={() => setShowMenu(false)}>
+                      {t('forDealers')}
                     </Link>
                     <Link href="/info" className="px-4 py-2 hover:bg-green-100 text-green-700 font-semibold" onClick={() => setShowMenu(false)}>
                       {t('usefulInformation')}

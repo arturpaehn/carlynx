@@ -191,13 +191,13 @@ DELETE /api/dealercenter/listings?token=x7k9m2p5q8r1s4t6&listing_ids=INV-12345,I
 
 | Tier Name | Listing Limit | Price (30 days) | tier_id |
 |-----------|---------------|-----------------|---------|
-| 100 Listings | 100 | $29 | Contact CarLynx |
-| 250 Listings | 250 | $49 | Contact CarLynx |
-| 500 Listings | 500 | $79 | Contact CarLynx |
-| 1000 Listings | 1000 | $129 | Contact CarLynx |
-| Unlimited | Unlimited | $199 | Contact CarLynx |
+| Up to 100 listings | 100 | $29 | `tier_100` |
+| Up to 250 listings | 250 | $49 | `tier_250` |
+| Up to 500 listings | 500 | $79 | `tier_500` |
+| Up to 1000 listings | 1000 | $129 | `tier_1000` |
+| Unlimited listings | Unlimited | $199 | `tier_unlimited` |
 
-**Note**: `tier_id` values (UUIDs) will be provided by CarLynx before integration.
+**Note**: Use these exact `tier_id` values when calling `/register` endpoint.
 
 ---
 
@@ -291,14 +291,15 @@ All endpoints return standard JSON error responses:
 
 ## Support & Contact
 
-**Technical Documentation**:
-- API Guide: `DEALERCENTER_API_GUIDE.md` (detailed technical reference)
-- Quick Start: `DEALERCENTER_QUICKSTART.md` (code examples)
-
 **CarLynx Technical Contact**:
-- Integration Support: [contact information to be provided]
+- Name: Artur
+- Email: support@carlynx.us
+- Response Time: Within 24 hours
+
+**Resources**:
 - Production Database: https://nusnffvsnhmqxoeqjhjs.supabase.co
 - Dealer Portal: https://carlynx.us/dealers
+- API Documentation: This document
 
 ---
 
