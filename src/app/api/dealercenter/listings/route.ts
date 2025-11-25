@@ -192,7 +192,6 @@ export async function POST(req: NextRequest) {
           year: listing.year,
           is_active: true,
           last_seen_at: currentTime,
-          views: 0,
           // Optional vehicle details
           brand: listing.brand || null,
           model: listing.model || null,
@@ -220,7 +219,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (existing) {
-          // Update existing listing
+          // Update existing listing - preserve views counter
           const { error: updateError } = await supabase
             .from('external_listings')
             .update(listingData)
@@ -232,10 +231,10 @@ export async function POST(req: NextRequest) {
             updated++
           }
         } else {
-          // Insert new listing
+          // Insert new listing with initial views = 0
           const { error: insertError } = await supabase
             .from('external_listings')
-            .insert(listingData)
+            .insert({ ...listingData, views: 0 })
 
           if (insertError) {
             errors.push(`Failed to insert ${listing.external_id}: ${insertError.message}`)
