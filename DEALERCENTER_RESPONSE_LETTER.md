@@ -161,7 +161,7 @@ DELETE /api/dealercenter/listings?token={token}&listing_ids=A001,A002
 4. **Cancelled** - при отмене подписки
 
 **Email service**: Resend API  
-**Sender**: noreply@carlynx.com
+**Sender**: noreply@carlynx.us
 
 ---
 

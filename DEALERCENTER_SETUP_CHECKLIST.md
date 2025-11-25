@@ -24,7 +24,7 @@ DEALERCENTER_API_KEY=dc_live_YOUR_SECURE_API_KEY_HERE_32_CHARS
 
 # Email Configuration (Resend)
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxx
-EMAIL_FROM=noreply@carlynx.com
+EMAIL_FROM=noreply@carlynx.us
 
 # Already configured (verify):
 NEXT_PUBLIC_SUPABASE_URL=https://nusnffvsnhmqxoeqjhjs.supabase.co
@@ -82,7 +82,7 @@ Expected output:
 
 #### A. Verify Domain (if not done)
 1. Go to: https://resend.com/domains
-2. Add domain: `carlynx.com`
+2. Add domain: `carlynx.us`
 3. Add DNS records (SPF, DKIM, DMARC)
 4. Wait for verification
 
