@@ -31,20 +31,18 @@ interface DealerCenterCSVRow {
   State?: string
   Zip?: string
   StockNumber: string
+  VIN?: string
   Year: number
   Make: string  // Maps to brand
   Model: string
-  Price: number
+  Trim?: string
   Odometer: number  // Maps to mileage
-  Transmission: string
-  VIN: string
-  VehicleDescription: string  // Maps to description
-  PhotoURLs: string  // Comma-separated
-  // Optional fields we ignore
+  SpecialPrice: number  // Maps to price
   ExteriorColor?: string
   InteriorColor?: string
-  Trim?: string
-  SpecialPrice?: string
+  Transmission: string
+  PhotoURLs: string  // Pipe-delimited list
+  VehicleDescription?: string  // Maps to description
   EquipmentCode?: string
   LatestPhotoModifiedDate?: string
 }
@@ -157,7 +155,7 @@ function parseCSV(csvText: string): DealerCenterCSVRow[] {
 
     // Convert numeric fields
     if (row.Year && typeof row.Year === 'string') row.Year = parseInt(row.Year)
-    if (row.Price && typeof row.Price === 'string') row.Price = parseFloat(row.Price)
+    if (row.SpecialPrice && typeof row.SpecialPrice === 'string') row.SpecialPrice = parseFloat(row.SpecialPrice)
     if (row.Odometer && typeof row.Odometer === 'string') row.Odometer = parseInt(row.Odometer)
 
     rows.push(row as unknown as DealerCenterCSVRow)
@@ -320,9 +318,9 @@ async function processListingsForDealer(
         }
       }
 
-      // Parse image URLs (comma-separated)
+      // Parse image URLs (pipe-delimited list)
       const imageUrls = listing.PhotoURLs 
-        ? listing.PhotoURLs.split(',').map(url => url.trim()).filter(url => url.length > 0)
+        ? listing.PhotoURLs.split('|').map(url => url.trim()).filter(url => url.length > 0)
         : []
 
       // Check if listing exists
@@ -336,15 +334,15 @@ async function processListingsForDealer(
       const listingData = {
         source: 'dealercenter' as const,
         external_id: fullExternalId,
-        title: `${listing.Year} ${listing.Make} ${listing.Model}`,
+        title: `${listing.Year} ${listing.Make} ${listing.Model}${listing.Trim ? ' ' + listing.Trim : ''}`,
         year: listing.Year,
         brand: listing.Make,  // Make → brand
         model: listing.Model,
-        price: listing.Price,
+        price: listing.SpecialPrice,  // SpecialPrice → price
         mileage: listing.Odometer,  // Odometer → mileage
         transmission: listing.Transmission,
-        vin: listing.VIN,
-        description: listing.VehicleDescription,  // VehicleDescription → description
+        vin: listing.VIN || null,  // VIN from CSV
+        description: listing.VehicleDescription || null,  // VehicleDescription → description
         image_url: imageUrls[0] || null,
         image_url_2: imageUrls[1] || null,
         image_url_3: imageUrls[2] || null,

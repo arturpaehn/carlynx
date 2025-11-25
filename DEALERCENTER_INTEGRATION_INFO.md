@@ -29,7 +29,7 @@ CarLynx provides **automatic dealer onboarding and listing import** for DealerCe
 
 Upload CSV file containing dealer info and vehicle inventory.
 
-**Authentication**: API key via `x-api-key` header
+**Authentication**: API key via `Authorization: Bearer {API_KEY}` header
 
 **Request**: `Content-Type: text/csv` (raw CSV data in body)
 
@@ -77,25 +77,25 @@ DC12345,12345,Sunshine Motors,555-0123,123 Main St,Austin,TX,78701,A002,2019,Toy
 | `DCID` | `dcid` | string | Yes* | Alternative identifier |
 | `DealerName` | `dealer_name` | string | Yes | Dealer business name |
 | `Phone` | `contact_phone` | string | Yes | Contact phone |
-| `Address` | - | string | No | Not stored currently |
-| `City` | `city_name` | string | No | Matched to cities table |
-| `State` | `state_id` | string | No | Matched to states table (code) |
-| `Zip` | - | string | No | Not stored currently |
+| `Address` | - | string | No | Not stored |
+| `City` | `city_name` | string | Yes | Matched to cities table |
+| `State` | `state_id` | string | Yes | Matched to states table (code) |
+| `Zip` | - | string | No | Not stored |
 | `StockNumber` | `external_id` | string | Yes | Prefixed with `DC-{token}-` |
+| `VIN` | `vin` | string | Yes | 17-character VIN |
 | `Year` | `year` | number | Yes | Model year |
 | `Make` | `brand` | string | Yes | Manufacturer name |
 | `Model` | `model` | string | Yes | Model name |
-| `Price` | `price` | number | Yes | Price in USD |
+| `Trim` | Added to `title` | string | Yes | Vehicle trim level |
 | `Odometer` | `mileage` | number | Yes | Mileage |
-| `Transmission` | `transmission` | string | No | Automatic, Manual, etc. |
-| `VIN` | `vin` | string | No | Vehicle identification |
+| `SpecialPrice` | `price` | number | Yes | Price in USD |
+| `ExteriorColor` | - | string | No | Not stored |
+| `InteriorColor` | - | string | No | Not stored |
+| `Transmission` | `transmission` | string | Yes | Automatic, Manual, etc. |
+| `PhotoURLs` | `image_url`, `image_url_2`, `image_url_3`, `image_url_4` | string | No | Pipe-delimited URLs (max 4) |
 | `VehicleDescription` | `description` | string | No | Full description |
-| `PhotoURLs` | `image_url`, `image_url_2`, `image_url_3`, `image_url_4` | string | No | Comma-separated URLs (max 4) |
-| `ExteriorColor` | - | - | No | **Not stored** |
-| `InteriorColor` | - | - | No | **Not stored** |
-| `Trim` | - | - | No | **Not stored** |
-| `SpecialPrice` | - | - | No | **Not stored** |
-| `EquipmentCode` | - | - | No | **Not stored** |
+| `EquipmentCode` | - | string | No | Not stored |
+| `LatestPhotoModifiedDate` | - | string | No | Not stored |
 
 *Either `AccountID` or `DCID` required
 
@@ -172,11 +172,11 @@ DC12345,12345,Sunshine Motors,555-0123,123 Main St,Austin,TX,78701,A002,2019,Toy
 
 | Tier | Max Listings | Monthly Price | Stripe Price ID |
 |------|-------------|---------------|----------------|
-| Tier 1 | 100 | $29/mo | *Created on first activation* |
-| Tier 2 | 250 | $49/mo | *Created on first activation* |
-| Tier 3 | 500 | $79/mo | *Created on first activation* |
-| Tier 4 | 1000 | $129/mo | *Created on first activation* |
-| Tier 5 | Unlimited | $199/mo | *Created on first activation* |
+| Tier 100 | 100 | $29/mo | *Created on activation* |
+| Tier 250 | 250 | $49/mo | *Created on activation* |
+| Tier 500 | 500 | $79/mo | *Created on activation* |
+| Tier 1000 | 1000 | $129/mo | *Created on activation* |
+| Tier Unlimited | Unlimited | $199/mo | *Created on activation* |
 
 **Subscription Type**: Recurring monthly via Stripe Checkout  
 **Auto-renewal**: Yes, automatically charges card each month  
@@ -210,8 +210,9 @@ pending → active → past_due → cancelled
 
 ### Welcome Email
 **Trigger**: First CSV feed from new dealer  
+**Sender**: noreply@carlynx.us  
 **Recipient**: Dealer contact email  
-**Content**: Activation link + free listings info
+**Content**: Activation link + 5 free listings info
 
 ### Payment Failed
 **Trigger**: Stripe invoice.payment_failed webhook  
@@ -377,17 +378,23 @@ Example: Dealer has 250-listing tier but 300 active listings → 50 oldest deact
 
 ## API Authentication
 
-**Header**: `x-api-key: YOUR_API_KEY`
+**Header**: `Authorization: Bearer YOUR_API_KEY`
+
+**Example**:
+```bash
+curl -H "Authorization: Bearer dc_live_gap457yshfvx8mdbwqkcje0lzi3n21u9" \
+  https://carlynx.us/api/dealercenter/feed/ingest
+```
 
 **Environment Variable**: `DEALERCENTER_API_KEY`
 
 **Required for**:
-- `/feed/ingest`
-- `/register`
-- `/listings`
+- `/api/dealercenter/feed/ingest`
+- `/api/dealercenter/register`
+- `/api/dealercenter/listings`
 
 **Not required for**:
-- `/status/{token}` (public)
+- `/api/dealercenter/status/{token}` (public)
 
 ---
 
@@ -400,8 +407,8 @@ Example: Dealer has 250-listing tier but 300 active listings → 50 oldest deact
 
 **Production Details**:
 - Base URL: https://carlynx.us
-- Database: https://nusnffvsnhmqxoeqjhjs.supabase.co
-- Stripe: Production mode
+- Stripe: Production mode (live keys)
+- Email: Resend (carlynx.us domain verified)
 
 ---
 
