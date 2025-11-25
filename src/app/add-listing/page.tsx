@@ -93,6 +93,8 @@ function AddListingContent() {
   const [model, setModel] = useState('')
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [price, setPrice] = useState('')
+  const [isCalculatingPrice, setIsCalculatingPrice] = useState(false)
+  const [priceMessage, setPriceMessage] = useState('')
   // Используем stateId вместо location
   const [description, setDescription] = useState('')
   const [transmission, setTransmission] = useState('')
@@ -154,6 +156,72 @@ function AddListingContent() {
     loadMotorcycleBrands()
     loadStates()
   }, [])
+
+  // Calculate average price from vehicle_price_benchmarks
+  const handleCalculateAveragePrice = async () => {
+    // Validate required fields
+    if (!title || !year) {
+      setPriceMessage(t('fillBrandModelYear'))
+      setTimeout(() => setPriceMessage(''), 3000)
+      return
+    }
+
+    setIsCalculatingPrice(true)
+    setPriceMessage('')
+
+    try {
+      // Call get_price_badge function to get benchmark data
+      const { data, error } = await supabase.rpc('get_price_badge', {
+        p_brand: title,
+        p_model: model || '',
+        p_year: parseInt(year),
+        p_price: 0 // We don't need price for calculation, just want avg_price
+      })
+
+      if (error) {
+        console.error('Error fetching price data:', error)
+        setPriceMessage(t('noMarketDataAvailable'))
+        setTimeout(() => setPriceMessage(''), 5000)
+        return
+      }
+
+      // If no data found
+      if (!data) {
+        setPriceMessage(t('noMarketDataAvailable'))
+        setTimeout(() => setPriceMessage(''), 5000)
+        return
+      }
+
+      // Fetch the actual benchmark to get avg_price
+      const { data: benchmarkData, error: benchmarkError } = await supabase
+        .from('vehicle_price_benchmarks')
+        .select('avg_price')
+        .ilike('brand', title)
+        .eq('year', parseInt(year))
+        .order('avg_price', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (benchmarkError || !benchmarkData?.avg_price) {
+        setPriceMessage(t('noMarketDataAvailable'))
+        setTimeout(() => setPriceMessage(''), 5000)
+        return
+      }
+
+      // Auto-fill price with average
+      const avgPrice = Math.round(benchmarkData.avg_price)
+      setPrice(avgPrice.toString())
+      
+      setPriceMessage(`${t('priceAutofilled')}: $${avgPrice.toLocaleString()} - ${t('basedOnUSMarketData')}`)
+      setTimeout(() => setPriceMessage(''), 8000)
+    } catch (error) {
+      console.error('Error calculating average price:', error)
+      setPriceMessage(t('noMarketDataAvailable'))
+      setTimeout(() => setPriceMessage(''), 5000)
+    } finally {
+      setIsCalculatingPrice(false)
+    }
+  }
 
   // Загружаем города при выборе штата
   useEffect(() => {
@@ -1094,27 +1162,6 @@ function AddListingContent() {
 
               {/* Price and Year Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Price */}
-                <div className="space-y-1">
-                  <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                    {t('price')} <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-400 text-sm">$</span>
-                    </div>
-                    <input
-                      id="price"
-                      type="number"
-                      placeholder={t('enterPrice')}
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      required
-                      className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-                    />
-                  </div>
-                </div>
-
                 {/* Year */}
                 <div className="space-y-1">
                   <label htmlFor="year" className="block text-sm font-medium text-gray-700">
@@ -1345,6 +1392,66 @@ function AddListingContent() {
                     </select>
                   </div>
                 </div>
+              </div>
+
+              {/* Price with Calculate Button */}
+              <div className="space-y-1">
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+                  {t('price')} <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-3">
+                  <div className="flex-1 relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-400 text-sm">$</span>
+                    </div>
+                    <input
+                      id="price"
+                      type="number"
+                      placeholder={t('enterPrice')}
+                      value={price}
+                      onChange={(e) => {
+                        setPrice(e.target.value)
+                        setPriceMessage('')
+                      }}
+                      required
+                      className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCalculateAveragePrice}
+                    disabled={!title || !year || isCalculatingPrice}
+                    className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold text-sm hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 whitespace-nowrap flex items-center gap-2"
+                  >
+                    {isCalculatingPrice ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        {t('calculatingPrice')}
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        {t('calculateAveragePrice')}
+                      </>
+                    )}
+                  </button>
+                </div>
+                {priceMessage && (
+                  <div className={`flex items-center gap-2 text-sm mt-2 ${priceMessage.includes('auto-filled') || priceMessage.includes('autocompletado') ? 'text-green-700' : 'text-orange-700'}`}>
+                    <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {priceMessage.includes('auto-filled') || priceMessage.includes('autocompletado') ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      )}
+                    </svg>
+                    <span>{priceMessage}</span>
+                  </div>
+                )}
               </div>
 
               {/* Description */}
