@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
+import { sendPaymentFailedEmail } from '@/lib/emailService'
 
 function getSupabaseAdmin() {
   return createClient(
@@ -122,33 +123,26 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Just log for now
 }
 
-// Handle DealerCenter one-time payment activation
+// Handle DealerCenter recurring subscription activation
 async function handleDealerCenterActivation(session: Stripe.Checkout.Session) {
   const supabaseAdmin = getSupabaseAdmin()
   const dealerId = session.metadata?.dealercenter_dealer_id
   const activationToken = session.metadata?.activation_token
-  const tierId = session.metadata?.tier_id
 
-  if (!dealerId || !activationToken || !tierId) {
+  if (!dealerId || !activationToken) {
     console.error('[DealerCenter Activation] Missing metadata:', session.metadata)
     return
   }
 
-  console.log(`[DealerCenter Activation] Dealer: ${dealerId}, Payment: ${session.payment_intent}`)
+  console.log(`[DealerCenter Activation] Dealer: ${dealerId}, Session: ${session.id}`)
 
-  // Calculate expiration date (30 days from now)
-  const activationDate = new Date()
-  const expirationDate = new Date()
-  expirationDate.setDate(expirationDate.getDate() + 30)
-
-  // Update dealer as active
+  // For subscriptions, we'll get more details from subscription.created event
+  // Just mark as pending payment success
   const { error } = await supabaseAdmin
     .from('dealercenter_dealers')
     .update({
-      subscription_status: 'active',
-      activation_date: activationDate.toISOString(),
-      expiration_date: expirationDate.toISOString(),
-      stripe_payment_intent_id: session.payment_intent as string
+      stripe_session_id: session.id,
+      last_payment_date: new Date().toISOString()
     })
     .eq('id', dealerId)
 
@@ -157,16 +151,19 @@ async function handleDealerCenterActivation(session: Stripe.Checkout.Session) {
     return
   }
 
-  console.log(`[DealerCenter Activation] Success! Expires: ${expirationDate.toISOString()}`)
-
-  // TODO: Send activation confirmation email
-  // TODO: Send welcome email with instructions
+  console.log(`[DealerCenter Activation] Payment session completed`)
 }
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   const supabaseAdmin = getSupabaseAdmin()
   const userId = subscription.metadata?.user_id
   const tierId = subscription.metadata?.tier_id
+  const dealerCenterId = subscription.metadata?.dealercenter_dealer_id
+
+  // Check if this is DealerCenter subscription
+  if (dealerCenterId) {
+    return await handleDealerCenterSubscriptionCreated(subscription, dealerCenterId, tierId)
+  }
 
   if (!userId || !tierId) {
     console.error('[Subscription Created] Missing metadata:', subscription.metadata)
@@ -199,9 +196,66 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   }
 }
 
+// Handle DealerCenter subscription creation
+async function handleDealerCenterSubscriptionCreated(
+  subscription: Stripe.Subscription,
+  dealerId: string,
+  tierId: string | undefined
+) {
+  const supabaseAdmin = getSupabaseAdmin()
+  
+  console.log(`[DealerCenter Subscription Created] Dealer: ${dealerId}, Subscription: ${subscription.id}`)
+
+  const status = subscription.status === 'active' ? 'active' : 'pending'
+  const subAny = subscription as any // eslint-disable-line @typescript-eslint/no-explicit-any
+  const currentPeriodEnd = subAny.current_period_end 
+    ? new Date(subAny.current_period_end * 1000).toISOString() 
+    : null
+
+  // Get tier info for max_listings
+  let maxListings = 100
+  if (tierId) {
+    const { data: tier } = await supabaseAdmin
+      .from('subscription_tiers')
+      .select('max_listings')
+      .eq('id', tierId)
+      .single()
+    
+    if (tier) maxListings = tier.max_listings
+  }
+
+  // Update dealer as active with subscription
+  const { error } = await supabaseAdmin
+    .from('dealercenter_dealers')
+    .update({
+      subscription_status: status,
+      stripe_subscription_id: subscription.id,
+      activation_date: new Date().toISOString(),
+      expiration_date: currentPeriodEnd,
+      max_listings: maxListings,
+      tier_id: tierId ? parseInt(tierId) : null
+    })
+    .eq('id', dealerId)
+
+  if (error) {
+    console.error('[DealerCenter Subscription Created] Failed to update dealer:', error)
+    return
+  }
+
+  console.log(`[DealerCenter Subscription Created] Dealer ${dealerId} activated! Status: ${status}`)
+
+  // TODO: Send welcome email
+}
+
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const supabaseAdmin = getSupabaseAdmin()
   const userId = subscription.metadata?.user_id
+  const dealerCenterId = subscription.metadata?.dealercenter_dealer_id
+
+  // Check if DealerCenter subscription
+  if (dealerCenterId) {
+    return await handleDealerCenterSubscriptionUpdated(subscription, dealerCenterId)
+  }
 
   if (!userId) {
     // Try to find user by stripe subscription ID
@@ -261,6 +315,69 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   } else {
     console.log(`[Subscription Updated] Status updated to ${status}`)
   }
+}
+
+// Handle DealerCenter subscription update
+async function handleDealerCenterSubscriptionUpdated(
+  subscription: Stripe.Subscription,
+  dealerId: string
+) {
+  const supabaseAdmin = getSupabaseAdmin()
+  
+  console.log(`[DealerCenter Subscription Updated] Dealer: ${dealerId}, Status: ${subscription.status}`)
+
+  let status: 'active' | 'pending' | 'cancelled' | 'past_due'
+  switch (subscription.status) {
+    case 'active':
+      status = 'active'
+      break
+    case 'past_due':
+      status = 'past_due'
+      break
+    case 'canceled':
+    case 'unpaid':
+      status = 'cancelled'
+      break
+    default:
+      status = 'pending'
+  }
+
+  const subAny = subscription as any // eslint-disable-line @typescript-eslint/no-explicit-any
+  const currentPeriodEnd = subAny.current_period_end 
+    ? new Date(subAny.current_period_end * 1000).toISOString() 
+    : null
+
+  const { error } = await supabaseAdmin
+    .from('dealercenter_dealers')
+    .update({
+      subscription_status: status,
+      expiration_date: currentPeriodEnd
+    })
+    .eq('id', dealerId)
+
+  if (error) {
+    console.error('[DealerCenter Subscription Updated] DB update error:', error)
+  } else {
+    console.log(`[DealerCenter Subscription Updated] Status: ${status}`)
+  }
+
+  // Send payment failed email if past_due
+  if (status === 'past_due') {
+    const { data: dealer } = await supabaseAdmin
+      .from('dealercenter_dealers')
+      .select('dealer_name, contact_email, expiration_date')
+      .eq('id', dealerId)
+      .single()
+
+    if (dealer && dealer.contact_email) {
+      await sendPaymentFailedEmail(dealer.contact_email, {
+        dealer_name: dealer.dealer_name,
+        subscription_end_date: dealer.expiration_date || new Date().toISOString()
+      })
+    }
+  }
+
+  // TODO: If status became cancelled, deactivate listings
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
