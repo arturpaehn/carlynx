@@ -5,6 +5,7 @@ type ListingImage = { listing_id: string; image_url: string };
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
+import AdminLayout from "@/components/AdminLayout";
 
 interface Listing {
   id: string;
@@ -31,8 +32,6 @@ interface Listing {
 
 
 export default function ListingsPage() {
-  const [accessLoading, setAccessLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [tab, setTab] = useState<'active' | 'inactive'>('active');
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,17 +44,6 @@ export default function ListingsPage() {
   const [searchEmail, setSearchEmail] = useState('');
   const [searchCreated, setSearchCreated] = useState('');
   const LISTINGS_PER_PAGE = 25;
-
-  useEffect(() => {
-    async function checkAdmin() {
-      setAccessLoading(true);
-      const { data } = await supabase.auth.getUser();
-      const email = data?.user?.email;
-      setIsAdmin(email === "admin@carlynx.us");
-      setAccessLoading(false);
-    }
-    checkAdmin();
-  }, []);
 
   // Filtering logic
   function getFilteredListings(listings: Listing[]) {
@@ -95,16 +83,14 @@ export default function ListingsPage() {
   const pagedListings = sortedListings.slice((page - 1) * LISTINGS_PER_PAGE, page * LISTINGS_PER_PAGE);
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchListings();
-    }
+    fetchListings();
     // eslint-disable-next-line
-  }, [tab, isAdmin]);
+  }, [tab]);
 
   async function fetchListings() {
     setLoading(true);
     setError(null);
-    // 1. Получаем все объявления
+    // Fetch only from 'listings' table (automatically excludes external_listings from DealerCenter)
     const { data: listingsData, error: listingsError } = await supabase
       .from('listings')
       .select('*')
@@ -123,8 +109,7 @@ export default function ListingsPage() {
       return;
     }
     setListings(listingsData);
-    setPage(1); // сбрасываем страницу при смене таба/фильтра
-    // 2. Получаем email для всех user_id
+    setPage(1);
     const userIds = Array.from(new Set(listingsData.map((l: Listing) => l.user_id)));
     const { data: usersData } = await supabase
       .from('user_profiles')
@@ -136,7 +121,6 @@ export default function ListingsPage() {
     });
     setUserEmails(emails);
 
-    // 3. Получаем первую картинку для каждого listing из listing_images
     const listingIds = listingsData.map((l: Listing) => l.id);
     let imagesMap: Record<string, string> = {};
     if (listingIds.length > 0) {
@@ -145,7 +129,6 @@ export default function ListingsPage() {
         .select('listing_id, image_url')
         .in('listing_id', listingIds);
       if (imagesData) {
-        // Для каждого listing_id берём первую картинку
         const firstImageByListing: Record<string, string> = {};
         (imagesData as ListingImage[]).forEach((img) => {
           if (!firstImageByListing[img.listing_id]) {
@@ -160,40 +143,21 @@ export default function ListingsPage() {
   }
 
   async function toggleListingActive(id: string, is_active: boolean) {
+    const action = is_active ? 'deactivate' : 'activate';
+    if (!confirm(`Are you sure you want to ${action} this listing?`)) return;
+    
     await supabase.from('listings').update({ is_active: !is_active }).eq('id', id);
     fetchListings();
   }
 
-  if (accessLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="p-8 text-center text-lg text-gray-600 font-bold border-2 border-gray-200 bg-white rounded shadow-lg">
-          Checking access...
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="p-8 text-center text-lg text-red-600 font-bold border-2 border-red-300 bg-white rounded shadow-lg">
-          Access denied. This page is for administrators only.
-        </div>
-      </div>
-    );
+  function clearFilters() {
+    setSearchEmail('');
+    setSearchCreated('');
+    setPage(1);
   }
 
   return (
-    <div className="px-2 sm:px-8 pt-header">
-      <div className="mb-4">
-        <a
-          href="/admin"
-          className="inline-block px-3 py-2 sm:px-4 sm:py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-150 text-xs sm:text-base"
-        >
-          ← Back to admin panel
-        </a>
-      </div>
+    <AdminLayout>
       <div className="mb-4 flex gap-2 sm:gap-4 flex-wrap">
         <button
           className={`px-3 py-2 sm:px-4 sm:py-2 rounded-t text-xs sm:text-base ${tab === 'active' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'}`}
@@ -215,7 +179,7 @@ export default function ListingsPage() {
         </div>
       )}
       {/* Search controls */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row gap-2 mb-4 items-start sm:items-center">
         <input
           type="text"
           className="border rounded px-2 py-1 text-xs sm:text-sm w-full sm:w-56"
@@ -226,11 +190,26 @@ export default function ListingsPage() {
         <input
           type="text"
           className="border rounded px-2 py-1 text-xs sm:text-sm w-full sm:w-56"
-          placeholder="Search by created date (e.g. 01.08.2025)..."
+          placeholder="Search by created date..."
           value={searchCreated}
           onChange={e => { setSearchCreated(e.target.value); setPage(1); }}
         />
+        <button
+          className="px-3 py-1 sm:px-4 sm:py-2 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs sm:text-base"
+          onClick={clearFilters}
+        >
+          Clear
+        </button>
       </div>
+      
+      {/* Results counter */}
+      {!loading && (
+        <div className="mb-2 text-sm text-gray-600">
+          Showing {pagedListings.length} of {sortedListings.length} listings
+          {sortedListings.length !== listings.length && ` (filtered from ${listings.length} total)`}
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="min-w-full border text-xs sm:text-sm">
           <thead>
@@ -266,23 +245,27 @@ export default function ListingsPage() {
             ) : listings.length === 0 ? (
               <tr><td colSpan={5} className="text-center p-4">No listings found</td></tr>
             ) : (
-              pagedListings.map(listing => (
+              pagedListings.map(listing => {
+                // All listings from 'listings' table use regular /listing/{id} format
+                const listingUrl = `/listing/${listing.id}`;
+                
+                return (
                 <tr key={listing.id} className="align-top hover:bg-orange-50 group">
                   <td
                     className="border p-2 break-all max-w-[120px] sm:max-w-none group-hover:underline cursor-pointer"
-                    onClick={() => window.open(`/listing/${listing.id}`, '_blank')}
+                    onClick={() => window.open(listingUrl, '_blank')}
                   >
                     {userEmails[listing.user_id] || listing.user_id}
                   </td>
                   <td
                     className="border p-2 text-center whitespace-nowrap cursor-pointer"
-                    onClick={() => window.open(`/listing/${listing.id}`, '_blank')}
+                    onClick={() => window.open(listingUrl, '_blank')}
                   >
                     {new Date(listing.created_at).toLocaleDateString()}
                   </td>
                   <td
                     className="border p-2 text-center cursor-pointer"
-                    onClick={() => window.open(`/listing/${listing.id}`, '_blank')}
+                    onClick={() => window.open(listingUrl, '_blank')}
                   >
                     {listingImages[listing.id] ? (
                       <Image src={listingImages[listing.id]} alt="photo" width={60} height={40} className="object-cover rounded max-w-full h-auto mx-auto" />
@@ -292,7 +275,7 @@ export default function ListingsPage() {
                   </td>
                   <td
                     className="border p-2 text-xs sm:text-sm cursor-pointer"
-                    onClick={() => window.open(`/listing/${listing.id}`, '_blank')}
+                    onClick={() => window.open(listingUrl, '_blank')}
                   >
                     <div className="break-words max-w-[140px] sm:max-w-none font-bold">{[listing.brand, listing.model, listing.year].filter(Boolean).join(' ')}</div>
                     <div className="text-gray-500">{listing.price ? `${listing.price.toLocaleString()} $` : ''}</div>
@@ -309,7 +292,7 @@ export default function ListingsPage() {
                     </button>
                   </td>
                 </tr>
-              ))
+              )})
             )}
           </tbody>
         </table>
@@ -334,6 +317,6 @@ export default function ListingsPage() {
           </button>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 }

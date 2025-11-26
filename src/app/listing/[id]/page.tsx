@@ -12,7 +12,7 @@ import PriceBadge from '@/components/PriceBadge'
 import SafetyRatingBadge from '@/components/SafetyRatingBadge'
 
 type Listing = {
-  id: number
+  id: string
   title: string
   model: string | null
   price: number
@@ -44,7 +44,7 @@ type Listing = {
 }
 
 type ListingImage = {
-  listing_id: number
+  listing_id: string
   image_url: string
 }
 
@@ -213,18 +213,18 @@ export default function ListingDetailPage() {
           setListing(formattedExternal);
 
           // Для external listings собираем все доступные изображения (до 4)
-          const externalImages: { listing_id: number; image_url: string }[] = [];
+          const externalImages: { listing_id: string; image_url: string }[] = [];
           if (externalData.image_url) {
-            externalImages.push({ listing_id: Number(id), image_url: externalData.image_url });
+            externalImages.push({ listing_id: id, image_url: externalData.image_url });
           }
           if (externalData.image_url_2) {
-            externalImages.push({ listing_id: Number(id), image_url: externalData.image_url_2 });
+            externalImages.push({ listing_id: id, image_url: externalData.image_url_2 });
           }
           if (externalData.image_url_3) {
-            externalImages.push({ listing_id: Number(id), image_url: externalData.image_url_3 });
+            externalImages.push({ listing_id: id, image_url: externalData.image_url_3 });
           }
           if (externalData.image_url_4) {
-            externalImages.push({ listing_id: Number(id), image_url: externalData.image_url_4 });
+            externalImages.push({ listing_id: id, image_url: externalData.image_url_4 });
           }
           
           if (externalImages.length > 0) {
@@ -264,41 +264,20 @@ export default function ListingDetailPage() {
         }
 
         // Обычное объявление из listings
+        console.log('Fetching regular listing from listings table...')
+        console.log('Query ID:', id)
+        console.log('Query ID type:', typeof id)
+        
         const { data, error } = await supabase
           .from('listings')
-          .select(`
-            id, 
-            title, 
-            price, 
-            year, 
-            mileage, 
-            transmission, 
-            description, 
-            vin, 
-            condition, 
-            vehicle_type, 
-            user_id,
-            state_id, 
-            city_id,
-            city_name,
-            created_at,
-            model,
-            exterior_color,
-            interior_color,
-            fuel_type,
-            drive_type,
-            body_style,
-            cylinders,
-            engine_size,
-            horse_power,
-            stock_number,
-            door_count,
-            seating_capacity,
-            states (name, code, country_code),
-            cities (name)
-          `)
+          .select('*')
           .eq('id', id)
           .single()
+
+        console.log('Regular listing response:')
+        console.log('Data:', data)
+        console.log('Error:', error)
+        console.log('Error details:', JSON.stringify(error, null, 2))
 
         if (error || !data) {
           console.error('Error loading listing:', error)

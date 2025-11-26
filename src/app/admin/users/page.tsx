@@ -1,8 +1,8 @@
 "use client";
 
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import AdminLayout from "@/components/AdminLayout";
 
 interface UserProfile {
   user_id: string;
@@ -14,9 +14,6 @@ interface UserProfile {
 }
 
 export default function UsersPage() {
-  // --- ВСЕ ХУКИ ВЫЗЫВАЮТСЯ СРАЗУ ---
-  const [accessLoading, setAccessLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [searchEmailInput, setSearchEmailInput] = useState("");
   const [searchEmail, setSearchEmail] = useState("");
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -28,41 +25,8 @@ export default function UsersPage() {
   const USERS_PER_PAGE = 25;
 
   useEffect(() => {
-    async function checkAdmin() {
-      setAccessLoading(true);
-      const { data } = await supabase.auth.getUser();
-      const email = data?.user?.email;
-      setIsAdmin(email === "admin@carlynx.us");
-      setAccessLoading(false);
-    }
-    checkAdmin();
-  }, []);
-
-  useEffect(() => {
     fetchUsers();
   }, []);
-
-  if (accessLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="p-8 text-center text-lg text-gray-600 font-bold border-2 border-gray-200 bg-white rounded shadow-lg">
-          Checking access...
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="p-8 text-center text-lg text-red-600 font-bold border-2 border-red-300 bg-white rounded shadow-lg">
-          Access denied. This page is for administrators only.
-        </div>
-      </div>
-    );
-  }
-  // хуки объявлены выше, дубли не нужны
-  // USERS_PER_PAGE и useEffect уже объявлены выше, дубли не нужны
 
   async function fetchUsers() {
     setLoading(true);
@@ -108,12 +72,14 @@ export default function UsersPage() {
     return sorted;
   }
 
-  // Pagination logic with search
   const filteredSortedUsers = getFilteredAndSortedUsers();
   const totalPages = Math.max(1, Math.ceil(filteredSortedUsers.length / USERS_PER_PAGE));
   const pagedUsers = filteredSortedUsers.slice((page - 1) * USERS_PER_PAGE, page * USERS_PER_PAGE);
 
   async function toggleBlock(user: UserProfile) {
+    const action = user.is_blocked ? 'unblock' : 'block';
+    if (!confirm(`Are you sure you want to ${action} ${user.email}?`)) return;
+    
     const { error } = await supabase
       .from('user_profiles')
       .update({ is_blocked: !user.is_blocked })
@@ -125,19 +91,16 @@ export default function UsersPage() {
     }
   }
 
+  function clearFilters() {
+    setSearchEmailInput('');
+    setSearchEmail('');
+    setPage(1);
+  }
+
   return (
-    <div className="px-2 sm:px-8 pt-header">
-      <div className="mb-4">
-        <a
-          href="/admin/"
-          className="inline-block px-3 py-2 sm:px-4 sm:py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-150 text-xs sm:text-base"
-        >
-          ← Back to admin panel
-        </a>
-      </div>
-      <h2 className="text-xl sm:text-2xl font-bold mb-4">User Management</h2>
+    <AdminLayout title="User Management">
       {/* Search fields */}
-      <div className="flex flex-wrap gap-2 sm:gap-4 mb-6 items-center">
+      <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 items-center">
         <input
           type="text"
           placeholder="Search by Email"
@@ -151,8 +114,24 @@ export default function UsersPage() {
         >
           Apply
         </button>
+        <button
+          className="px-3 py-1 sm:px-4 sm:py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors duration-150 text-xs sm:text-base"
+          onClick={clearFilters}
+        >
+          Clear
+        </button>
       </div>
+      
+      {/* Results counter */}
+      {!loading && (
+        <div className="mb-2 text-sm text-gray-600">
+          Showing {pagedUsers.length} of {filteredSortedUsers.length} users
+          {filteredSortedUsers.length !== users.length && ` (filtered from ${users.length} total)`}
+        </div>
+      )}
+
       {error && <div className="mb-4 text-red-600 text-xs sm:text-base">Error: {error}</div>}
+      
       <div className="overflow-x-auto">
         <table className="min-w-full border text-xs sm:text-sm">
           <thead>
@@ -208,6 +187,7 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
+      
       {/* Pagination controls */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-6">
@@ -228,6 +208,6 @@ export default function UsersPage() {
           </button>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 }

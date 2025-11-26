@@ -27,6 +27,189 @@ export interface CancelledEmailData {
   cancellation_date: string
 }
 
+export interface ImportErrorAlertData {
+  total_rows: number
+  dealers_processed: number
+  errors: string[]
+  timestamp: string
+}
+
+export interface ImportSuccessReportData {
+  dealers_processed: number
+  dealers_created: number
+  listings_inserted: number
+  listings_updated: number
+  total_rows: number
+  duration_ms: number
+  timestamp: string
+}
+
+/**
+ * Send import error alert to admin
+ */
+export async function sendImportErrorAlert(data: ImportErrorAlertData) {
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@carlynx.us'
+  
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DealerCenter Import Error Alert</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+    <tr>
+      <td style="padding: 40px 30px; text-align: center; background-color: #dc2626;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 28px;">🚨 Import Error Alert</h1>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 40px 30px;">
+        <h2 style="color: #333333; margin-top: 0;">DealerCenter Import Failed</h2>
+        
+        <p style="color: #555555; line-height: 1.6; font-size: 16px;">
+          A DealerCenter CSV import encountered errors at <strong>${new Date(data.timestamp).toLocaleString()}</strong>.
+        </p>
+
+        <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
+          <p style="margin: 0 0 10px 0; color: #991b1b; font-weight: bold;">Import Summary:</p>
+          <ul style="margin: 0; padding-left: 20px; color: #991b1b;">
+            <li>Total rows: ${data.total_rows}</li>
+            <li>Dealers processed: ${data.dealers_processed}</li>
+            <li>Errors: ${data.errors.length}</li>
+          </ul>
+        </div>
+
+        <h3 style="color: #333333; margin-top: 30px;">Error Details:</h3>
+        <div style="background-color: #f9fafb; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto;">
+          ${data.errors.map(err => `<div style="margin-bottom: 5px; color: #dc2626;">${err}</div>`).join('')}
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${SITE_URL}/admin/dealercenter-logs" 
+             style="display: inline-block; background-color: #667eea; color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 5px; font-weight: bold; font-size: 16px;">
+            View Full Logs
+          </a>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px 30px; background-color: #f9fafb; text-align: center; border-top: 1px solid #e5e5e5;">
+        <p style="margin: 0; color: #999999; font-size: 12px;">
+          © ${new Date().getFullYear()} CarLynx System Alert
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+
+  try {
+    const { data: result, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: '🚨 DealerCenter Import Error Alert',
+      html
+    })
+
+    if (error) {
+      console.error('[Email] Import error alert failed:', error)
+      return { success: false, error }
+    }
+
+    console.log('[Email] Import error alert sent:', result?.id)
+    return { success: true, id: result?.id }
+  } catch (error) {
+    console.error('[Email] Import error alert exception:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Send import success report to admin (optional, for monitoring)
+ */
+export async function sendImportSuccessReport(data: ImportSuccessReportData) {
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@carlynx.us'
+  
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DealerCenter Import Success</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+    <tr>
+      <td style="padding: 40px 30px; text-align: center; background-color: #10b981;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 28px;">✅ Import Successful</h1>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 40px 30px;">
+        <h2 style="color: #333333; margin-top: 0;">DealerCenter Import Completed</h2>
+        
+        <p style="color: #555555; line-height: 1.6; font-size: 16px;">
+          CSV import completed successfully at <strong>${new Date(data.timestamp).toLocaleString()}</strong>.
+        </p>
+
+        <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;">
+          <p style="margin: 0 0 10px 0; color: #065f46; font-weight: bold;">Import Summary:</p>
+          <ul style="margin: 0; padding-left: 20px; color: #065f46;">
+            <li>Total rows: ${data.total_rows}</li>
+            <li>Dealers processed: ${data.dealers_processed}</li>
+            <li>New dealers: ${data.dealers_created}</li>
+            <li>Listings inserted: ${data.listings_inserted}</li>
+            <li>Listings updated: ${data.listings_updated}</li>
+            <li>Duration: ${(data.duration_ms / 1000).toFixed(2)}s</li>
+          </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${SITE_URL}/admin/dealercenter-logs" 
+             style="display: inline-block; background-color: #667eea; color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 5px; font-weight: bold; font-size: 16px;">
+            View All Logs
+          </a>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px 30px; background-color: #f9fafb; text-align: center; border-top: 1px solid #e5e5e5;">
+        <p style="margin: 0; color: #999999; font-size: 12px;">
+          © ${new Date().getFullYear()} CarLynx System Report
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+
+  try {
+    const { data: result, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: `✅ DealerCenter Import: ${data.dealers_processed} dealers, ${data.listings_inserted + data.listings_updated} listings`,
+      html
+    })
+
+    if (error) {
+      console.error('[Email] Import success report failed:', error)
+      return { success: false, error }
+    }
+
+    console.log('[Email] Import success report sent:', result?.id)
+    return { success: true, id: result?.id }
+  } catch (error) {
+    console.error('[Email] Import success report exception:', error)
+    return { success: false, error }
+  }
+}
+
 /**
  * Send welcome email to new DealerCenter dealer
  */

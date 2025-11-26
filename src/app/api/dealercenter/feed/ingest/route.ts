@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { sendWelcomeEmail } from '@/lib/emailService'
+import { sendWelcomeEmail, sendImportErrorAlert, sendImportSuccessReport } from '@/lib/emailService'
 
 function getSupabaseAdmin() {
   return createClient(
@@ -49,6 +49,7 @@ interface DealerCenterCSVRow {
 
 export async function POST(req: NextRequest) {
   const supabase = getSupabaseAdmin()
+  const startTime = Date.now()
   
   try {
     // Verify API key
@@ -118,6 +119,43 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const duration = Date.now() - startTime
+    const status = errors.length === 0 ? 'success' : (dealersProcessed > 0 ? 'partial' : 'failed')
+
+    // Save log to database
+    await supabase.from('dealercenter_import_logs').insert({
+      dealers_processed: dealersProcessed,
+      dealers_created: dealersCreated,
+      listings_inserted: totalInserted,
+      listings_updated: totalUpdated,
+      total_rows: rows.length,
+      errors: errors,
+      duration_ms: duration,
+      status
+    })
+
+    // Send email alerts
+    if (errors.length > 0) {
+      // Send error alert if there are errors
+      await sendImportErrorAlert({
+        total_rows: rows.length,
+        dealers_processed: dealersProcessed,
+        errors: errors.slice(0, 20), // Limit to first 20 errors in email
+        timestamp: new Date().toISOString()
+      })
+    } else if (process.env.SEND_SUCCESS_REPORTS === 'true') {
+      // Optional: send success report (disabled by default)
+      await sendImportSuccessReport({
+        dealers_processed: dealersProcessed,
+        dealers_created: dealersCreated,
+        listings_inserted: totalInserted,
+        listings_updated: totalUpdated,
+        total_rows: rows.length,
+        duration_ms: duration,
+        timestamp: new Date().toISOString()
+      })
+    }
+
     return NextResponse.json({
       success: true,
       dealers_processed: dealersProcessed,
@@ -125,11 +163,35 @@ export async function POST(req: NextRequest) {
       listings_inserted: totalInserted,
       listings_updated: totalUpdated,
       total_rows: rows.length,
+      duration_ms: duration,
+      status,
       errors: errors.length > 0 ? errors : undefined
     })
 
   } catch (error) {
+    const duration = Date.now() - startTime
     console.error('CSV feed processing error:', error)
+    
+    // Log critical failure
+    await supabase.from('dealercenter_import_logs').insert({
+      dealers_processed: 0,
+      dealers_created: 0,
+      listings_inserted: 0,
+      listings_updated: 0,
+      total_rows: 0,
+      errors: [error instanceof Error ? error.message : 'Unknown error'],
+      duration_ms: duration,
+      status: 'failed'
+    })
+
+    // Send error alert
+    await sendImportErrorAlert({
+      total_rows: 0,
+      dealers_processed: 0,
+      errors: [error instanceof Error ? error.message : 'Unknown error'],
+      timestamp: new Date().toISOString()
+    })
+
     return NextResponse.json(
       { error: 'Failed to process CSV feed', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
