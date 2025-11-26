@@ -12,15 +12,23 @@ interface IndividualGuardProps {
 /**
  * Guard component that only allows individual users to access the wrapped content
  * Redirects dealers to dealer dashboard
+ * Redirects non-authenticated users to register page
  */
 export default function IndividualGuard({ children, fallbackUrl = '/dealer/dashboard' }: IndividualGuardProps) {
   const router = useRouter()
   const { userType, loading } = useUserType()
 
   useEffect(() => {
-    if (!loading && userType === 'dealer') {
-      console.warn('Access denied: User is a dealer, redirecting to', fallbackUrl)
-      router.push(fallbackUrl)
+    if (!loading) {
+      if (userType === null) {
+        // Not authenticated - redirect to register
+        console.warn('Access denied: User not authenticated, redirecting to /register')
+        router.push('/register')
+      } else if (userType === 'dealer') {
+        // Dealer - redirect to dealer dashboard
+        console.warn('Access denied: User is a dealer, redirecting to', fallbackUrl)
+        router.push(fallbackUrl)
+      }
     }
   }, [userType, loading, router, fallbackUrl])
 
@@ -36,11 +44,11 @@ export default function IndividualGuard({ children, fallbackUrl = '/dealer/dashb
     )
   }
 
-  // If a dealer, show nothing (redirect will happen)
-  if (userType === 'dealer') {
+  // If not authenticated or dealer, show nothing (redirect will happen)
+  if (userType === null || userType === 'dealer') {
     return null
   }
 
-  // Individual or guest, render children
+  // Individual user - render children
   return <>{children}</>
 }

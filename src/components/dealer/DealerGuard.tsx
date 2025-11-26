@@ -11,6 +11,7 @@ interface DealerGuardProps {
 
 /**
  * Guard component that only allows dealers to access the wrapped content
+ * Redirects non-authenticated users to login page
  * Redirects individual users to home page
  */
 export default function DealerGuard({ children, fallbackUrl = '/' }: DealerGuardProps) {
@@ -18,9 +19,16 @@ export default function DealerGuard({ children, fallbackUrl = '/' }: DealerGuard
   const { userType, loading } = useUserType()
 
   useEffect(() => {
-    if (!loading && userType !== 'dealer') {
-      console.warn('Access denied: User is not a dealer, redirecting to', fallbackUrl)
-      router.push(fallbackUrl)
+    if (!loading) {
+      if (userType === null) {
+        // Not authenticated - redirect to login
+        console.warn('Access denied: User not authenticated, redirecting to /login')
+        router.push('/login')
+      } else if (userType !== 'dealer') {
+        // Individual user - redirect to home
+        console.warn('Access denied: User is not a dealer, redirecting to', fallbackUrl)
+        router.push(fallbackUrl)
+      }
     }
   }, [userType, loading, router, fallbackUrl])
 
