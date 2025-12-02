@@ -8,15 +8,15 @@ interface DealerInfo {
   dealer_name: string
   contact_email: string
   subscription_status: string
-  tier_id: number | null
+  tier_id: string | null
 }
 
 interface SubscriptionTier {
-  id: number
+  tier_id: string
   tier_name: string
-  price: number
-  max_listings: number
-  description: string
+  monthly_price: string
+  listing_limit: number | null
+  description?: string
   stripe_price_id: string | null
 }
 
@@ -26,7 +26,7 @@ export default function ActivateDealerPage() {
 
   const [dealer, setDealer] = useState<DealerInfo | null>(null)
   const [tiers, setTiers] = useState<SubscriptionTier[]>([])
-  const [selectedTier, setSelectedTier] = useState<number | null>(null)
+  const [selectedTier, setSelectedTier] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
@@ -205,11 +205,11 @@ export default function ActivateDealerPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {tiers.map((tier) => (
             <div
-              key={tier.id}
-              onClick={() => setSelectedTier(tier.id)}
+              key={tier.tier_id}
+              onClick={() => setSelectedTier(tier.tier_id)}
               className={`
                 bg-white rounded-lg shadow-lg p-6 cursor-pointer transition-all
-                ${selectedTier === tier.id 
+                ${selectedTier === tier.tier_id 
                   ? 'ring-2 ring-blue-600 transform scale-105' 
                   : 'hover:shadow-xl hover:scale-102'
                 }
@@ -221,12 +221,12 @@ export default function ActivateDealerPage() {
                 </h3>
                 
                 <div className="text-3xl font-bold text-blue-600 mb-1">
-                  ${tier.price}
+                  ${tier.monthly_price}
                   <span className="text-sm text-gray-500">/month</span>
                 </div>
                 
                 <div className="text-lg text-gray-700 mb-4">
-                  Up to <strong>{tier.max_listings}</strong> listings
+                  Up to <strong>{tier.listing_limit || 'Unlimited'}</strong> listings
                 </div>
 
                 {tier.description && (
@@ -235,7 +235,7 @@ export default function ActivateDealerPage() {
                   </p>
                 )}
 
-                {selectedTier === tier.id && (
+                {selectedTier === tier.tier_id && (
                   <div className="mt-4 text-blue-600 font-semibold">
                     ✓ Selected
                   </div>

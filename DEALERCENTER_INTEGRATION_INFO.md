@@ -35,15 +35,17 @@ Upload CSV file containing dealer info and vehicle inventory.
 
 **CSV Format**: Must include these columns (see Field Mapping section below):
 - `AccountID` or `DCID` - Dealer identifier
-- `DealerName`, `Phone`, `Address`, `City`, `State`, `Zip` - Dealer info (first row only)
+- `DealerName`, `Email`, `Phone`, `Address`, `City`, `State`, `Zip` - Dealer info (first row only)
 - `StockNumber`, `Year`, `Make`, `Model`, `Price`, `Odometer` - Required vehicle fields
 - `Transmission`, `VIN`, `VehicleDescription`, `PhotoURLs` - Recommended fields
 
+**IMPORTANT**: The `Email` field is **REQUIRED** for sending activation links to dealers. Without it, the dealer will not receive the welcome email with their activation token.
+
 **Example CSV**:
 ```csv
-AccountID,DCID,DealerName,Phone,Address,City,State,Zip,StockNumber,Year,Make,Model,Price,Odometer,Transmission,VIN,VehicleDescription,PhotoURLs
-DC12345,12345,Sunshine Motors,555-0123,123 Main St,Austin,TX,78701,A001,2020,Honda,Accord,24999,35000,Automatic,1HGCV1F30LA123456,Clean CarFax,https://example.com/photo1.jpg
-DC12345,12345,Sunshine Motors,555-0123,123 Main St,Austin,TX,78701,A002,2019,Toyota,Camry,22999,42000,Automatic,4T1BF1FK5KU123456,One owner,https://example.com/photo2.jpg
+AccountID,DCID,DealerName,Email,Phone,Address,City,State,Zip,StockNumber,Year,Make,Model,Price,Odometer,Transmission,VIN,VehicleDescription,PhotoURLs
+DC12345,12345,Sunshine Motors,manager@sunshinemotors.com,555-0123,123 Main St,Austin,TX,78701,A001,2020,Honda,Accord,24999,35000,Automatic,1HGCV1F30LA123456,Clean CarFax,https://example.com/photo1.jpg
+DC12345,12345,Sunshine Motors,manager@sunshinemotors.com,555-0123,123 Main St,Austin,TX,78701,A002,2019,Toyota,Camry,22999,42000,Automatic,4T1BF1FK5KU123456,One owner,https://example.com/photo2.jpg
 ```
 
 **Response**:
@@ -76,6 +78,7 @@ DC12345,12345,Sunshine Motors,555-0123,123 Main St,Austin,TX,78701,A002,2019,Toy
 | `AccountID` | `dealercenter_account_id` | string | Yes* | Primary dealer identifier |
 | `DCID` | `dcid` | string | Yes* | Alternative identifier |
 | `DealerName` | `dealer_name` | string | Yes | Dealer business name |
+| `Email` | `contact_email` | string | **Yes** | Dealer contact email (required for activation) |
 | `Phone` | `contact_phone` | string | Yes | Contact phone |
 | `Address` | - | string | No | Not stored |
 | `City` | `city_name` | string | Yes | Matched to cities table |

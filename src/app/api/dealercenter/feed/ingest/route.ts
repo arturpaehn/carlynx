@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendWelcomeEmail, sendImportErrorAlert, sendImportSuccessReport } from '@/lib/emailService'
+import Papa from 'papaparse'
+import crypto from 'crypto'
 
 function getSupabaseAdmin() {
   return createClient(
@@ -25,6 +27,7 @@ interface DealerCenterCSVRow {
   AccountID?: string
   DCID?: string
   DealerName?: string
+  Email?: string
   Phone?: string
   Address?: string
   City?: string
@@ -201,29 +204,42 @@ export async function POST(req: NextRequest) {
 
 // Simple CSV parser
 function parseCSV(csvText: string): DealerCenterCSVRow[] {
-  const lines = csvText.trim().split('\n')
-  if (lines.length < 2) return []
+  const result = Papa.parse<Record<string, string>>(csvText, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (header) => header.trim(),
+    transform: (value) => value.trim()
+  })
 
-  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
-  const rows: DealerCenterCSVRow[] = []
-
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''))
-    const row: Record<string, string | number> = {}
-    
-    headers.forEach((header, index) => {
-      row[header] = values[index] || ''
-    })
-
-    // Convert numeric fields
-    if (row.Year && typeof row.Year === 'string') row.Year = parseInt(row.Year)
-    if (row.SpecialPrice && typeof row.SpecialPrice === 'string') row.SpecialPrice = parseFloat(row.SpecialPrice)
-    if (row.Odometer && typeof row.Odometer === 'string') row.Odometer = parseInt(row.Odometer)
-
-    rows.push(row as unknown as DealerCenterCSVRow)
+  if (result.errors.length > 0) {
+    console.warn('CSV parse warnings:', result.errors)
   }
 
+  const rows: DealerCenterCSVRow[] = result.data.map((row) => {
+    return {
+      ...row,
+      Year: row.Year ? parseInt(row.Year) || 0 : 0,
+      SpecialPrice: row.SpecialPrice ? parseFloat(row.SpecialPrice) || 0 : 0,
+      Odometer: row.Odometer ? parseInt(row.Odometer) || 0 : 0
+    } as unknown as DealerCenterCSVRow
+  })
+
   return rows
+}
+
+// Normalize transmission values
+function normalizeTransmission(value: string | undefined): string {
+  if (!value) return 'automatic'
+  const lower = value.toLowerCase()
+  if (lower.includes('auto') || lower.includes('a/t') || lower === 'at') return 'automatic'
+  if (lower.includes('man') || lower.includes('m/t') || lower === 'mt') return 'manual'
+  return value
+}
+
+// Validate image URL
+function isValidImageUrl(url: string | undefined): boolean {
+  if (!url) return false
+  return url.startsWith('http://') || url.startsWith('https://')
 }
 
 // Group listings by dealer
@@ -278,6 +294,8 @@ async function findOrCreateDealer(
   // Create new dealer
   const activation_token = generateActivationToken()
   
+  const dealerEmail = sampleRow.Email || null
+  
   const { data: newDealer, error } = await supabase
     .from('dealercenter_dealers')
     .insert({
@@ -285,7 +303,7 @@ async function findOrCreateDealer(
       dcid: dcid || null,
       activation_token,
       dealer_name: sampleRow.DealerName || 'Unknown Dealer',
-      contact_email: 'pending@dealercenter.com', // Will be updated
+      contact_email: dealerEmail || 'pending@dealercenter.com',
       contact_phone: sampleRow.Phone || null,
       subscription_status: 'pending',
       welcome_email_sent: false
@@ -298,16 +316,31 @@ async function findOrCreateDealer(
     return null
   }
 
-  // Send welcome email
-  if (sampleRow.Phone) {
-    await sendWelcomeEmail(
-      'pending@dealercenter.com', // TODO: Get real email from DealerCenter
-      {
-        dealer_name: sampleRow.DealerName || 'Unknown Dealer',
-        activation_token,
-        free_listings: FREE_LISTING_LIMIT
-      }
-    )
+  // Send welcome email only if valid email provided
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (dealerEmail && dealerEmail !== 'pending@dealercenter.com' && emailRegex.test(dealerEmail)) {
+    try {
+      await sendWelcomeEmail(
+        dealerEmail,
+        {
+          dealer_name: sampleRow.DealerName || 'Unknown Dealer',
+          activation_token,
+          free_listings: FREE_LISTING_LIMIT
+        }
+      )
+      
+      // Mark email as sent
+      await supabase
+        .from('dealercenter_dealers')
+        .update({ welcome_email_sent: true })
+        .eq('id', newDealer.id)
+        
+      console.log(`📧 Welcome email sent to ${dealerEmail}`)
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError)
+    }
+  } else {
+    console.warn(`⚠️  No valid email for dealer ${sampleRow.DealerName} - welcome email not sent`)
   }
 
   console.log(`✅ Created new dealer: ${sampleRow.DealerName} (${accountId || dcid})`)
@@ -360,12 +393,15 @@ async function processListingsForDealer(
       let cityId = null
 
       if (listing.State) {
-        const { data: stateData } = await supabase
+        const { data: stateData, error: stateError } = await supabase
           .from('states')
           .select('id')
           .eq('code', listing.State.toUpperCase())
           .single()
         
+        if (stateError) {
+          console.warn(`State not found: ${listing.State} for listing ${listing.StockNumber}`)
+        }
         stateId = stateData?.id || null
 
         if (stateId && listing.City) {
@@ -380,9 +416,9 @@ async function processListingsForDealer(
         }
       }
 
-      // Parse image URLs (pipe-delimited list)
+      // Parse image URLs (pipe-delimited list) and validate
       const imageUrls = listing.PhotoURLs 
-        ? listing.PhotoURLs.split('|').map(url => url.trim()).filter(url => url.length > 0)
+        ? listing.PhotoURLs.split('|').map(url => url.trim()).filter(url => isValidImageUrl(url))
         : []
 
       // Check if listing exists
@@ -402,7 +438,7 @@ async function processListingsForDealer(
         model: listing.Model,
         price: listing.SpecialPrice,  // SpecialPrice → price
         mileage: listing.Odometer,  // Odometer → mileage
-        transmission: listing.Transmission,
+        transmission: normalizeTransmission(listing.Transmission),
         vin: listing.VIN || null,  // VIN from CSV
         description: listing.VehicleDescription || null,  // VehicleDescription → description
         image_url: imageUrls[0] || null,
@@ -444,7 +480,12 @@ async function processListingsForDealer(
       }
 
     } catch (error) {
-      errors.push(`Error processing ${listing.StockNumber}: ${error instanceof Error ? error.message : 'Unknown'}`)
+      const errorMsg = `Error processing ${listing.StockNumber}: ${error instanceof Error ? error.message : 'Unknown'}`
+      // Limit errors to first 100 to prevent memory issues
+      if (errors.length < 100) {
+        errors.push(errorMsg)
+      }
+      console.error(errorMsg)
     }
   }
 
@@ -453,10 +494,5 @@ async function processListingsForDealer(
 
 // Generate activation token
 function generateActivationToken(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
-  let token = ''
-  for (let i = 0; i < 16; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return token
+  return crypto.randomBytes(16).toString('hex').substring(0, 16)
 }

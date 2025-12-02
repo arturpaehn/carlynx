@@ -79,8 +79,8 @@ export async function POST(req: NextRequest) {
     // Get tier info
     const { data: tier, error: tierError } = await supabase
       .from('subscription_tiers')
-      .select('*')
-      .eq('id', tier_id)
+      .select('tier_id, tier_name, monthly_price, listing_limit, stripe_price_id')
+      .eq('tier_id', tier_id)
       .single()
 
     if (tierError || !tier) {
@@ -121,9 +121,9 @@ export async function POST(req: NextRequest) {
       // Create recurring price in Stripe
       const product = await stripe.products.create({
         name: `CarLynx DealerCenter - ${tier.tier_name}`,
-        description: `Up to ${tier.max_listings} active listings`,
+        description: `Up to ${tier.listing_limit || 'unlimited'} active listings`,
         metadata: {
-          tier_id: tier.id.toString(),
+          tier_id: tier.tier_id,
           tier_name: tier.tier_name
         }
       })
@@ -131,13 +131,13 @@ export async function POST(req: NextRequest) {
       const price = await stripe.prices.create({
         product: product.id,
         currency: 'usd',
-        unit_amount: Math.round(tier.price * 100), // Convert to cents
+        unit_amount: Math.round(parseFloat(tier.monthly_price.toString()) * 100), // Convert to cents
         recurring: {
           interval: 'month',
           interval_count: 1
         },
         metadata: {
-          tier_id: tier.id.toString()
+          tier_id: tier.tier_id
         }
       })
 
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
       await supabase
         .from('subscription_tiers')
         .update({ stripe_price_id: stripePriceId })
-        .eq('id', tier.id)
+        .eq('tier_id', tier.tier_id)
     }
 
     // Update dealer's tier
@@ -173,14 +173,14 @@ export async function POST(req: NextRequest) {
         metadata: {
           dealercenter_dealer_id: dealer.id,
           activation_token: activation_token,
-          tier_id: tier_id.toString(),
+          tier_id: tier_id,
           type: 'dealercenter_subscription'
         }
       },
       metadata: {
         dealercenter_dealer_id: dealer.id,
         activation_token: activation_token,
-        tier_id: tier_id.toString(),
+        tier_id: tier_id,
         type: 'dealercenter_activation'
       }
     })

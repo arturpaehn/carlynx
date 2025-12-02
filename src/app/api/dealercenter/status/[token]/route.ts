@@ -79,7 +79,11 @@ export async function GET(
         .eq('tier_id', dealer.tier_id)
         .single()
       
-      tierInfo = tier
+      tierInfo = tier ? {
+        name: tier.tier_name,
+        price: tier.monthly_price,
+        listing_limit: tier.listing_limit
+      } : null
     }
 
     // Count active listings
@@ -104,11 +108,7 @@ export async function GET(
       contact_email: dealer.contact_email,
       contact_phone: dealer.contact_phone,
       subscription_status: dealer.subscription_status,
-      tier: tierInfo ? {
-        name: tierInfo.tier_name,
-        price: tierInfo.monthly_price,
-        listing_limit: tierInfo.listing_limit
-      } : null,
+      tier: tierInfo,
       max_listings: dealer.max_listings,
       active_listings_count: activeCount || 0,
       activation_date: dealer.activation_date,

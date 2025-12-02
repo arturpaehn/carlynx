@@ -597,6 +597,15 @@ function AddListingContent() {
     setContactByEmail(false);
     setMessage('');
     
+    // Track Google Ads conversion for listing creation
+    if (typeof window !== 'undefined' && (window as Window & { gtag?: (...args: unknown[]) => void }).gtag) {
+      ((window as unknown) as Window & { gtag: (...args: unknown[]) => void }).gtag('event', 'conversion', {
+        'send_to': 'AW-1752909486/gzXxzCHlf6coD8MDfwcZD',
+        'value': 2.5,
+        'currency': 'EUR'
+      });
+    }
+    
     router.push('/my-listings');
     } catch (error) {
       console.error('Error creating listing:', error);

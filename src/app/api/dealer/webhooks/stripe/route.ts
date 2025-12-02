@@ -217,11 +217,11 @@ async function handleDealerCenterSubscriptionCreated(
   if (tierId) {
     const { data: tier } = await supabaseAdmin
       .from('subscription_tiers')
-      .select('max_listings')
-      .eq('id', tierId)
+      .select('listing_limit')
+      .eq('tier_id', tierId)
       .single()
     
-    if (tier) maxListings = tier.max_listings
+    if (tier) maxListings = tier.listing_limit
   }
 
   // Update dealer as active with subscription
@@ -233,7 +233,7 @@ async function handleDealerCenterSubscriptionCreated(
       activation_date: new Date().toISOString(),
       expiration_date: currentPeriodEnd,
       max_listings: maxListings,
-      tier_id: tierId ? parseInt(tierId) : null
+      tier_id: tierId || null
     })
     .eq('id', dealerId)
 

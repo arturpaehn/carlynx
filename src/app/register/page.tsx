@@ -120,6 +120,15 @@ export default function RegisterPage() {
           console.error('Error updating user type:', err)
         }
 
+        // Track Google Ads conversion
+        if (typeof window !== 'undefined' && (window as Window & { gtag?: (...args: unknown[]) => void }).gtag) {
+          ((window as unknown) as Window & { gtag: (...args: unknown[]) => void }).gtag('event', 'conversion', {
+            'send_to': 'AW-1752909486/_uYDChamkcobEMZfwcZD',
+            'value': 1.0,
+            'currency': 'EUR'
+          });
+        }
+
         setSuccess(true)
       } else {
         setError(t('registrationSuccessNoId'))

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 
 function getSupabaseAdmin() {
   return createClient(
@@ -128,13 +129,8 @@ export async function POST(req: NextRequest) {
 
 /**
  * Generate random activation token
- * Format: 16 characters, alphanumeric
+ * Format: 16 characters, hexadecimal (crypto-safe)
  */
 function generateActivationToken(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
-  let token = ''
-  for (let i = 0; i < 16; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return token
+  return crypto.randomBytes(16).toString('hex').substring(0, 16)
 }
