@@ -78,7 +78,118 @@ async function generateSitemapUrls(): Promise<SitemapUrl[]> {
       });
     }
 
-    // Car brands (for potential brand pages)
+    // Get unique brands from active listings (both tables)
+    const { data: ownBrands } = await supabase
+      .from('listings')
+      .select('title')
+      .eq('is_active', true);
+
+    const { data: externalBrands } = await supabase
+      .from('external_listings')
+      .select('brand, title')
+      .eq('is_active', true);
+
+    // Extract unique brand names
+    const brandSet = new Set<string>();
+    
+    // From listings table (brand is first word of title)
+    if (ownBrands) {
+      ownBrands.forEach((listing) => {
+        const brand = listing.title?.split(' ')[0]?.toLowerCase();
+        if (brand && brand.length > 1) {
+          brandSet.add(brand);
+        }
+      });
+    }
+
+    // From external_listings table
+    if (externalBrands) {
+      externalBrands.forEach((listing) => {
+        const brand = (listing.brand || listing.title?.split(' ')[0])?.toLowerCase();
+        if (brand && brand.length > 1) {
+          brandSet.add(brand);
+        }
+      });
+    }
+
+    // Add SEO-friendly brand pages (/browse/toyota instead of /search-results?brand=Toyota)
+    Array.from(brandSet).forEach((brand) => {
+      urls.push({
+        url: `${baseUrl}/browse/${encodeURIComponent(brand)}`,
+        lastModified: now,
+        changeFrequency: 'daily',
+        priority: 0.7, // Higher priority for SEO pages
+      });
+    });
+
+    // Add SEO-friendly city pages from both tables
+    const { data: ownCities } = await supabase
+      .from('listings')
+      .select('city_name, state_id, states!inner(code, name)')
+      .eq('is_active', true)
+      .not('city_name', 'is', null)
+      .not('state_id', 'is', null);
+
+    const { data: externalCities } = await supabase
+      .from('external_listings')
+      .select('city_name, state_id, states!inner(code, name)')
+      .eq('is_active', true)
+      .not('city_name', 'is', null)
+      .not('state_id', 'is', null);
+
+    // Combine and deduplicate city/state pairs
+    const cityMap = new Map<string, { city: string; state: string; stateCode: string }>();
+    
+    type CityData = {
+      city_name: string;
+      state_id: number;
+      states: { code: string; name: string } | Array<{ code: string; name: string }>;
+    };
+    
+    const processCities = (cityData: CityData[]) => {
+      cityData?.forEach((item) => {
+        const cityName = item.city_name?.toLowerCase().trim();
+        let stateCode = '';
+        let stateName = '';
+        
+        if (item.states) {
+          if (Array.isArray(item.states) && item.states.length > 0) {
+            stateCode = item.states[0].code?.toLowerCase() || '';
+            stateName = item.states[0].name || '';
+          } else if (typeof item.states === 'object') {
+            stateCode = (item.states as { code: string; name: string }).code?.toLowerCase() || '';
+            stateName = (item.states as { code: string; name: string }).name || '';
+          }
+        }
+        
+        if (cityName && stateCode && stateName) {
+          const key = `${stateCode}-${cityName}`;
+          if (!cityMap.has(key)) {
+            cityMap.set(key, {
+              city: cityName,
+              state: stateName,
+              stateCode: stateCode
+            });
+          }
+        }
+      });
+    };
+
+    if (ownCities) processCities(ownCities as CityData[]);
+    if (externalCities) processCities(externalCities as CityData[]);
+
+    // Add city pages (limited to keep sitemap manageable)
+    Array.from(cityMap.values()).slice(0, 200).forEach(({ city, stateCode }) => {
+      const citySlug = city.replace(/\s+/g, '-');
+      urls.push({
+        url: `${baseUrl}/location/${stateCode}/${citySlug}`,
+        lastModified: now,
+        changeFrequency: 'daily',
+        priority: 0.8, // High priority for local SEO
+      });
+    });
+
+    // Keep old search URLs for backward compatibility (lower priority)
     const { data: carBrands } = await supabase
       .from('car_brands')
       .select('id, name')
@@ -90,7 +201,7 @@ async function generateSitemapUrls(): Promise<SitemapUrl[]> {
           url: `${baseUrl}/search-results?brand=${encodeURIComponent(brand.name)}`,
           lastModified: now,
           changeFrequency: 'weekly',
-          priority: 0.5,
+          priority: 0.4, // Lower priority than SEO pages
         });
       });
     }
@@ -107,7 +218,7 @@ async function generateSitemapUrls(): Promise<SitemapUrl[]> {
           url: `${baseUrl}/search-results?motorcycleBrand=${encodeURIComponent(brand.name)}`,
           lastModified: now,
           changeFrequency: 'weekly',
-          priority: 0.5,
+          priority: 0.4,
         });
       });
     }

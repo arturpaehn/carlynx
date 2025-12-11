@@ -24,6 +24,9 @@ Disallow: /update-password
 Allow: /search-results
 Allow: /info/
 Allow: /listing/
+Allow: /browse/
+Allow: /location/
+Allow: /dealers
 
 # Sitemap
 Sitemap: https://carlynx.us/sitemap.xml

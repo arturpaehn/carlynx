@@ -282,16 +282,10 @@ export async function syncLeifJohnson(supabaseUrl?: string, supabaseKey?: string
     let inserted = 0;
     let updated = 0;
     let skipped = 0;
+    const validExternalIds: string[] = []; // Track valid listings (with price and image)
 
     for (const vehicle of allVehicles) {
       try {
-        // Skip vehicles without price OR without image
-        if (!vehicle.price || !vehicle.imageUrl) {
-          console.log(`⏭️  Skipping ${vehicle.title || 'vehicle'}: ${!vehicle.price ? 'no price' : 'no image'}`);
-          skipped++;
-          continue;
-        }
-
         // Create external_id from VIN or URL
         const externalId = vehicle.vin || vehicle.detailUrl?.split('/').pop() || `${vehicle.title}-${Math.random()}`;
         
@@ -300,6 +294,16 @@ export async function syncLeifJohnson(supabaseUrl?: string, supabaseKey?: string
           skipped++;
           continue;
         }
+
+        // Skip vehicles without price OR without image
+        if (!vehicle.price || !vehicle.imageUrl) {
+          console.log(`⏭️  Skipping ${vehicle.title || 'vehicle'}: ${!vehicle.price ? 'no price' : 'no image'}`);
+          skipped++;
+          continue;
+        }
+
+        // Track valid listings (with image and price)
+        validExternalIds.push(externalId);
 
         // Check if listing exists
         const { data: existing } = await supabase
@@ -368,22 +372,25 @@ export async function syncLeifJohnson(supabaseUrl?: string, supabaseKey?: string
       }
     }
 
-    // Deactivate removed listings
-    console.log('\n🔄 Deactivating removed listings...');
-    const allExternalIds = allVehicles
-      .map(v => v.vin || v.detailUrl?.split('/').pop())
-      .filter(Boolean);
-
-    const { error: deactivateError } = await supabase
-      .from('external_listings')
-      .update({ is_active: false })
-      .eq('source', SOURCE)
-      .not('external_id', 'in', `(${allExternalIds.join(',')})`);
-
-    if (deactivateError) {
-      console.error('❌ Error deactivating listings:', deactivateError.message);
+    // Deactivate listings in two scenarios:
+    // 1. Listings that are no longer on the site at all
+    // 2. Listings that are still on site but now missing image/price (not in validExternalIds)
+    console.log('\n🔄 Deactivating removed or invalid listings...');
+    
+    if (validExternalIds.length === 0) {
+      console.log('⚠️  No valid listings found, skipping deactivation');
     } else {
-      console.log('✅ Deactivated removed listings');
+      const { error: deactivateError } = await supabase
+        .from('external_listings')
+        .update({ is_active: false })
+        .eq('source', SOURCE)
+        .not('external_id', 'in', `(${validExternalIds.join(',')})`);
+
+      if (deactivateError) {
+        console.error('❌ Error deactivating listings:', deactivateError.message);
+      } else {
+        console.log('✅ Deactivated listings that were removed or lost their image/price');
+      }
     }
 
     console.log('\n🎉 Sync complete!');
