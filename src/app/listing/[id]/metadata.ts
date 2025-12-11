@@ -39,8 +39,9 @@ export async function generateListingMetadata({ params }: { params: Promise<{ id
 
       // Форматируем данные для external listing
       const imageUrl = listing.image_url || 'https://carlynx.us/logo.png'
-      const title = `${listing.year} ${listing.title} - $${listing.price.toLocaleString()}`
-      const description = `${listing.year} ${listing.title} for sale. ${listing.transmission} transmission, ${listing.fuel_type} fuel type. Listed by trusted partner dealer.`
+      const priceText = listing.price ? `$${listing.price.toLocaleString()}` : 'Contact for price'
+      const title = `${listing.year || ''} ${listing.title} - ${priceText}`.trim()
+      const description = `${listing.year || ''} ${listing.title} for sale. ${listing.transmission || 'N/A'} transmission, ${listing.fuel_type || 'N/A'} fuel type. Listed by trusted partner dealer.`
       const url = `https://carlynx.us/listing/ext-${listing.id}`
 
       return {
