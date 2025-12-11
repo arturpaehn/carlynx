@@ -129,28 +129,23 @@ export default function Home() {
         <div className="blob blob-3"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* Hero Section */}
-        <section className="text-center mb-12 sm:mb-16">
-          <div className="bg-gradient-to-br from-orange-100/80 via-yellow-50/80 to-orange-200/80 backdrop-blur-sm rounded-3xl shadow-xl border border-orange-200/30 p-6 sm:p-8">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-yellow-500 to-orange-700 leading-tight py-2">
-              {t('welcomeToCarLynx')}
-            </h1>
-            <p className="max-w-2xl mx-auto text-gray-700 text-base sm:text-lg leading-relaxed">
-              {t('marketplaceDescription')}
-            </p>
-          </div>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Hero Section - Compact */}
+        <section className="text-center mb-8 sm:mb-10">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold mb-4 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 bg-clip-text text-transparent tracking-wide">
+            {t('welcomeToCarLynx')}
+          </h1>
+          <p className="max-w-4xl mx-auto text-slate-600 text-lg sm:text-xl leading-relaxed font-light antialiased">
+            {t('marketplaceDescription')}
+          </p>
         </section>
 
         {/* Latest Cars Section */}
         <section className="mb-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl sm:text-3xl font-semibold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-2">
               {t('latestCars')}
             </h2>
-            <div className="max-w-2xl mx-auto text-gray-600 text-lg">
-              {t('discoverListings')}
-            </div>
           </div>
 
           {loading ? (
