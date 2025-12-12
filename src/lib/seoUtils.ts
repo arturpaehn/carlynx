@@ -15,7 +15,7 @@ interface ListingSEO {
   brand_name?: string;
   transmission?: string;
   fuel_type?: string;
-  engine_size?: number;
+  engine_size?: string;
 }
 
 export function generateListingTitle(listing: ListingSEO): string {
