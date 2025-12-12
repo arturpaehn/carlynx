@@ -118,6 +118,7 @@
   "transmission": "Transmission",
   "manual": "Manual",
   "automatic": "Automatic",
+  "engineSize": "Engine Size",
   "fuelType": "Fuel Type",
   "gasoline": "Gasoline",
   "diesel": "Diesel",

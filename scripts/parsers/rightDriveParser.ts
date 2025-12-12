@@ -331,4 +331,19 @@ async function main() {
   }
 }
 
-main().catch(console.error);
+// Export for GitHub Actions
+export async function syncRightDrive() {
+  console.log('🚗 Starting Right Drive Auto sync...');
+  const listings = await fetchListings();
+  
+  if (listings.length > 0) {
+    await syncListings(listings);
+  } else {
+    console.log('⚠️  No listings to sync');
+  }
+}
+
+// Run directly if not imported
+if (require.main === module) {
+  main().catch(console.error);
+}

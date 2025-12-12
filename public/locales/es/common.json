@@ -150,6 +150,7 @@
   "transmission": "Transmisión",
   "automatic": "Automática",
   "manual": "Manual",
+  "engineSize": "Cilindrada",
   "fuelType": "Tipo de combustible",
   "gasoline": "Gasolina",
   "diesel": "Diésel",

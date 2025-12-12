@@ -20,7 +20,7 @@ type Listing = {
   transmission: string
   fuel_type: string
   vehicle_type?: string
-  engine_size?: number
+  engine_size?: string
   mileage?: number | null
   vin?: string | null
   description: string | null
@@ -138,6 +138,7 @@ export default function ListingDetailPage() {
               transmission,
               fuel_type,
               vehicle_type,
+              engine_size,
               mileage,
               vin,
               image_url,
@@ -195,6 +196,7 @@ export default function ListingDetailPage() {
             transmission: externalData.transmission,
             fuel_type: externalData.fuel_type,
             vehicle_type: externalData.vehicle_type,
+            engine_size: externalData.engine_size,
             mileage: externalData.mileage,
             vin: externalData.vin,
             description: null, // Не показываем description для внешних объявлений
@@ -245,6 +247,8 @@ export default function ListingDetailPage() {
             companyName = 'Leif Johnson Used Car Superstore';
           } else if (externalData.source === 'auto_center_texas') {
             companyName = 'Auto Center of Texas';
+          } else if (externalData.source === 'autonation_usa_corpus_christi') {
+            companyName = 'AutoNation USA Corpus Christi';
           }
           
           console.log('Setting external owner info:')
@@ -831,6 +835,12 @@ useEffect(() => {
                 <span className="text-gray-600 font-medium">{t('fuelType')}</span>
                 <span className="text-gray-900 capitalize">{translateVehicleSpec(listing.fuel_type)}</span>
               </div>
+              {listing.engine_size && (
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">{t('engineSize')}</span>
+                  <span className="text-gray-900">{listing.engine_size}L</span>
+                </div>
+              )}
               {listing.mileage && (
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-600 font-medium">{t('mileage')}</span>
@@ -957,7 +967,8 @@ useEffect(() => {
                           'leif_johnson': 'Leif Johnson Auto Group',
                           'dream_machines_texas': 'Dream Machines of Texas',
                           'philpott_ford': 'Philpott Ford',
-                          'right_drive': 'Right Drive'
+                          'right_drive': 'Right Drive',
+                          'autonation_usa_corpus_christi': 'AutoNation USA Corpus Christi'
                         };
                         return sourceMap[listing.external_source || ''] || listing.external_source || 'Dealer';
                       })()}
@@ -975,7 +986,8 @@ useEffect(() => {
                           'leif_johnson': 'https://www.leifjohnson.com',
                           'dream_machines_texas': 'https://www.dreammachinesoftexas.com',
                           'philpott_ford': 'https://www.philpottford.com',
-                          'right_drive': 'https://www.rightdriveauto.com'
+                          'right_drive': 'https://www.rightdriveauto.com',
+                          'autonation_usa_corpus_christi': 'https://www.autonationusa.com'
                         };
                         
                         // Try to extract base URL from external_url

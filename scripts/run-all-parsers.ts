@@ -11,6 +11,9 @@ import { syncPreOwnedPlus } from './parsers/preOwnedPlusParser';
 import { syncLeifJohnson } from './parsers/leifJohnsonParser';
 import { syncAutoCenterTexas } from './parsers/autoCenterTexasParser';
 import { syncDreamMachines } from './parsers/dreamMachinesParser';
+import { syncPhilpottFord } from './parsers/philpottFordParser';
+import { syncRightDrive } from './parsers/rightDriveParser';
+import { syncAutoNationUsaCorpusChristi } from './parsers/autoNationUsaCorpusChristiParser';
 
 async function runAllParsers() {
   console.log('🚀 Starting all parsers sync...');
@@ -23,7 +26,10 @@ async function runAllParsers() {
     preOwnedPlus: { success: false, error: null as string | null },
     leifJohnson: { success: false, error: null as string | null },
     autoCenterTexas: { success: false, error: null as string | null },
-    dreamMachines: { success: false, error: null as string | null }
+    dreamMachines: { success: false, error: null as string | null },
+    philpottFord: { success: false, error: null as string | null },
+    rightDrive: { success: false, error: null as string | null },
+    autoNationUsaCorpusChristi: { success: false, error: null as string | null }
   };
 
   // Get Supabase credentials from environment
@@ -97,7 +103,7 @@ async function runAllParsers() {
 
   // 6. Dream Machines of Texas (Motorcycles)
   try {
-    console.log('\n🏍️  [6/6] Dream Machines of Texas...');
+    console.log('\n🏍️  [6/9] Dream Machines of Texas...');
     await syncDreamMachines(supabaseUrl, supabaseKey);
     results.dreamMachines.success = true;
     console.log('✅ Dream Machines of Texas completed');
@@ -106,23 +112,59 @@ async function runAllParsers() {
     console.error('❌ Dream Machines of Texas failed:', error);
   }
 
+  // 7. Philpott Ford
+  try {
+    console.log('\n🚗 [7/9] Philpott Ford...');
+    await syncPhilpottFord(supabaseUrl, supabaseKey);
+    results.philpottFord.success = true;
+    console.log('✅ Philpott Ford completed');
+  } catch (error) {
+    results.philpottFord.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Philpott Ford failed:', error);
+  }
+
+  // 8. Right Drive Auto (El Paso)
+  try {
+    console.log('\n🚗 [8/9] Right Drive Auto...');
+    await syncRightDrive();
+    results.rightDrive.success = true;
+    console.log('✅ Right Drive Auto completed');
+  } catch (error) {
+    results.rightDrive.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Right Drive Auto failed:', error);
+  }
+
+  // 9. AutoNation USA Corpus Christi
+  try {
+    console.log('\n🚗 [9/9] AutoNation USA Corpus Christi...');
+    await syncAutoNationUsaCorpusChristi();
+    results.autoNationUsaCorpusChristi.success = true;
+    console.log('✅ AutoNation USA Corpus Christi completed');
+  } catch (error) {
+    results.autoNationUsaCorpusChristi.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ AutoNation USA Corpus Christi failed:', error);
+  }
+
   // Summary
   console.log('\n' + '='.repeat(60));
   console.log('📊 SUMMARY');
   console.log('='.repeat(60));
-  console.log(`Mars Dealership:      ${results.marsDealer.success ? '✅ Success' : '❌ Failed'}`);
-  console.log(`Auto Boutique Texas:  ${results.autoBoutique.success ? '✅ Success' : '❌ Failed'}`);
-  console.log(`Pre-owned Plus:       ${results.preOwnedPlus.success ? '✅ Success' : '❌ Failed'}`);
-  console.log(`Leif Johnson:         ${results.leifJohnson.success ? '✅ Success' : '❌ Failed'}`);
-  console.log(`Auto Center of Texas: ${results.autoCenterTexas.success ? '✅ Success' : '❌ Failed'}`);
-  console.log(`Dream Machines TX:    ${results.dreamMachines.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Mars Dealership:         ${results.marsDealer.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Auto Boutique Texas:     ${results.autoBoutique.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Pre-owned Plus:          ${results.preOwnedPlus.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Leif Johnson:            ${results.leifJohnson.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Auto Center of Texas:    ${results.autoCenterTexas.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Dream Machines TX:       ${results.dreamMachines.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Philpott Ford:           ${results.philpottFord.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`Right Drive Auto:        ${results.rightDrive.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`AutoNation USA CC:       ${results.autoNationUsaCorpusChristi.success ? '✅ Success' : '❌ Failed'}`);
   console.log('='.repeat(60));
 
   const successCount = Object.values(results).filter(r => r.success).length;
-  console.log(`\n🎉 Completed: ${successCount}/6 parsers successful`);
+  console.log(`\n🎉 Completed: ${successCount}/9 parsers successful`);
 
   // Exit with error if any parser failed
-  if (successCount < 6) {
+  if (successCount < 9) {
     console.error('\n⚠️  Some parsers failed - check logs above');
     process.exit(1);
   }
