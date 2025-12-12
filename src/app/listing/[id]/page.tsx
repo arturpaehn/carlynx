@@ -956,7 +956,8 @@ useEffect(() => {
                           'preowned_plus': 'PreOwned Plus',
                           'leif_johnson': 'Leif Johnson Auto Group',
                           'dream_machines_texas': 'Dream Machines of Texas',
-                          'philpott_ford': 'Philpott Ford'
+                          'philpott_ford': 'Philpott Ford',
+                          'right_drive': 'Right Drive'
                         };
                         return sourceMap[listing.external_source || ''] || listing.external_source || 'Dealer';
                       })()}
@@ -973,7 +974,8 @@ useEffect(() => {
                           'preowned_plus': 'https://www.preownedplus.com',
                           'leif_johnson': 'https://www.leifjohnson.com',
                           'dream_machines_texas': 'https://www.dreammachinesoftexas.com',
-                          'philpott_ford': 'https://www.philpottford.com'
+                          'philpott_ford': 'https://www.philpottford.com',
+                          'right_drive': 'https://www.rightdriveauto.com'
                         };
                         
                         // Try to extract base URL from external_url

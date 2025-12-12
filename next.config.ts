@@ -57,6 +57,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'www.carsdirect.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'static.overfuel.com',
+      },
     ],
   },
 };
