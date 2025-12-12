@@ -935,7 +935,7 @@ useEffect(() => {
                   <span className="text-gray-900">
                     {listing.vehicle_type === 'motorcycle' 
                       ? `${listing.engine_size} cc` 
-                      : `${(listing.engine_size / 1000).toFixed(1)}L`
+                      : `${listing.engine_size}L`
                     }
                   </span>
                 </div>
