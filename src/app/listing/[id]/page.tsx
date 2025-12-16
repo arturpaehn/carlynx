@@ -243,8 +243,6 @@ export default function ListingDetailPage() {
             companyName = 'Pre-owned Plus';
           } else if (externalData.source === 'dick_poe_used_cars') {
             companyName = "Dick Poe's Used Car America";
-          } else if (externalData.source === 'leif_johnson') {
-            companyName = 'Leif Johnson Used Car Superstore';
           } else if (externalData.source === 'auto_center_texas') {
             companyName = 'Auto Center of Texas';
           } else if (externalData.source === 'autonation_usa_corpus_christi') {
@@ -929,17 +927,6 @@ useEffect(() => {
                   </div>
                 </div>
               )}
-              {listing.engine_size && (
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-gray-600 font-medium">{t('engineSize')}</span>
-                  <span className="text-gray-900">
-                    {listing.vehicle_type === 'motorcycle' 
-                      ? `${listing.engine_size} cc` 
-                      : `${listing.engine_size}L`
-                    }
-                  </span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -964,7 +951,6 @@ useEffect(() => {
                           'auto_boutique_texas': 'Auto Boutique Texas',
                           'auto_center_texas': 'Auto Center Texas',
                           'preowned_plus': 'PreOwned Plus',
-                          'leif_johnson': 'Leif Johnson Auto Group',
                           'dream_machines_texas': 'Dream Machines of Texas',
                           'philpott_ford': 'Philpott Ford',
                           'right_drive': 'Right Drive',
@@ -983,7 +969,6 @@ useEffect(() => {
                           'auto_boutique_texas': 'https://www.autoboutiquetexas.com',
                           'auto_center_texas': 'https://www.autocentertexas.com',
                           'preowned_plus': 'https://www.preownedplus.com',
-                          'leif_johnson': 'https://www.leifjohnson.com',
                           'dream_machines_texas': 'https://www.dreammachinesoftexas.com',
                           'philpott_ford': 'https://www.philpottford.com',
                           'right_drive': 'https://www.rightdriveauto.com',
