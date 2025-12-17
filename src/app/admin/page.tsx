@@ -108,49 +108,51 @@ export default function AdminPage() {
       setUserStatsLoading(true);
       
       // Use count() queries like the footer (same as ActiveListingsCount.tsx)
-      // Count total listings
-      const { count: regularTotal, error: err1 } = await supabase
+      // Count ACTIVE listings only (like the footer shows)
+      const { count: regularActive } = await supabase
         .from('listings')
-        .select('id', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true })
+        .eq('is_active', true);
       
-      const { count: externalTotal, error: err2 } = await supabase
+      const { count: externalActive } = await supabase
         .from('external_listings')
-        .select('id', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true })
+        .eq('is_active', true);
       
-      if (err1 || err2 || regularTotal === null || externalTotal === null) {
+      // Count INACTIVE listings
+      const { count: regularInactive } = await supabase
+        .from('listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_active', false);
+      
+      const { count: externalInactive } = await supabase
+        .from('external_listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_active', false);
+      
+      const active = (regularActive || 0) + (externalActive || 0);
+      const inactive = (regularInactive || 0) + (externalInactive || 0);
+      const total = active + inactive;
+      
+      if (active === 0 && inactive === 0) {
         setStats(null);
         setMonthly(null);
         setStatsLoading(false);
         setMonthlyLoading(false);
       } else {
-        // Count active listings
-        const { count: regularActive } = await supabase
-          .from('listings')
-          .select('id', { count: 'exact', head: true })
-          .eq('is_active', true);
-        
-        const { count: externalActive } = await supabase
-          .from('external_listings')
-          .select('id', { count: 'exact', head: true })
-          .eq('is_active', true);
-        
-        const total = (regularTotal || 0) + (externalTotal || 0);
-        const active = (regularActive || 0) + (externalActive || 0);
-        const inactive = total - active;
-        
-        // For now, show 0 for last30 and today (would need date filters on count)
         setStats({ total, active, inactive, last30: 0, today: 0 });
         setStatsLoading(false);
         
-        // For monthly, we need to fetch actual data with dates
-        // Get all listings with created_at for monthly calculation
+        // For monthly, we need to fetch actual data with dates for ACTIVE only
         const { data: regularListings } = await supabase
           .from('listings')
-          .select('created_at');
+          .select('created_at')
+          .eq('is_active', true);
         
         const { data: externalListings } = await supabase
           .from('external_listings')
-          .select('created_at');
+          .select('created_at')
+          .eq('is_active', true);
         
         if (regularListings && externalListings) {
           const allListings = [...(regularListings || []), ...(externalListings || [])];
