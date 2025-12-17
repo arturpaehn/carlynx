@@ -18,8 +18,11 @@ export async function GET() {
   )
 
   try {
+    // Get listings from last 24 hours
+    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    
     // Fetch both regular and external listings in parallel
-    // Get latest listings (no time filter), then filter by minimum 2 images
+    // Get all new or updated listings from last 24 hours
     const [listingsResult, externalResult] = await Promise.all([
       supabase
         .from('listings')
@@ -40,8 +43,8 @@ export async function GET() {
           listing_images (image_url)
         `)
         .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1000), // Fetch more to filter by image count
+        .gte('created_at', last24Hours)
+        .order('created_at', { ascending: false }),
       
       supabase
         .from('external_listings')
@@ -66,8 +69,8 @@ export async function GET() {
           states (name, code, country_code)
         `)
         .eq('is_active', true)
+        .gte('created_at', last24Hours)
         .order('created_at', { ascending: false })
-        .limit(1000)
     ])
 
     if (listingsResult.error) {
