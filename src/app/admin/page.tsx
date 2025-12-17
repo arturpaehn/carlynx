@@ -201,52 +201,75 @@ export default function AdminPage() {
     
     try {
       // Top 10 most viewed listings (regular + external)
-      const [{ data: topRegular }, { data: topExternal }] = await Promise.all([
-        supabase.from('listings').select('id,title,price,views,is_active').order('views', { ascending: false }).limit(10),
-        supabase.from('external_listings').select('id,title,price,views,is_active').order('views', { ascending: false }).limit(10)
-      ]);
+      let topRegular: TopViewedListing[] = [];
+      let topExternal: TopViewedListing[] = [];
       
-      const combined = [
-        ...(topRegular || []).map(l => ({ ...l, source: 'User', listing_id: l.id })),
-        ...(topExternal || []).map(l => ({ ...l, source: 'External', listing_id: `ext-${l.id}` }))
-      ].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 10);
+      try {
+        const { data } = await supabase.from('listings').select('id,title,price,views,is_active').order('views', { ascending: false }).limit(10);
+        topRegular = (data || []).map(l => ({ ...l, source: 'User', listing_id: l.id }));
+      } catch (e) {
+        console.warn('Failed to fetch top regular listings:', e);
+      }
+      
+      try {
+        const { data } = await supabase.from('external_listings').select('id,title,price,views,is_active').order('views', { ascending: false }).limit(10);
+        topExternal = (data || []).map(l => ({ ...l, source: 'External', listing_id: `ext-${l.id}` }));
+      } catch (e) {
+        console.warn('Failed to fetch top external listings:', e);
+      }
+      
+      const combined = [...topRegular, ...topExternal]
+        .sort((a, b) => (b.views || 0) - (a.views || 0))
+        .slice(0, 10);
       
       setTopViewedListings(combined);
       
-      // Recent 10 users
-      const { data: recent } = await supabase
-        .from('user_profiles')
-        .select('user_id,email,user_type,created_at')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      setRecentUsers(recent || []);
-      
       // Sources breakdown
-      const [{ count: regularCount }, { data: externalBySource }] = await Promise.all([
-        supabase.from('listings').select('*', { count: 'exact', head: true }),
-        supabase.from('external_listings').select('source')
-      ]);
+      let regularCount = 0;
+      let externalBySource: Array<{ source: string }> = [];
+      
+      try {
+        const { count } = await supabase
+          .from('listings')
+          .select('id', { count: 'exact', head: true });
+        regularCount = count || 0;
+      } catch (e) {
+        console.warn('Failed to count listings:', e);
+      }
+      
+      try {
+        const { data } = await supabase
+          .from('external_listings')
+          .select('source');
+        externalBySource = data || [];
+      } catch (e) {
+        console.warn('Failed to fetch external sources:', e);
+      }
       
       const sources: Record<string, number> = {
-        'User Listings': regularCount || 0
+        'User Listings': regularCount
       };
       
-      (externalBySource || []).forEach((item: { source: string }) => {
+      externalBySource.forEach((item: { source: string }) => {
         sources[item.source] = (sources[item.source] || 0) + 1;
       });
       
       setSourcesBreakdown(sources);
       
-      // Average price by vehicle type
-      const [{ data: allListings }, { data: allExternal }] = await Promise.all([
-        supabase.from('listings').select('price,vehicle_type'),
-        supabase.from('external_listings').select('price,vehicle_type')
-      ]);
+      // Average price by vehicle type - only from external
+      let allExternal: Array<{ price?: number; vehicle_type?: string }> = [];
+      try {
+        const { data } = await supabase
+          .from('external_listings')
+          .select('price,vehicle_type');
+        allExternal = data || [];
+      } catch (e) {
+        console.warn('Failed to fetch external listings for pricing:', e);
+      }
       
-      const allVehicles = [...(allListings || []), ...(allExternal || [])];
       const priceByType: Record<string, { total: number; count: number }> = {};
       
-      allVehicles.forEach((v: { price?: number; vehicle_type?: string }) => {
+      allExternal.forEach((v: { price?: number; vehicle_type?: string }) => {
         if (v.price && v.vehicle_type) {
           if (!priceByType[v.vehicle_type]) {
             priceByType[v.vehicle_type] = { total: 0, count: 0 };
