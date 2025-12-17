@@ -5,6 +5,7 @@ type Listing = { id: string; is_active: boolean; created_at: string; views?: num
 type UserProfile = { user_id: string; is_blocked: boolean; created_at?: string; email?: string; user_type?: string };
 type TopViewedListing = { id: string | number; title?: string; price?: number; views?: number; is_active?: boolean; source: string; listing_id: string };
 type RecentUser = { user_id: string; email?: string; user_type?: string; created_at?: string };
+type AnalyticsData = { period: string; stats: { totalVisits: number; uniqueVisitors: number; uniqueIPs: number; topPages: Array<{ path: string; count: number }> } };
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -43,6 +44,12 @@ export default function AdminPage() {
   const [monthlyLoading, setMonthlyLoading] = useState(true);
   const [monthLabels, setMonthLabels] = useState<string[]>([]);
   
+  // Analytics state
+  const [analyticsDay, setAnalyticsDay] = useState<AnalyticsData | null>(null);
+  const [analyticsMonth, setAnalyticsMonth] = useState<AnalyticsData | null>(null);
+  const [analyticsAll, setAnalyticsAll] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  
   // New features state
   const [topViewedListings, setTopViewedListings] = useState<TopViewedListing[]>([]);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
@@ -64,6 +71,34 @@ export default function AdminPage() {
       setLoading(false);
     }
     checkAdmin();
+  }, []);
+
+  // Fetch analytics data
+  useEffect(() => {
+    async function fetchAnalytics() {
+      setAnalyticsLoading(true);
+      try {
+        const [dayRes, monthRes, allRes] = await Promise.all([
+          fetch('/api/analytics?period=day'),
+          fetch('/api/analytics?period=month'),
+          fetch('/api/analytics?period=all')
+        ]);
+
+        const dayData = dayRes.ok ? await dayRes.json() : null;
+        const monthData = monthRes.ok ? await monthRes.json() : null;
+        const allData = allRes.ok ? await allRes.json() : null;
+
+        if (dayData) setAnalyticsDay(dayData);
+        if (monthData) setAnalyticsMonth(monthData);
+        if (allData) setAnalyticsAll(allData);
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    }
+
+    fetchAnalytics();
   }, []);
 
   useEffect(() => {
@@ -279,6 +314,39 @@ export default function AdminPage() {
           </div>
           <div className="text-xs text-gray-500 mt-1">
             {userStatsLoading ? '' : userStats ? `${userStats.blocked} blocked` : ''}
+          </div>
+        </div>
+      </div>
+
+      {/* Visitor Analytics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white border-2 border-orange-200 rounded-lg p-4 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Visitors Today</div>
+          <div className="text-3xl font-bold text-orange-600">
+            {analyticsLoading ? '...' : analyticsDay ? analyticsDay.stats.uniqueVisitors : 'N/A'}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {analyticsLoading ? '' : analyticsDay ? `${analyticsDay.stats.totalVisits} visits` : ''}
+          </div>
+        </div>
+        
+        <div className="bg-white border-2 border-amber-200 rounded-lg p-4 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">Visitors This Month</div>
+          <div className="text-3xl font-bold text-amber-600">
+            {analyticsLoading ? '...' : analyticsMonth ? analyticsMonth.stats.uniqueVisitors : 'N/A'}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {analyticsLoading ? '' : analyticsMonth ? `${analyticsMonth.stats.totalVisits} visits` : ''}
+          </div>
+        </div>
+        
+        <div className="bg-white border-2 border-yellow-200 rounded-lg p-4 shadow-sm">
+          <div className="text-sm text-gray-600 mb-1">All-Time Visitors</div>
+          <div className="text-3xl font-bold text-yellow-600">
+            {analyticsLoading ? '...' : analyticsAll ? analyticsAll.stats.uniqueVisitors : 'N/A'}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {analyticsLoading ? '' : analyticsAll ? `${analyticsAll.stats.totalVisits} visits` : ''}
           </div>
         </div>
       </div>
