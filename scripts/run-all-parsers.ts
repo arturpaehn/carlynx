@@ -13,6 +13,9 @@ import { syncDreamMachines } from './parsers/dreamMachinesParser';
 import { syncPhilpottFord } from './parsers/philpottFordParser';
 import { syncRightDrive } from './parsers/rightDriveParser';
 import { syncAutoNationUsaCorpusChristi } from './parsers/autoNationUsaCorpusChristiParser';
+import { syncAutoNationUsaAustin } from './parsers/autoNationUsaAustinParser';
+import { syncAutoNationUsaHouston } from './parsers/autoNationUsaHoustonParser';
+import { syncAutoNationUsaKaty } from './parsers/autoNationUsaKatyParser';
 
 async function runAllParsers() {
   console.log('🚀 Starting all parsers sync...');
@@ -27,7 +30,10 @@ async function runAllParsers() {
     dreamMachines: { success: false, error: null as string | null },
     philpottFord: { success: false, error: null as string | null },
     rightDrive: { success: false, error: null as string | null },
-    autoNationUsaCorpusChristi: { success: false, error: null as string | null }
+    autoNationUsaCorpusChristi: { success: false, error: null as string | null },
+    autoNationUsaAustin: { success: false, error: null as string | null },
+    autoNationUsaHouston: { success: false, error: null as string | null },
+    autoNationUsaKaty: { success: false, error: null as string | null }
   };
 
   // Get Supabase credentials from environment
@@ -123,13 +129,46 @@ async function runAllParsers() {
 
   // 8. AutoNation USA Corpus Christi
   try {
-    console.log('\n🚗 [8/8] AutoNation USA Corpus Christi...');
+    console.log('\n🚗 [8/9] AutoNation USA Corpus Christi...');
     await syncAutoNationUsaCorpusChristi();
     results.autoNationUsaCorpusChristi.success = true;
     console.log('✅ AutoNation USA Corpus Christi completed');
   } catch (error) {
     results.autoNationUsaCorpusChristi.error = error instanceof Error ? error.message : 'Unknown error';
     console.error('❌ AutoNation USA Corpus Christi failed:', error);
+  }
+
+  // 9. AutoNation USA Austin
+  try {
+    console.log('\n🚗 [9/10] AutoNation USA Austin...');
+    await syncAutoNationUsaAustin();
+    results.autoNationUsaAustin.success = true;
+    console.log('✅ AutoNation USA Austin completed');
+  } catch (error) {
+    results.autoNationUsaAustin.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ AutoNation USA Austin failed:', error);
+  }
+
+  // 10. AutoNation USA Houston
+  try {
+    console.log('\n🚗 [10/11] AutoNation USA Houston...');
+    await syncAutoNationUsaHouston();
+    results.autoNationUsaHouston.success = true;
+    console.log('✅ AutoNation USA Houston completed');
+  } catch (error) {
+    results.autoNationUsaHouston.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ AutoNation USA Houston failed:', error);
+  }
+
+  // 11. AutoNation USA Katy
+  try {
+    console.log('\n🚗 [11/11] AutoNation USA Katy...');
+    await syncAutoNationUsaKaty();
+    results.autoNationUsaKaty.success = true;
+    console.log('✅ AutoNation USA Katy completed');
+  } catch (error) {
+    results.autoNationUsaKaty.error = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ AutoNation USA Katy failed:', error);
   }
 
   // Summary
@@ -144,13 +183,16 @@ async function runAllParsers() {
   console.log(`Philpott Ford:           ${results.philpottFord.success ? '✅ Success' : '❌ Failed'}`);
   console.log(`Right Drive Auto:        ${results.rightDrive.success ? '✅ Success' : '❌ Failed'}`);
   console.log(`AutoNation USA CC:       ${results.autoNationUsaCorpusChristi.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`AutoNation USA Austin:   ${results.autoNationUsaAustin.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`AutoNation USA Houston:  ${results.autoNationUsaHouston.success ? '✅ Success' : '❌ Failed'}`);
+  console.log(`AutoNation USA Katy:     ${results.autoNationUsaKaty.success ? '✅ Success' : '❌ Failed'}`);
   console.log('='.repeat(60));
 
   const successCount = Object.values(results).filter(r => r.success).length;
-  console.log(`\n🎉 Completed: ${successCount}/8 parsers successful`);
+  console.log(`\n🎉 Completed: ${successCount}/11 parsers successful`);
 
   // Exit with error if any parser failed
-  if (successCount < 8) {
+  if (successCount < 11) {
     console.error('\n⚠️  Some parsers failed - check logs above');
     process.exit(1);
   }

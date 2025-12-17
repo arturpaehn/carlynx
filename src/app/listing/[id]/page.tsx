@@ -247,6 +247,12 @@ export default function ListingDetailPage() {
             companyName = 'Auto Center of Texas';
           } else if (externalData.source === 'autonation_usa_corpus_christi') {
             companyName = 'AutoNation USA Corpus Christi';
+          } else if (externalData.source === 'autonation_usa_austin') {
+            companyName = 'AutoNation USA Austin';
+          } else if (externalData.source === 'autonation_usa_houston') {
+            companyName = 'AutoNation USA Houston';
+          } else if (externalData.source === 'autonation_usa_katy') {
+            companyName = 'AutoNation USA Katy';
           }
           
           console.log('Setting external owner info:')
@@ -954,7 +960,10 @@ useEffect(() => {
                           'dream_machines_texas': 'Dream Machines of Texas',
                           'philpott_ford': 'Philpott Ford',
                           'right_drive': 'Right Drive',
-                          'autonation_usa_corpus_christi': 'AutoNation USA Corpus Christi'
+                          'autonation_usa_corpus_christi': 'AutoNation USA Corpus Christi',
+                          'autonation_usa_austin': 'AutoNation USA Austin',
+                          'autonation_usa_houston': 'AutoNation USA Houston',
+                          'autonation_usa_katy': 'AutoNation USA Katy'
                         };
                         return sourceMap[listing.external_source || ''] || listing.external_source || 'Dealer';
                       })()}
@@ -972,7 +981,10 @@ useEffect(() => {
                           'dream_machines_texas': 'https://www.dreammachinesoftexas.com',
                           'philpott_ford': 'https://www.philpottford.com',
                           'right_drive': 'https://www.rightdriveauto.com',
-                          'autonation_usa_corpus_christi': 'https://www.autonationusa.com'
+                          'autonation_usa_corpus_christi': 'https://www.autonationusa.com',
+                          'autonation_usa_austin': 'https://www.autonationusa.com',
+                          'autonation_usa_houston': 'https://www.autonationusa.com',
+                          'autonation_usa_katy': 'https://www.autonationusa.com'
                         };
                         
                         // Try to extract base URL from external_url
