@@ -161,6 +161,11 @@ export async function GET() {
     // Format external listings
     const formattedExternal = (externalResult.data || [])
       .filter((item) => {
+        // Exclude Right Drive due to repetitive transit photos
+        if (item.source === 'right_drive') {
+          return false
+        }
+        
         // Filter: motorcycles need min 1 image, cars need min 2 images
         let imageCount = 0
         if (item.image_url) imageCount++
