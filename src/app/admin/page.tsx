@@ -107,27 +107,70 @@ export default function AdminPage() {
       setMonthlyLoading(true);
       setUserStatsLoading(true);
       
-      try {
-        // Use API route that has access to service_role (bypasses RLS)
-        const res = await fetch('/api/admin-stats');
-        const data = await res.json();
-        
-        if (res.ok) {
-          setStats(data.stats);
-          setMonthly(data.monthly);
-          setStatsLoading(false);
-          setMonthlyLoading(false);
-        } else {
-          setStats(null);
-          setMonthly(null);
-          setStatsLoading(false);
-          setMonthlyLoading(false);
-        }
-      } catch (error) {
-        console.error('Error fetching stats:', error);
+      // Use count() queries like the footer (same as ActiveListingsCount.tsx)
+      // Count total listings
+      const { count: regularTotal, error: err1 } = await supabase
+        .from('listings')
+        .select('id', { count: 'exact', head: true });
+      
+      const { count: externalTotal, error: err2 } = await supabase
+        .from('external_listings')
+        .select('id', { count: 'exact', head: true });
+      
+      if (err1 || err2 || regularTotal === null || externalTotal === null) {
         setStats(null);
         setMonthly(null);
         setStatsLoading(false);
+        setMonthlyLoading(false);
+      } else {
+        // Count active listings
+        const { count: regularActive } = await supabase
+          .from('listings')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true);
+        
+        const { count: externalActive } = await supabase
+          .from('external_listings')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true);
+        
+        const total = (regularTotal || 0) + (externalTotal || 0);
+        const active = (regularActive || 0) + (externalActive || 0);
+        const inactive = total - active;
+        
+        // For now, show 0 for last30 and today (would need date filters on count)
+        setStats({ total, active, inactive, last30: 0, today: 0 });
+        setStatsLoading(false);
+        
+        // For monthly, we need to fetch actual data with dates
+        // Get all listings with created_at for monthly calculation
+        const { data: regularListings } = await supabase
+          .from('listings')
+          .select('created_at');
+        
+        const { data: externalListings } = await supabase
+          .from('external_listings')
+          .select('created_at');
+        
+        if (regularListings && externalListings) {
+          const allListings = [...(regularListings || []), ...(externalListings || [])];
+          const now = new Date();
+          const months = [];
+          for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            months.push({ year: d.getFullYear(), month: d.getMonth() });
+          }
+          
+          const counts = months.map(({ year, month }) => {
+            return allListings.filter((l: any) => {
+              if (!l.created_at) return false;
+              const dt = new Date(l.created_at);
+              return dt.getFullYear() === year && dt.getMonth() === month;
+            }).length;
+          });
+          
+          setMonthly(counts);
+        }
         setMonthlyLoading(false);
       }
 
