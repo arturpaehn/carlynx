@@ -107,64 +107,27 @@ export default function AdminPage() {
       setMonthlyLoading(true);
       setUserStatsLoading(true);
       
-      // 1. Fetch regular listings
-      const { data: all, error: err1 } = await supabase.from('listings').select('id, is_active, created_at');
-      
-      // 2. Fetch external listings
-      const { data: externalAll, error: err2 } = await supabase.from('external_listings').select('id, is_active, created_at');
-      
-      if ((!all || err1) && (!externalAll || err2)) {
+      try {
+        // Use API route that has access to service_role (bypasses RLS)
+        const res = await fetch('/api/admin-stats');
+        const data = await res.json();
+        
+        if (res.ok) {
+          setStats(data.stats);
+          setMonthly(data.monthly);
+          setStatsLoading(false);
+          setMonthlyLoading(false);
+        } else {
+          setStats(null);
+          setMonthly(null);
+          setStatsLoading(false);
+          setMonthlyLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
         setStats(null);
         setMonthly(null);
         setStatsLoading(false);
-        setMonthlyLoading(false);
-      } else {
-        const regularListings = all || [];
-        const externalListings = externalAll || [];
-        
-        const now = new Date();
-        const todayStr = now.toISOString().slice(0, 10);
-        const last30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        
-        const total = regularListings.length + externalListings.length;
-        const active = (regularListings as Listing[]).filter((l) => l.is_active).length + 
-                       (externalListings as Listing[]).filter((l) => l.is_active).length;
-        const inactive = total - active;
-        const last30count = (regularListings as Listing[]).filter((l) => l.created_at && new Date(l.created_at) >= last30).length +
-                           (externalListings as Listing[]).filter((l) => l.created_at && new Date(l.created_at) >= last30).length;
-        const todayCount = (regularListings as Listing[]).filter((l) => l.created_at && l.created_at.slice(0, 10) === todayStr).length +
-                          (externalListings as Listing[]).filter((l) => l.created_at && l.created_at.slice(0, 10) === todayStr).length;
-        
-        setStats({ total, active, inactive, last30: last30count, today: todayCount });
-        setStatsLoading(false);
-
-        // 2. Monthly chart (last 6 months) - NEW LISTINGS ONLY (by unique ID, not updates)
-        const months = [];
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          months.push({
-            year: d.getFullYear(),
-            month: d.getMonth(),
-          });
-        }
-        
-        const counts = months.map(({ year, month }) => {
-          const regularCount = (regularListings as Listing[]).filter((l) => {
-            if (!l.created_at) return false;
-            const dt = new Date(l.created_at);
-            return dt.getFullYear() === year && dt.getMonth() === month;
-          }).length;
-          
-          const externalCount = (externalListings as Listing[]).filter((l) => {
-            if (!l.created_at) return false;
-            const dt = new Date(l.created_at);
-            return dt.getFullYear() === year && dt.getMonth() === month;
-          }).length;
-          
-          return regularCount + externalCount;
-        });
-        
-        setMonthly(counts);
         setMonthlyLoading(false);
       }
 
