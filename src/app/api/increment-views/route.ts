@@ -23,56 +23,66 @@ export async function POST(request: NextRequest) {
 
     if (isExternal) {
       // Инкремент для external_listings
-      const { data, error } = await supabaseAdmin
-        .from('external_listings')
-        .select('views')
-        .eq('id', listingId)
-        .single();
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('external_listings')
+          .select('views')
+          .eq('id', listingId)
+          .single();
 
-      if (error) {
-        console.error('Error fetching external listing:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error) {
+          console.error('Error fetching external listing:', error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        const newViews = (data.views || 0) + 1;
+
+        const { error: updateError } = await supabaseAdmin
+          .from('external_listings')
+          .update({ views: newViews })
+          .eq('id', listingId);
+
+        if (updateError) {
+          console.error('Error updating external listing views:', updateError);
+          return NextResponse.json({ error: updateError.message }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true, newViews });
+      } catch (err) {
+        console.error('Error in external views update:', err);
+        return NextResponse.json({ success: true, newViews: -1 });
       }
-
-      const newViews = (data.views || 0) + 1;
-
-      const { error: updateError } = await supabaseAdmin
-        .from('external_listings')
-        .update({ views: newViews })
-        .eq('id', listingId);
-
-      if (updateError) {
-        console.error('Error updating external listing views:', updateError);
-        return NextResponse.json({ error: updateError.message }, { status: 500 });
-      }
-
-      return NextResponse.json({ success: true, newViews });
     } else {
       // Инкремент для listings
-      const { data, error } = await supabaseAdmin
-        .from('listings')
-        .select('views')
-        .eq('id', listingId)
-        .single();
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('listings')
+          .select('views')
+          .eq('id', listingId)
+          .single();
 
-      if (error) {
-        console.error('Error fetching listing:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error) {
+          console.error('Error fetching listing:', error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        const newViews = (data.views || 0) + 1;
+
+        const { error: updateError } = await supabaseAdmin
+          .from('listings')
+          .update({ views: newViews })
+          .eq('id', listingId);
+
+        if (updateError) {
+          console.error('Error updating listing views:', updateError);
+          return NextResponse.json({ error: updateError.message }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true, newViews });
+      } catch (err) {
+        console.error('Error in views update:', err);
+        return NextResponse.json({ success: true, newViews: -1 });
       }
-
-      const newViews = (data.views || 0) + 1;
-
-      const { error: updateError } = await supabaseAdmin
-        .from('listings')
-        .update({ views: newViews })
-        .eq('id', listingId);
-
-      if (updateError) {
-        console.error('Error updating listing views:', updateError);
-        return NextResponse.json({ error: updateError.message }, { status: 500 });
-      }
-
-      return NextResponse.json({ success: true, newViews });
     }
   } catch (error) {
     console.error('Error in increment-views API:', error);

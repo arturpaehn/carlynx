@@ -74,10 +74,11 @@ function normalizeTransmission(transmission: string | null): string | null {
 
 async function fetchDetailPageData(detailUrl: string, browser: Browser): Promise<{ transmission: string | null; engine_size: string | null }> {
   const page = await browser.newPage();
+  const DETAIL_PAGE_TIMEOUT = 20000; // 20 seconds per detail page
   try {
     const fullUrl = detailUrl.startsWith('http') ? detailUrl : `https://www.autonationusa.com${detailUrl}`;
     
-    await page.goto(fullUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+    await page.goto(fullUrl, { waitUntil: 'networkidle2', timeout: DETAIL_PAGE_TIMEOUT });
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     const detailData = await page.evaluate(() => {
@@ -137,7 +138,14 @@ async function fetchDetailPageData(detailUrl: string, browser: Browser): Promise
 async function fetchListings(): Promise<VehicleData[]> {
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--single-process=false',
+      '--memory-pressure-off'
+    ]
   });
 
   const vehicles: VehicleData[] = [];

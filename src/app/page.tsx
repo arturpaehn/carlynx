@@ -8,6 +8,7 @@ import { useUser } from '@/hooks/useUser'
 import { monitor } from '@/lib/monitoring'
 import { useTranslation } from '@/components/I18nProvider'
 import PriceBadge from '@/components/PriceBadge'
+import BlogPreview from '@/components/BlogPreview'
 
 // SEO metadata will be handled by layout.tsx for this page
 
@@ -272,6 +273,9 @@ export default function Home() {
             </div>
           )}
         </section>
+
+        {/* Blog Preview Section */}
+        <BlogPreview />
       </div>
     </main>
   )

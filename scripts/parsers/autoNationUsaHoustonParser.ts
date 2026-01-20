@@ -74,11 +74,13 @@ function normalizeTransmission(transmission: string | null): string | null {
 
 async function fetchDetailPageData(detailUrl: string, browser: Browser): Promise<{ transmission: string | null; engine_size: string | null; vin: string | null }> {
   const page = await browser.newPage();
+  const DETAIL_PAGE_TIMEOUT = 20000; // 20 seconds per detail page
+  
   try {
     const fullUrl = detailUrl.startsWith('http') ? detailUrl : `https://www.autonationusa.com${detailUrl}`;
     
-    await page.goto(fullUrl, { waitUntil: 'networkidle2', timeout: 60000 });
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await page.goto(fullUrl, { waitUntil: 'networkidle2', timeout: DETAIL_PAGE_TIMEOUT });
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const detailData = await page.evaluate(() => {
       let transmission = null;
@@ -134,8 +136,16 @@ async function fetchDetailPageData(detailUrl: string, browser: Browser): Promise
       vin: detailData.vin
     };
   } catch (error) {
-    console.error(`  ✗ Error fetching detail page: ${error}`);
-    await page.close();
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`  ✗ Error fetching detail page: ${errorMsg.substring(0, 100)}`);
+    
+    // Clean up page on error
+    try {
+      await page.close();
+    } catch (e) {
+      // Ignore close errors
+    }
+    
     return { transmission: null, engine_size: null, vin: null };
   }
 }
@@ -143,7 +153,14 @@ async function fetchDetailPageData(detailUrl: string, browser: Browser): Promise
 async function fetchListings(): Promise<VehicleData[]> {
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage', // Use temp storage instead of shared memory
+      '--disable-gpu',
+      '--single-process=false', // Ensure separate process
+      '--memory-pressure-off'
+    ]
   });
 
   const vehicles: VehicleData[] = [];
@@ -153,8 +170,8 @@ async function fetchListings(): Promise<VehicleData[]> {
   try {
     // Определяем количество страниц
     const firstPage = await browser.newPage();
-    await firstPage.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 60000 });
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await firstPage.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Находим максимальную страницу из пагинации
     const paginationLinks = await firstPage.$$eval('.pagination a', links => 
@@ -185,18 +202,18 @@ async function fetchListings(): Promise<VehicleData[]> {
       const start = pageNum * vehiclesPerPage;
       const url = pageNum === 0 ? baseUrl : `${baseUrl}&start=${start}`;
       
-      console.log(`\nParsing page ${pageNum + 1}/${totalPages}: ${url}`);
+      console.log(`\nParsing page ${pageNum + 1}/${pagesToParse}: ${url}`);
       
       const page = await browser.newPage();
       
       try {
-        await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
         
-        // Ждём загрузки карточек
-        await page.waitForSelector('.vehicle-card', { timeout: 30000 });
+        // Ждём загрузки карточек (с таймаутом 10 секунд)
+        await page.waitForSelector('.vehicle-card', { timeout: 10000 });
         
         // Ждём пока загрузятся JavaScript данные (evs_link)
-        await new Promise(resolve => setTimeout(resolve, 8000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
         // Скроллим страницу чтобы все изображения и данные загрузились
         await page.evaluate(async () => {
@@ -214,7 +231,7 @@ async function fetchListings(): Promise<VehicleData[]> {
           });
         });
         
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Извлекаем данные о каждом автомобиле
         const pageVehicles = await page.evaluate(() => {
@@ -319,22 +336,43 @@ async function fetchListings(): Promise<VehicleData[]> {
           
           if (v.detailUrl) {
             console.log(`  Fetching details for ${v.year} ${v.make} ${v.model}...`);
-            const detailData = await fetchDetailPageData(v.detailUrl, browser);
-            transmission = detailData.transmission;
-            engineSize = detailData.engine_size;
-            detailVin = detailData.vin;
             
-            // Use VIN from detail page if available
-            if (detailVin) {
-              actualVin = detailVin;
+            // Retry logic: try up to 2 times
+            let retries = 0;
+            const maxRetries = 2;
+            let detailData = null;
+            
+            while (retries < maxRetries && !detailData?.engine_size) {
+              try {
+                detailData = await fetchDetailPageData(v.detailUrl, browser);
+                if (detailData?.engine_size) break;
+              } catch (err) {
+                // Error already logged in fetchDetailPageData
+              }
+              retries++;
+              if (retries < maxRetries && !detailData?.engine_size) {
+                console.log(`  Retrying... (attempt ${retries + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before retry
+              }
             }
             
-            if (!engineSize) {
-              console.log(`  ⚠️  No engine size found - skipping vehicle`);
-              continue;
+            if (detailData) {
+              transmission = detailData.transmission;
+              engineSize = detailData.engine_size;
+              detailVin = detailData.vin;
+              
+              // Use VIN from detail page if available
+              if (detailVin) {
+                actualVin = detailVin;
+              }
+              
+              if (!engineSize) {
+                console.log(`  ⚠️  No engine size found - skipping vehicle`);
+                continue;
+              }
+              
+              console.log(`  ✓ Got: transmission=${transmission}, engine_size=${engineSize}, vin=${actualVin}`);
             }
-            
-            console.log(`  ✓ Got: transmission=${transmission}, engine_size=${engineSize}, vin=${actualVin}`);
           } else {
             console.log(`  ⚠️  No detail URL - skipping vehicle`);
             continue;
