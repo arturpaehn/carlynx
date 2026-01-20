@@ -18,11 +18,8 @@ export async function GET() {
   )
 
   try {
-    // Get listings from last 24 hours
-    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    
     // Fetch both regular and external listings in parallel
-    // Get all new or updated listings from last 24 hours
+    // Get all active listings, sorted by newest first - no time limit
     const [listingsResult, externalResult] = await Promise.all([
       supabase
         .from('listings')
@@ -43,7 +40,6 @@ export async function GET() {
           listing_images (image_url)
         `)
         .eq('is_active', true)
-        .gte('created_at', last24Hours)
         .order('created_at', { ascending: false }),
       
       supabase
@@ -69,7 +65,6 @@ export async function GET() {
           states (name, code, country_code)
         `)
         .eq('is_active', true)
-        .gte('created_at', last24Hours)
         .order('created_at', { ascending: false })
     ])
 
@@ -226,18 +221,18 @@ export async function GET() {
     const shuffleCars = cars.sort(() => Math.random() - 0.5)
     const shuffleMotorcycles = motorcycles.sort(() => Math.random() - 0.5)
 
-    // Select 8 cars and 4 motorcycles (or fill with cars if not enough motorcycles)
-    const selectedCars = shuffleCars.slice(0, 8)
-    const selectedMotorcycles = shuffleMotorcycles.slice(0, 4)
+    // Select 16 cars and 8 motorcycles (or fill with cars if not enough motorcycles) - Total 24 items
+    const selectedCars = shuffleCars.slice(0, 16)
+    const selectedMotorcycles = shuffleMotorcycles.slice(0, 8)
     
     // If not enough motorcycles, fill the rest with cars
-    const remainingSlots = 12 - selectedCars.length - selectedMotorcycles.length
-    const additionalCars = remainingSlots > 0 ? shuffleCars.slice(8, 8 + remainingSlots) : []
+    const remainingSlots = 24 - selectedCars.length - selectedMotorcycles.length
+    const additionalCars = remainingSlots > 0 ? shuffleCars.slice(16, 16 + remainingSlots) : []
 
     // Combine and shuffle the final selection randomly
     const finalSelection = [...selectedCars, ...selectedMotorcycles, ...additionalCars]
       .sort(() => Math.random() - 0.5)
-      .slice(0, 12)
+      .slice(0, 24)
 
     return NextResponse.json(
       { 
