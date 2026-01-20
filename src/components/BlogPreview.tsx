@@ -15,16 +15,21 @@ interface BlogPost {
 export default async function BlogPreview() {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/blog_posts?is_published=eq.true&order=published_at.desc&limit=3`,
+      `${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.carlynx.us'}/api/blog?page=1&limit=3`,
       {
         headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-          'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          'Content-Type': 'application/json',
         },
       }
     );
 
-    const posts: BlogPost[] = (await response.json()) || [];
+    if (!response.ok) {
+      console.error('Failed to fetch blog posts:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const posts: BlogPost[] = Array.isArray(data.posts) ? data.posts : [];
 
     if (posts.length === 0) {
       return null;

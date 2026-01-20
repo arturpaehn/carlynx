@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const category = searchParams.get('category');
-    const limit = 10;
+    const limit = parseInt(searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
 
     let query = supabase
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error('Error fetching blog posts:', error);
-      return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 });
+      return NextResponse.json({ posts: [], total: 0, page, totalPages: 0, error: error.message }, { status: 200 });
     }
 
     return NextResponse.json({
@@ -41,6 +41,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Error in blog API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ posts: [], total: 0, page: 1, totalPages: 0, error: 'Internal server error' }, { status: 200 });
   }
 }
