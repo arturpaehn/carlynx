@@ -221,18 +221,18 @@ export async function GET() {
     const shuffleCars = cars.sort(() => Math.random() - 0.5)
     const shuffleMotorcycles = motorcycles.sort(() => Math.random() - 0.5)
 
-    // Select 16 cars and 8 motorcycles (or fill with cars if not enough motorcycles) - Total 24 items
-    const selectedCars = shuffleCars.slice(0, 16)
-    const selectedMotorcycles = shuffleMotorcycles.slice(0, 8)
+    // Select 8 cars and 4 motorcycles (or fill with cars if not enough motorcycles) - Total 12 items
+    const selectedCars = shuffleCars.slice(0, 8)
+    const selectedMotorcycles = shuffleMotorcycles.slice(0, 4)
     
     // If not enough motorcycles, fill the rest with cars
-    const remainingSlots = 24 - selectedCars.length - selectedMotorcycles.length
-    const additionalCars = remainingSlots > 0 ? shuffleCars.slice(16, 16 + remainingSlots) : []
+    const remainingSlots = 12 - selectedCars.length - selectedMotorcycles.length
+    const additionalCars = remainingSlots > 0 ? shuffleCars.slice(8, 8 + remainingSlots) : []
 
     // Combine and shuffle the final selection randomly
     const finalSelection = [...selectedCars, ...selectedMotorcycles, ...additionalCars]
       .sort(() => Math.random() - 0.5)
-      .slice(0, 24)
+      .slice(0, 12)
 
     return NextResponse.json(
       { 
