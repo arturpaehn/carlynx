@@ -165,7 +165,7 @@ async function fetchListings(): Promise<VehicleData[]> {
   try {
     // Определяем количество страниц
     const firstPage = await browser.newPage();
-    await firstPage.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+    await firstPage.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30000 });
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Находим максимальную страницу из пагинации
@@ -202,29 +202,41 @@ async function fetchListings(): Promise<VehicleData[]> {
       const page = await browser.newPage();
       
       try {
-        await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
         
         // Ждём загрузки карточек
-        await page.waitForSelector('.vehicle-card', { timeout: 30000 });
+        await page.waitForSelector('.vehicle-card', { timeout: 10000 });
         
         // Ждём пока загрузятся JavaScript данные (evs_link)
         await new Promise(resolve => setTimeout(resolve, 8000));
 
         // Скроллим страницу чтобы все изображения и данные загрузились
-        await page.evaluate(async () => {
-          await new Promise((resolve) => {
-            let totalHeight = 0;
-            const distance = 100;
-            const timer = setInterval(() => {
-              window.scrollBy(0, distance);
-              totalHeight += distance;
-              if (totalHeight >= document.body.scrollHeight) {
-                clearInterval(timer);
-                resolve(null);
-              }
-            }, 100);
-          });
-        });
+        // ЗАЩИТА: используем Promise.race чтобы не зависнуть навечно
+        try {
+          await Promise.race([
+            page.evaluate(async () => {
+              await new Promise((resolve) => {
+                let totalHeight = 0;
+                const distance = 100;
+                const timer = setInterval(() => {
+                  window.scrollBy(0, distance);
+                  totalHeight += distance;
+                  if (totalHeight >= document.body.scrollHeight) {
+                    clearInterval(timer);
+                    resolve(null);
+                  }
+                }, 100);
+              });
+            }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Scroll timeout exceeded 5 seconds')), 5000)
+            )
+          ]);
+        } catch (scrollError) {
+          // Scroll не завершился за 5 сек, но это не критично - продолжаем парсинг
+          const errMsg = scrollError instanceof Error ? scrollError.message : 'Unknown scroll error';
+          console.log(`  ⚠️  Scroll warning: ${errMsg} - continuing anyway`);
+        }
         
         await new Promise(resolve => setTimeout(resolve, 5000));
 
@@ -336,14 +348,12 @@ async function fetchListings(): Promise<VehicleData[]> {
             }
             
             if (!engineSize) {
-              console.log(`  ⚠️  No engine size found - skipping vehicle`);
-              continue;
+              console.log(`  ⚠️  No engine size found - vehicle will be saved with null value`);
+            } else {
+              console.log(`  ✓ Got: transmission=${transmission}, engine_size=${engineSize}, vin=${actualVin}`);
             }
-            
-            console.log(`  ✓ Got: transmission=${transmission}, engine_size=${engineSize}, vin=${actualVin}`);
           } else {
-            console.log(`  ⚠️  No detail URL - skipping vehicle`);
-            continue;
+            console.log(`  ⚠️  No detail URL found - vehicle will be saved without detail data`);
           }
 
           vehicles.push({

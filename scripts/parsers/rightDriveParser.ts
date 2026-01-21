@@ -233,8 +233,7 @@ async function fetchListings(): Promise<ScrapedListing[]> {
     );
     
     if (photos.length === 0) {
-      console.log(`⚠️  Skipping ${vehicle.year} ${vehicle.make} ${vehicle.model} - no photos`);
-      continue;
+      console.log(`⚠️  No photos for ${vehicle.year} ${vehicle.make} ${vehicle.model} - will save without images`);
     }
     
     const listing: ScrapedListing = {

@@ -289,11 +289,10 @@ async function fetchListings(): Promise<ScrapedListing[]> {
       }
     }
     
-    // Filter out listings without images
-    const listingsWithImages = allListings.filter(listing => listing.imageUrls && listing.imageUrls.length > 0);
-    console.log(`\n✅ Listings with images: ${listingsWithImages.length}/${allListings.length}`);
+    // Don't filter out listings without images - just log the count
+    console.log(`\n✅ Listings with images: ${allListings.filter(l => l.imageUrls && l.imageUrls.length > 0).length}/${allListings.length}`);
     
-    return listingsWithImages;
+    return allListings;
     
   } catch (error) {
     console.error('❌ Error during scraping:', error);
