@@ -1,7 +1,7 @@
 name: Sync External Listings
 
 on:
-  # Run daily at 14:00 UTC (same as Vercel Cron)
+  # Run AutoNation parsers daily at 14:00 UTC
   schedule:
     - cron: '0 14 * * *'
   
@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync-parsers:
+  sync-autonation:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     
     steps:
       - name: Checkout code
@@ -30,12 +30,46 @@ jobs:
         run: |
           npx puppeteer browsers install chrome
       
-      - name: Run all parsers
+      - name: Run AutoNation parsers
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: npx tsx scripts/run-all-parsers.ts
+        run: npx tsx scripts/run-autonation-parsers.ts
       
       - name: Summary
         if: always()
-        run: echo "✅ Parsers sync completed!"
+        run: echo "✅ AutoNation parsers sync completed!"
+
+  sync-other:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    # This job always runs after sync-autonation completes
+    needs: sync-autonation
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Chromium for Puppeteer
+        run: |
+          npx puppeteer browsers install chrome
+      
+      - name: Run other parsers
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npx tsx scripts/run-other-parsers.ts
+      
+      - name: Summary
+        if: always()
+        run: echo "✅ Other parsers sync completed!"

@@ -1,4 +1,4 @@
-import puppeteer, { Browser } from 'puppeteer';
+import puppeteer from 'puppeteer';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
@@ -72,73 +72,80 @@ function normalizeTransmission(transmission: string | null): string | null {
   return transmission;
 }
 
-async function fetchDetailPageData(detailUrl: string, browser: Browser): Promise<{ transmission: string | null; engine_size: string | null; vin: string | null }> {
-  const page = await browser.newPage();
-  const DETAIL_PAGE_TIMEOUT = 20000; // 20 seconds per detail page
+// Helper: Fetch detail page data with aggressive timeout
+async function fetchDetailPageData(
+  detailPage: { $eval: Function; close: () => Promise<void> },
+  vehicleVin: string
+): Promise<{ transmission: string | null; engine_size: string | null }> {
   try {
-    const fullUrl = detailUrl.startsWith('http') ? detailUrl : `https://www.autonationusa.com${detailUrl}`;
-    
-    await page.goto(fullUrl, { waitUntil: 'networkidle2', timeout: DETAIL_PAGE_TIMEOUT });
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Aggressive 5-second timeout for entire detail fetch
+    const result = await Promise.race([
+      (async () => {
+        try {
+          // Try to find transmission
+          const transmissionText = await detailPage.$eval(
+            'span:contains("Transmission")',
+            (el: Element) => el?.parentElement?.textContent || null
+          ).catch(() => null);
 
-    const detailData = await page.evaluate(() => {
-      let transmission = null;
-      let engineSize = null;
-      let vin = null;
-
-      // Look for DT/DD pairs
-      const dtElements = document.querySelectorAll('dt');
-      dtElements.forEach(dt => {
-        const label = dt.textContent?.trim().toLowerCase() || '';
-        const dd = dt.nextElementSibling;
-        const value = dd?.textContent?.trim() || '';
-
-        if (label === 'transmission' && value) {
-          transmission = value;
-        }
-        
-        if (label === 'engine' && value) {
-          // Extract engine displacement: "5.3 Liter VVT" -> "5.3"
-          const match = value.match(/([\d.]+)\s*[Ll]/);
-          if (match) {
-            engineSize = match[1];
+          let transmission = null;
+          if (transmissionText) {
+            const match = transmissionText.match(/(Automatic|Manual|CVT|A\/T|M\/T)/i);
+            transmission = match ? match[1] : null;
           }
-        }
 
-        if (label === 'vin' && value) {
-          vin = value;
-        }
-      });
+          // Try to find engine size
+          const engineText = await detailPage.$eval(
+            'span:contains("Engine")',
+            (el: Element) => el?.parentElement?.textContent || null
+          ).catch(() => null);
 
-      // If engine size not found in DT/DD, check spec items
-      if (!engineSize) {
-        const specItems = document.querySelectorAll('.spec-item');
-        specItems.forEach(item => {
-          const text = item.textContent || '';
-          if (text.toLowerCase().includes('engine displacement:')) {
-            const match = text.match(/([\d.]+)\s*[Ll]/);
-            if (match) {
-              engineSize = match[1];
-            }
+          let engine_size = null;
+          if (engineText) {
+            const match = engineText.match(/(\d+\.?\d*)\s*(L|liter)/i);
+            engine_size = match ? match[1] : null;
           }
-        });
-      }
 
-      return { transmission, engineSize, vin };
+          return { transmission, engine_size };
+        } catch {
+          return { transmission: null, engine_size: null };
+        }
+      })(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Detail fetch timeout')), 5000)
+      )
+    ]);
+
+    return result as { transmission: string | null; engine_size: string | null };
+  } catch {
+    console.log(`⚠️  Detail page timeout for ${vehicleVin} - using null values`);
+    return { transmission: null, engine_size: null };
+  }
+}
+
+// Helper: Run concurrent tasks with limit
+async function runWithLimit<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number
+): Promise<T[]> {
+  const results: T[] = [];
+  const executing: Promise<T>[] = [];
+
+  for (const task of tasks) {
+    const promise = Promise.resolve().then(task).then(r => {
+      executing.splice(executing.indexOf(promise), 1);
+      return r;
     });
 
-    await page.close();
-    
-    return {
-      transmission: normalizeTransmission(detailData.transmission),
-      engine_size: detailData.engineSize,
-      vin: detailData.vin
-    };
-  } catch (error) {
-    console.error(`  ✗ Error fetching detail page: ${error}`);
-    await page.close();
-    return { transmission: null, engine_size: null, vin: null };
+    results.push(promise as unknown as T);
+    executing.push(promise);
+
+    if (executing.length >= limit) {
+      await Promise.race(executing);
+    }
   }
+
+  return Promise.all(results);
 }
 
 async function fetchListings(): Promise<VehicleData[]> {
@@ -310,80 +317,94 @@ async function fetchListings(): Promise<VehicleData[]> {
           console.log(`TEST MODE: Processing ${vehiclesToProcess.length} vehicle(s)`);
         }
 
-        for (const v of vehiclesToProcess) {
-          if (!v.make || !v.model || !v.year) {
-            console.log(`Skipping vehicle - missing required data:`, v);
-            continue;
-          }
-
-          // Use UUID as VIN if no VIN extracted (for Austin site)
-          let actualVin = v.vin || (v.uuid ? v.uuid.substring(0, 17) : null);
-          if (!actualVin) {
-            console.log(`Skipping vehicle - no VIN or UUID available`);
-            continue;
-          }
-
-          if (v.images.length === 0) {
-            console.log(`Skipping vehicle ${actualVin} - no images`);
-            continue;
-          }
-
-          const vehicleUrl = v.detailUrl 
-            ? `https://www.autonationusa.com${v.detailUrl}`
-            : `https://www.autonationusa.com/all-inventory/index.htm?geoZip=&geoRadius=0&accountId=autonationusaaustin`;
-
-          // Fetch transmission and engine_size from detail page
-          let transmission = null;
-          let engineSize = null;
-          let detailVin = null;
-          
-          if (v.detailUrl) {
-            console.log(`  Fetching details for ${v.year} ${v.make} ${v.model}...`);
-            const detailData = await fetchDetailPageData(v.detailUrl, browser);
-            transmission = detailData.transmission;
-            engineSize = detailData.engine_size;
-            detailVin = detailData.vin;
-            
-            // Use VIN from detail page if available
-            if (detailVin) {
-              actualVin = detailVin;
+        // Process vehicles with parallel detail fetching (5 concurrent)
+        const detailFetchTasks = vehiclesToProcess.map((v) => async () => {
+          try {
+            if (!v.make || !v.model || !v.year) {
+              console.log(`Skipping vehicle - missing required data:`, v);
+              return null;
             }
-            
-            if (!engineSize) {
-              console.log(`  ⚠️  No engine size found - vehicle will be saved with null value`);
-            } else {
-              console.log(`  ✓ Got: transmission=${transmission}, engine_size=${engineSize}, vin=${actualVin}`);
-            }
-          } else {
-            console.log(`  ⚠️  No detail URL found - vehicle will be saved without detail data`);
-          }
 
-          vehicles.push({
-            external_id: actualVin,
-            source: 'autonation_usa_austin',
-            external_url: vehicleUrl,
-            title: v.make, // Только марка
-            brand: v.make,
-            model: v.model,
-            year: v.year,
-            price: v.price,
-            mileage: v.mileage,
-            transmission: transmission,
-            fuel_type: null,
-            engine_size: engineSize,
-            vehicle_type: null,
-            image_url: v.images[0] || null,
-            image_url_2: v.images[1] || null,
-            image_url_3: v.images[2] || null,
-            image_url_4: v.images[3] || null,
-            vin: actualVin,
-            contact_phone: '(866) 316-5785',
-            contact_email: null,
-            city_name: 'Austin',
-            state_id: null,
-            city_id: null
-          });
-        }
+            // Use UUID as VIN if no VIN extracted
+            const actualVin = v.vin || (v.uuid ? v.uuid.substring(0, 17) : null);
+            if (!actualVin) {
+              console.log(`Skipping vehicle - no VIN or UUID available`);
+              return null;
+            }
+
+            if (v.images.length === 0) {
+              console.log(`Skipping vehicle ${actualVin} - no images`);
+              return null;
+            }
+
+            const vehicleUrl = v.detailUrl 
+              ? `https://www.autonationusa.com${v.detailUrl}`
+              : `https://www.autonationusa.com/all-inventory/index.htm?geoZip=&geoRadius=0&accountId=autonationusaaustin`;
+
+            let transmission: string | null = null;
+            let engine_size: string | null = null;
+
+            // Fetch detail page data only if URL available
+            if (v.detailUrl) {
+              try {
+                const detailPage = await browser.newPage();
+                try {
+                  await detailPage.goto(vehicleUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+                  
+                  const detailData = await fetchDetailPageData(detailPage, actualVin);
+                  transmission = normalizeTransmission(detailData.transmission);
+                  engine_size = detailData.engine_size;
+
+                  console.log(`  ✓ ${v.year} ${v.make} ${v.model} - transmission: ${transmission || 'N/A'}, engine: ${engine_size || 'N/A'}`);
+                } finally {
+                  await detailPage.close();
+                }
+              } catch (detailError) {
+                console.log(`  ⚠️  Could not fetch detail for ${actualVin}: ${detailError}`);
+                // Continue without detail data
+              }
+            }
+
+            return {
+              external_id: actualVin,
+              source: 'autonation_usa_austin',
+              external_url: vehicleUrl,
+              title: `${v.year} ${v.make} ${v.model}`,
+              brand: v.make,
+              model: v.model,
+              year: v.year,
+              price: v.price,
+              mileage: v.mileage,
+              transmission,
+              fuel_type: null,
+              engine_size,
+              vehicle_type: null,
+              image_url: v.images[0] || null,
+              image_url_2: v.images[1] || null,
+              image_url_3: v.images[2] || null,
+              image_url_4: v.images[3] || null,
+              vin: actualVin,
+              contact_phone: '(866) 316-5785',
+              contact_email: null,
+              city_name: 'Austin',
+              state_id: null,
+              city_id: null
+            };
+          } catch (error) {
+            console.error(`Error processing vehicle:`, error);
+            return null;
+          }
+        });
+
+        // Run with concurrency limit of 5
+        const processedVehicles = await runWithLimit(detailFetchTasks, 5);
+        
+        // Filter out null entries and add to vehicles array
+        processedVehicles.forEach(vehicle => {
+          if (vehicle) {
+            vehicles.push(vehicle);
+          }
+        });
 
         await page.close();
       } catch (error) {
