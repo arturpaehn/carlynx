@@ -74,7 +74,7 @@ function normalizeTransmission(transmission: string | null): string | null {
 
 // Helper: Fetch detail page data with aggressive timeout
 async function fetchDetailPageData(
-  detailPage: { $eval: Function; close: () => Promise<void> },
+  detailPage: any,
   vehicleVin: string
 ): Promise<{ transmission: string | null; engine_size: string | null }> {
   try {
@@ -82,31 +82,51 @@ async function fetchDetailPageData(
     const result = await Promise.race([
       (async () => {
         try {
-          // Try to find transmission
-          const transmissionText = await detailPage.$eval(
-            'span:contains("Transmission")',
-            (el: Element) => el?.parentElement?.textContent || null
-          ).catch(() => null);
+          const detailData = await detailPage.evaluate(() => {
+            let transmission = null;
+            let engineSize = null;
 
-          let transmission = null;
-          if (transmissionText) {
-            const match = transmissionText.match(/(Automatic|Manual|CVT|A\/T|M\/T)/i);
-            transmission = match ? match[1] : null;
-          }
+            // Look for DT/DD pairs
+            const dtElements = document.querySelectorAll('dt');
+            dtElements.forEach(dt => {
+              const label = dt.textContent?.trim().toLowerCase() || '';
+              const dd = dt.nextElementSibling;
+              const value = dd?.textContent?.trim() || '';
 
-          // Try to find engine size
-          const engineText = await detailPage.$eval(
-            'span:contains("Engine")',
-            (el: Element) => el?.parentElement?.textContent || null
-          ).catch(() => null);
+              if (label === 'transmission' && value) {
+                transmission = value;
+              }
 
-          let engine_size = null;
-          if (engineText) {
-            const match = engineText.match(/(\d+\.?\d*)\s*(L|liter)/i);
-            engine_size = match ? match[1] : null;
-          }
+              if (label === 'engine' && value) {
+                // Extract engine displacement: "5.3 Liter VVT" -> "5.3"
+                const match = value.match(/([\d.]+)\s*[Ll]/);
+                if (match) {
+                  engineSize = match[1];
+                }
+              }
+            });
 
-          return { transmission, engine_size };
+            // If engine size not found in DT/DD, check spec items
+            if (!engineSize) {
+              const specItems = document.querySelectorAll('.spec-item');
+              specItems.forEach(item => {
+                const text = item.textContent || '';
+                if (text.toLowerCase().includes('engine displacement:')) {
+                  const match = text.match(/([\d.]+)\s*[Ll]/);
+                  if (match) {
+                    engineSize = match[1];
+                  }
+                }
+              });
+            }
+
+            return { transmission, engineSize };
+          });
+
+          return {
+            transmission: normalizeTransmission(detailData.transmission),
+            engine_size: detailData.engineSize
+          };
         } catch {
           return { transmission: null, engine_size: null };
         }
