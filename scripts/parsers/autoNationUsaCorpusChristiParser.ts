@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import puppeteer, { Browser } from 'puppeteer';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
@@ -72,100 +72,67 @@ function normalizeTransmission(transmission: string | null): string | null {
   return transmission;
 }
 
-// Helper: Fetch detail page data with aggressive timeout
-async function fetchDetailPageData(
-  detailPage: any,
-  vehicleVin: string
-): Promise<{ transmission: string | null; engine_size: string | null }> {
+async function fetchDetailPageData(detailUrl: string, browser: Browser): Promise<{ transmission: string | null; engine_size: string | null }> {
+  const page = await browser.newPage();
+  const DETAIL_PAGE_TIMEOUT = 20000; // 20 seconds per detail page
   try {
-    // Aggressive 5-second timeout for entire detail fetch
-    const result = await Promise.race([
-      (async () => {
-        try {
-          const detailData = await detailPage.evaluate(() => {
-            let transmission = null;
-            let engineSize = null;
+    const fullUrl = detailUrl.startsWith('http') ? detailUrl : `https://www.autonationusa.com${detailUrl}`;
+    
+    await page.goto(fullUrl, { waitUntil: 'networkidle2', timeout: DETAIL_PAGE_TIMEOUT });
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-            // Look for DT/DD pairs
-            const dtElements = document.querySelectorAll('dt');
-            dtElements.forEach(dt => {
-              const label = dt.textContent?.trim().toLowerCase() || '';
-              const dd = dt.nextElementSibling;
-              const value = dd?.textContent?.trim() || '';
+    const detailData = await page.evaluate(() => {
+      let transmission = null;
+      let engineSize = null;
 
-              if (label === 'transmission' && value) {
-                transmission = value;
-              }
+      // Look for DT/DD pairs
+      const dtElements = document.querySelectorAll('dt');
+      dtElements.forEach(dt => {
+        const label = dt.textContent?.trim().toLowerCase() || '';
+        const dd = dt.nextElementSibling;
+        const value = dd?.textContent?.trim() || '';
 
-              if (label === 'engine' && value) {
-                // Extract engine displacement: "5.3 Liter VVT" -> "5.3"
-                const match = value.match(/([\d.]+)\s*[Ll]/);
-                if (match) {
-                  engineSize = match[1];
-                }
-              }
-            });
-
-            // If engine size not found in DT/DD, check spec items
-            if (!engineSize) {
-              const specItems = document.querySelectorAll('.spec-item');
-              specItems.forEach(item => {
-                const text = item.textContent || '';
-                if (text.toLowerCase().includes('engine displacement:')) {
-                  const match = text.match(/([\d.]+)\s*[Ll]/);
-                  if (match) {
-                    engineSize = match[1];
-                  }
-                }
-              });
-            }
-
-            return { transmission, engineSize };
-          });
-
-          return {
-            transmission: normalizeTransmission(detailData.transmission),
-            engine_size: detailData.engineSize
-          };
-        } catch {
-          return { transmission: null, engine_size: null };
+        if (label === 'transmission' && value) {
+          transmission = value;
         }
-      })(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Detail fetch timeout')), 5000)
-      )
-    ]);
+        
+        if (label === 'engine' && value) {
+          // Extract engine displacement: "5.3 Liter VVT" -> "5.3"
+          const match = value.match(/([\d.]+)\s*[Ll]/);
+          if (match) {
+            engineSize = match[1];
+          }
+        }
+      });
 
-    return result as { transmission: string | null; engine_size: string | null };
-  } catch {
-    console.log(`⚠️  Detail page timeout for ${vehicleVin} - using null values`);
-    return { transmission: null, engine_size: null };
-  }
-}
+      // If engine size not found in DT/DD, check spec items
+      if (!engineSize) {
+        const specItems = document.querySelectorAll('.spec-item');
+        specItems.forEach(item => {
+          const text = item.textContent || '';
+          if (text.toLowerCase().includes('engine displacement:')) {
+            const match = text.match(/([\d.]+)\s*[Ll]/);
+            if (match) {
+              engineSize = match[1];
+            }
+          }
+        });
+      }
 
-// Helper: Run concurrent tasks with limit
-async function runWithLimit<T>(
-  tasks: (() => Promise<T>)[],
-  limit: number
-): Promise<T[]> {
-  const results: T[] = [];
-  const executing: Promise<T>[] = [];
-
-  for (const task of tasks) {
-    const promise = Promise.resolve().then(task).then(r => {
-      executing.splice(executing.indexOf(promise), 1);
-      return r;
+      return { transmission, engineSize };
     });
 
-    results.push(promise as unknown as T);
-    executing.push(promise);
-
-    if (executing.length >= limit) {
-      await Promise.race(executing);
-    }
+    await page.close();
+    
+    return {
+      transmission: normalizeTransmission(detailData.transmission),
+      engine_size: detailData.engineSize
+    };
+  } catch (error) {
+    console.error(`  ✗ Error fetching detail page: ${error}`);
+    await page.close();
+    return { transmission: null, engine_size: null };
   }
-
-  return Promise.all(results);
 }
 
 async function fetchListings(): Promise<VehicleData[]> {
@@ -337,87 +304,66 @@ async function fetchListings(): Promise<VehicleData[]> {
           console.log(`TEST MODE: Processing ${vehiclesToProcess.length} vehicles`);
         }
 
-        // Process vehicles with parallel detail fetching (5 concurrent)
-        const detailFetchTasks = vehiclesToProcess.map((v) => async () => {
-          try {
-            if (!v.vin || !v.make || !v.model || !v.year) {
-              console.log(`Skipping vehicle - missing required data:`, v);
-              return null;
-            }
-
-            if (v.images.length === 0) {
-              console.log(`Skipping vehicle ${v.vin} - no images`);
-              return null;
-            }
-
-            const vehicleUrl = v.detailUrl 
-              ? `https://www.autonationusa.com${v.detailUrl}`
-              : `https://www.autonationusa.com/used-cars/corpus-christi.htm`;
-
-            let transmission: string | null = null;
-            let engine_size: string | null = null;
-
-            // Fetch detail page data only if URL available
-            if (v.detailUrl) {
-              try {
-                const detailPage = await browser.newPage();
-                try {
-                  await detailPage.goto(vehicleUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-                  
-                  const detailData = await fetchDetailPageData(detailPage, v.vin);
-                  transmission = normalizeTransmission(detailData.transmission);
-                  engine_size = detailData.engine_size;
-
-                  console.log(`  ✓ ${v.year} ${v.make} ${v.model} - transmission: ${transmission || 'N/A'}, engine: ${engine_size || 'N/A'}`);
-                } finally {
-                  await detailPage.close();
-                }
-              } catch (detailError) {
-                console.log(`  ⚠️  Could not fetch detail for ${v.vin}: ${detailError}`);
-                // Continue without detail data
-              }
-            }
-
-            return {
-              external_id: v.uuid || v.vin,
-              source: 'autonation_usa_corpus_christi',
-              external_url: vehicleUrl,
-              title: `${v.year} ${v.make} ${v.model}`,
-              brand: v.make,
-              model: v.model,
-              year: v.year,
-              price: v.price,
-              mileage: v.mileage,
-              transmission,
-              fuel_type: null,
-              engine_size,
-              vehicle_type: null,
-              image_url: v.images[0] || null,
-              image_url_2: v.images[1] || null,
-              image_url_3: v.images[2] || null,
-              image_url_4: v.images[3] || null,
-              vin: v.vin,
-              contact_phone: '(361) 541-6751',
-              contact_email: null,
-              city_name: 'Corpus Christi',
-              state_id: null,
-              city_id: null
-            };
-          } catch (error) {
-            console.error(`Error processing vehicle:`, error);
-            return null;
+        for (const v of vehiclesToProcess) {
+          if (!v.vin || !v.make || !v.model || !v.year) {
+            console.log(`Skipping vehicle - missing required data:`, v);
+            continue;
           }
-        });
 
-        // Run with concurrency limit of 5
-        const processedVehicles = await runWithLimit(detailFetchTasks, 5);
-        
-        // Filter out null entries and add to vehicles array
-        processedVehicles.forEach(vehicle => {
-          if (vehicle) {
-            vehicles.push(vehicle);
+          if (v.images.length === 0) {
+            console.log(`Skipping vehicle ${v.vin} - no images`);
+            continue;
           }
-        });
+
+          const vehicleUrl = v.detailUrl 
+            ? `https://www.autonationusa.com${v.detailUrl}`
+            : `https://www.autonationusa.com/used-cars/corpus-christi.htm`;
+
+          // Fetch transmission and engine_size from detail page
+          let transmission = null;
+          let engineSize = null;
+          
+          if (v.detailUrl) {
+            console.log(`  Fetching details for ${v.year} ${v.make} ${v.model}...`);
+            const detailData = await fetchDetailPageData(v.detailUrl, browser);
+            transmission = detailData.transmission;
+            engineSize = detailData.engine_size;
+            
+            if (!engineSize) {
+              console.log(`  ⚠️  No engine size found - vehicle will be saved with null value`);
+            } else {
+              console.log(`  ✓ Got: transmission=${transmission}, engine_size=${engineSize}`);
+            }
+          } else {
+            console.log(`  ⚠️  No detail URL found - vehicle will be saved without detail data`);
+          }
+
+          vehicles.push({
+            external_id: v.uuid || v.vin,
+            source: 'autonation_usa_corpus_christi',
+            external_url: vehicleUrl,
+            title: v.make, // Только марка
+            brand: v.make,
+            model: v.model,
+            year: v.year,
+            price: v.price,
+            mileage: v.mileage,
+            transmission: transmission,
+            fuel_type: null,
+            engine_size: engineSize,
+            vehicle_type: null,
+            image_url: v.images[0] || null,
+            image_url_2: v.images[1] || null,
+            image_url_3: v.images[2] || null,
+            image_url_4: v.images[3] || null,
+            vin: v.vin,
+            contact_phone: '(361) 541-6751',
+            contact_email: null,
+            city_name: 'Corpus Christi',
+            state_id: null,
+            city_id: null
+          });
+        }
 
         await page.close();
       } catch (error) {
