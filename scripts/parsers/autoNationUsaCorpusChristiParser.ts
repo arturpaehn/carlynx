@@ -135,6 +135,31 @@ async function fetchDetailPageData(detailUrl: string, browser: Browser): Promise
   }
 }
 
+// Helper: Run concurrent tasks with limit
+async function runWithLimit<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number
+): Promise<T[]> {
+  const results: T[] = [];
+  const executing: Promise<T>[] = [];
+
+  for (const task of tasks) {
+    const promise = Promise.resolve().then(task).then(r => {
+      executing.splice(executing.indexOf(promise), 1);
+      return r;
+    });
+
+    results.push(promise as unknown as T);
+    executing.push(promise);
+
+    if (executing.length >= limit) {
+      await Promise.race(executing);
+    }
+  }
+
+  return Promise.all(results);
+}
+
 async function fetchListings(): Promise<VehicleData[]> {
   const browser = await puppeteer.launch({
     headless: true,
@@ -304,66 +329,80 @@ async function fetchListings(): Promise<VehicleData[]> {
           console.log(`TEST MODE: Processing ${vehiclesToProcess.length} vehicles`);
         }
 
-        for (const v of vehiclesToProcess) {
-          if (!v.vin || !v.make || !v.model || !v.year) {
-            console.log(`Skipping vehicle - missing required data:`, v);
-            continue;
-          }
-
-          if (v.images.length === 0) {
-            console.log(`Skipping vehicle ${v.vin} - no images`);
-            continue;
-          }
-
-          const vehicleUrl = v.detailUrl 
-            ? `https://www.autonationusa.com${v.detailUrl}`
-            : `https://www.autonationusa.com/used-cars/corpus-christi.htm`;
-
-          // Fetch transmission and engine_size from detail page
-          let transmission = null;
-          let engineSize = null;
-          
-          if (v.detailUrl) {
-            console.log(`  Fetching details for ${v.year} ${v.make} ${v.model}...`);
-            const detailData = await fetchDetailPageData(v.detailUrl, browser);
-            transmission = detailData.transmission;
-            engineSize = detailData.engine_size;
-            
-            if (!engineSize) {
-              console.log(`  ⚠️  No engine size found - vehicle will be saved with null value`);
-            } else {
-              console.log(`  ✓ Got: transmission=${transmission}, engine_size=${engineSize}`);
+        // Process vehicles with parallel detail fetching (5 concurrent)
+        const detailFetchTasks = vehiclesToProcess.map((v) => async () => {
+          try {
+            if (!v.vin || !v.make || !v.model || !v.year) {
+              console.log(`Skipping vehicle - missing required data:`, v);
+              return null;
             }
-          } else {
-            console.log(`  ⚠️  No detail URL found - vehicle will be saved without detail data`);
-          }
 
-          vehicles.push({
-            external_id: v.uuid || v.vin,
-            source: 'autonation_usa_corpus_christi',
-            external_url: vehicleUrl,
-            title: v.make, // Только марка
-            brand: v.make,
-            model: v.model,
-            year: v.year,
-            price: v.price,
-            mileage: v.mileage,
-            transmission: transmission,
-            fuel_type: null,
-            engine_size: engineSize,
-            vehicle_type: null,
-            image_url: v.images[0] || null,
-            image_url_2: v.images[1] || null,
-            image_url_3: v.images[2] || null,
-            image_url_4: v.images[3] || null,
-            vin: v.vin,
-            contact_phone: '(361) 541-6751',
-            contact_email: null,
-            city_name: 'Corpus Christi',
-            state_id: null,
-            city_id: null
-          });
-        }
+            if (v.images.length === 0) {
+              console.log(`Skipping vehicle ${v.vin} - no images`);
+              return null;
+            }
+
+            const vehicleUrl = v.detailUrl 
+              ? `https://www.autonationusa.com${v.detailUrl}`
+              : `https://www.autonationusa.com/used-cars/corpus-christi.htm`;
+
+            // Fetch transmission and engine_size from detail page
+            let transmission = null;
+            let engineSize = null;
+            
+            if (v.detailUrl) {
+              console.log(`  Fetching details for ${v.year} ${v.make} ${v.model}...`);
+              const detailData = await fetchDetailPageData(v.detailUrl, browser);
+              transmission = detailData.transmission;
+              engineSize = detailData.engine_size;
+              
+              if (!engineSize) {
+                console.log(`  ⚠️  No engine size found - vehicle will be saved with null value`);
+              } else {
+                console.log(`  ✓ Got: transmission=${transmission}, engine_size=${engineSize}`);
+              }
+            } else {
+              console.log(`  ⚠️  No detail URL found - vehicle will be saved without detail data`);
+            }
+
+            return {
+              external_id: v.uuid || v.vin,
+              source: 'autonation_usa_corpus_christi',
+              external_url: vehicleUrl,
+              title: v.make,
+              brand: v.make,
+              model: v.model,
+              year: v.year,
+              price: v.price,
+              mileage: v.mileage,
+              transmission: transmission,
+              fuel_type: null,
+              engine_size: engineSize,
+              vehicle_type: null,
+              image_url: v.images[0] || null,
+              image_url_2: v.images[1] || null,
+              image_url_3: v.images[2] || null,
+              image_url_4: v.images[3] || null,
+              vin: v.vin,
+              contact_phone: '(361) 541-6751',
+              contact_email: null,
+              city_name: 'Corpus Christi',
+              state_id: null,
+              city_id: null
+            };
+          } catch (error) {
+            console.error(`Error processing vehicle:`, error);
+            return null;
+          }
+        });
+
+        // Execute with 5 concurrent detail fetches
+        const vehicleResults = await runWithLimit(detailFetchTasks, 5);
+        vehicleResults.forEach(result => {
+          if (result) {
+            vehicles.push(result);
+          }
+        });
 
         await page.close();
       } catch (error) {
