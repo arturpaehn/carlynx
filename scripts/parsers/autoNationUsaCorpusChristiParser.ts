@@ -74,12 +74,12 @@ function normalizeTransmission(transmission: string | null): string | null {
 
 async function fetchDetailPageData(detailUrl: string, browser: Browser): Promise<{ transmission: string | null; engine_size: string | null }> {
   const page = await browser.newPage();
-  const DETAIL_PAGE_TIMEOUT = 60000; // 60 seconds per detail page (increased for slow site)
+  const DETAIL_PAGE_TIMEOUT = 60000; // 60 seconds per detail page (safe for slow pages)
   try {
     const fullUrl = detailUrl.startsWith('http') ? detailUrl : `https://www.autonationusa.com${detailUrl}`;
     
-    await page.goto(fullUrl, { waitUntil: 'networkidle0', timeout: DETAIL_PAGE_TIMEOUT });
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await page.goto(fullUrl, { waitUntil: 'networkidle2', timeout: DETAIL_PAGE_TIMEOUT });
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     const detailData = await page.evaluate(() => {
       let transmission = null;
@@ -181,7 +181,7 @@ async function fetchListings(): Promise<VehicleData[]> {
     // Определяем количество страниц
     const firstPage = await browser.newPage();
     await firstPage.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     // Находим максимальную страницу из пагинации
     const paginationLinks = await firstPage.$$eval('.pagination a', links => 
@@ -253,7 +253,7 @@ async function fetchListings(): Promise<VehicleData[]> {
           console.log(`  ⚠️  Scroll warning: ${errMsg} - continuing anyway`);
         }
         
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Извлекаем данные о каждом автомобиле
         const pageVehicles = await page.evaluate(() => {
@@ -396,7 +396,7 @@ async function fetchListings(): Promise<VehicleData[]> {
           }
         });
 
-        // Execute with 2 concurrent detail fetches (reduced from 5 to avoid timeout stress)
+        // Execute with 2 concurrent detail fetches (safe limit to avoid browser overload)
         const vehicleResults = await runWithLimit(detailFetchTasks, 2);
         vehicleResults.forEach(result => {
           if (result) {

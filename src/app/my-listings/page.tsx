@@ -44,6 +44,7 @@ function MyListingsContent() {
   const [states, setStates] = useState<State[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [activeListingsCount, setActiveListingsCount] = useState(0) // Track active count for reactivation pricing
 
   // Helper function to translate transmission and fuel type
   const translateVehicleSpec = (value: string): string => {
@@ -96,6 +97,10 @@ function MyListingsContent() {
           image_url: image?.image_url || null,
         } as Listing
       })
+
+      // Count active listings for pricing logic
+      const activeCount = userListings.filter(l => l.is_active).length
+      setActiveListingsCount(activeCount)
 
       setListings(listingsWithImages)
       setLoading(false)
@@ -160,6 +165,56 @@ function MyListingsContent() {
         return
       }
 
+      // Check how many active listings user has (excluding the one being reactivated)
+      const { count: activeCount, error: countError } = await supabase
+        .from('listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', currentUser.id)
+        .eq('is_active', true)
+
+      if (countError) {
+        throw new Error('Failed to check active listings: ' + countError.message)
+      }
+
+      const currentActiveCount = activeCount || 0
+
+      // If no active listings, first reactivation is free
+      if (currentActiveCount === 0) {
+        // Directly activate the listing without payment
+        const { error: updateError } = await supabase
+          .from('listings')
+          .update({ is_active: true, updated_at: new Date().toISOString() })
+          .eq('id', listingId)
+
+        if (updateError) {
+          throw new Error('Failed to reactivate listing: ' + updateError.message)
+        }
+
+        // Create payment record for free reactivation
+        await supabase
+          .from('individual_payments')
+          .insert([
+            {
+              user_id: currentUser.id,
+              amount: 0.00,
+              currency: 'USD',
+              payment_status: 'free_trial', // Free reactivation uses 'free_trial' status
+              payment_method: 'free_trial', // Free reactivation uses 'free_trial' method
+              metadata: {
+                listing_id: listingId,
+                listing_title: listingTitle,
+                info: 'First free reactivation - no active listings',
+              },
+            },
+          ])
+
+        alert('Listing reactivated for free!')
+        // Reload listings
+        window.location.reload()
+        return
+      }
+
+      // If there are active listings, require payment for reactivation
       // Create Stripe checkout session for reactivation
       const response = await fetch('/api/reactivate-listing', {
         method: 'POST',
@@ -185,7 +240,7 @@ function MyListingsContent() {
       }
     } catch (error) {
       console.error('Error reactivating listing:', error)
-      alert('Failed to start reactivation payment. Please try again.')
+      alert('Failed to reactivate listing. Please try again.')
     }
   }
 
@@ -514,7 +569,7 @@ function MyListingsContent() {
                                     <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    Reactivate for $2.50
+                                    {activeListingsCount === 0 ? 'Reactivate Free' : 'Reactivate for $2.50'}
                                   </button>
                                 ) : (
                                   <>

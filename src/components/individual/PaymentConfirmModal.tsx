@@ -1,11 +1,9 @@
-'use client';
-
 import React, { useState } from 'react';
 import { useTranslation } from '@/components/I18nProvider';
 
 // Payment settings
-const IS_FREE_TRIAL = false; // ← ПЛАТНЫЙ РЕЖИМ ($2.50 за 14 дней)
-const LISTING_PRICE = 2.50; // Price in dollars
+// For paid flow - determines if this is first listing (free) or not (paid)
+const LISTING_PRICE = 2.50; // Price in dollars for non-first listings
 // const LISTING_DURATION_DAYS = 14; // Duration in days (currently unused)
 
 interface ListingDetails {
@@ -27,6 +25,7 @@ interface PaymentConfirmModalProps {
   listingDetails: ListingDetails;
   userId: string;
   userEmail?: string;
+  activeListingsCount: number; // Number of currently active listings (0 = first listing)
 }
 
 const PaymentConfirmModal: React.FC<PaymentConfirmModalProps> = ({
@@ -37,17 +36,21 @@ const PaymentConfirmModal: React.FC<PaymentConfirmModalProps> = ({
   listingDetails,
   userId,
   userEmail,
+  activeListingsCount = 0,
 }) => {
   const { t } = useTranslation();
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Determine if this is the first listing (free) or not (paid)
+  const isFreeFirstListing = activeListingsCount === 0;
 
   if (!isOpen) return null;
 
   const handleConfirm = async () => {
     setIsProcessing(true);
     try {
-      if (IS_FREE_TRIAL) {
-        // Free trial: create listing directly with free_trial status
+      if (isFreeFirstListing) {
+        // Free first listing: create listing directly
         await onConfirm();
         onClose();
       } else {
@@ -96,7 +99,7 @@ const PaymentConfirmModal: React.FC<PaymentConfirmModalProps> = ({
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-900">
-              {IS_FREE_TRIAL ? t('confirmListingFree') : t('confirmListingPayment')}
+              {isFreeFirstListing ? t('confirmListingFree') : t('confirmListingPayment')}
             </h2>
             <button
               onClick={onClose}
@@ -112,7 +115,7 @@ const PaymentConfirmModal: React.FC<PaymentConfirmModalProps> = ({
         {/* Content */}
         <div className="px-6 py-4">
           {/* Free Trial Banner */}
-          {IS_FREE_TRIAL && (
+          {isFreeFirstListing && (
             <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-start">
                 <svg
@@ -198,7 +201,7 @@ const PaymentConfirmModal: React.FC<PaymentConfirmModalProps> = ({
                   />
                 </svg>
                 <span className="text-gray-700">
-                  {IS_FREE_TRIAL
+                  {isFreeFirstListing
                     ? t('feature30DaysFree')
                     : t('feature30Days')}
                 </span>
@@ -271,7 +274,7 @@ const PaymentConfirmModal: React.FC<PaymentConfirmModalProps> = ({
           </div>
 
           {/* Payment Amount */}
-          {!IS_FREE_TRIAL && (
+          {!isFreeFirstListing && (
             <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-medium text-gray-900">{t('total')}:</span>
@@ -298,7 +301,7 @@ const PaymentConfirmModal: React.FC<PaymentConfirmModalProps> = ({
               onClick={handleConfirm}
               disabled={isProcessing}
               className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                IS_FREE_TRIAL
+                isFreeFirstListing
                   ? 'bg-green-600 hover:bg-green-700 text-white'
                   : 'bg-blue-600 hover:bg-blue-700 text-white'
               }`}
@@ -326,7 +329,7 @@ const PaymentConfirmModal: React.FC<PaymentConfirmModalProps> = ({
                   </svg>
                   {t('processing')}
                 </span>
-              ) : IS_FREE_TRIAL ? (
+              ) : isFreeFirstListing ? (
                 t('addForFree')
               ) : (
                 t('proceedToPayment')

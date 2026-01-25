@@ -123,6 +123,7 @@ function AddListingContent() {
   
   // Состояние для payment modal
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [activeListingsCount, setActiveListingsCount] = useState(0) // Количество активных объявлений
   
   // Состояние загрузки для предотвращения двойной отправки
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -445,7 +446,7 @@ function AddListingContent() {
 
   // Вынесенная функция для реального добавления объявления (теперь с state_id, city_id/city_name)
   // Основная логика добавления объявления
-  const realAddListing = async () => {
+  const realAddListing = async (isFree: boolean = true) => {
     try {
       if (!userProfile || !('user_id' in userProfile) || !userProfile.user_id) {
         throw new Error('Authentication failed.');
@@ -461,19 +462,21 @@ function AddListingContent() {
       }
     }
     
-    // 1. Создаём payment запись (free trial)
+    // 1. Создаём payment запись с правильным статусом
+    const paymentStatus = isFree ? 'free_trial' : 'pending';
+    const paymentMethod = isFree ? 'free_trial' : 'card';
     const { data: paymentData, error: paymentError } = await supabase
       .from('individual_payments')
       .insert([
         {
           user_id: userProfile.user_id,
-          amount: 10.00,
+          amount: isFree ? 0.00 : 2.50,
           currency: 'USD',
-          payment_status: 'free_trial',
-          payment_method: 'free_trial',
+          payment_status: paymentStatus,
+          payment_method: paymentMethod,
           metadata: {
             listing_title: title,
-            trial_info: 'Launch period - free listing',
+            payment_type: isFree ? 'First listing - FREE' : 'Paid listing - $2.50',
           },
         },
       ])
@@ -636,17 +639,49 @@ function AddListingContent() {
     );
   }
 
-  const handleAgreementAccept = () => {
-    // Закрываем agreement и показываем payment modal
+  // Функция для проверки количества активных объявлений
+  const getActiveListingsCount = async (): Promise<number> => {
+    if (!userProfile || !('user_id' in userProfile) || !userProfile.user_id) {
+      throw new Error('User not authenticated');
+    }
+
+    const { count, error } = await supabase
+      .from('listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userProfile.user_id)
+      .eq('is_active', true);
+
+    if (error) {
+      console.error('Error counting active listings:', error);
+      throw error;
+    }
+
+    return count || 0;
+  };
+
+  const handleAgreementAccept = async () => {
+    // Закрываем agreement 
     setShowAgreement(false);
-    setShowPaymentModal(true);
+    
+    // Проверяем количество активных объявлений
+    try {
+      const activeCount = await getActiveListingsCount();
+      console.log('Active listings count:', activeCount);
+      setActiveListingsCount(activeCount); // Сохраняем для передачи в modal
+      
+      // Показываем payment modal (внутри он решит нужен ли платеж)
+      setShowPaymentModal(true);
+    } catch (error) {
+      console.error('Error checking active listings:', error);
+      setMessage('Error checking your listings. Please try again.');
+    }
   };
 
   const handleConfirmListing = async () => {
-    // Это вызывается из Payment Modal после подтверждения (FREE TRIAL только)
+    // Это вызывается из Payment Modal после подтверждения (первое объявление - бесплатное)
     setShowPaymentModal(false);
     try {
-      await realAddListing();
+      await realAddListing(true); // true = это первое объявление, бесплатное
     } catch (error) {
       console.error('Error in handleConfirmListing:', error);
       setMessage(error instanceof Error ? error.message : 'Failed to create listing. Please try again.');
@@ -896,6 +931,7 @@ function AddListingContent() {
             onCreatePendingListing={createPendingListing}
             userId={(userProfile && 'user_id' in userProfile && userProfile.user_id) || ''}
             userEmail={(userProfile && 'email' in userProfile && userProfile.email) || undefined}
+            activeListingsCount={activeListingsCount}
             listingDetails={{
               title: title,
               make: vehicleType === 'car' 
