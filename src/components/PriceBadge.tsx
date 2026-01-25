@@ -84,20 +84,17 @@ export default function PriceBadge({ brand, model, year, price, className = '' }
     good: {
       bg: 'bg-green-500',
       text: 'text-white',
-      border: 'border-green-500',
-      label: 'GOOD'
+      border: 'border-green-500'
     },
     fair: {
       bg: 'bg-blue-500',
       text: 'text-white',
-      border: 'border-blue-500',
-      label: 'FAIR'
+      border: 'border-blue-500'
     },
     high: {
       bg: 'bg-orange-500',
       text: 'text-white',
-      border: 'border-orange-500',
-      label: 'HIGH'
+      border: 'border-orange-500'
     }
   };
 
@@ -105,10 +102,10 @@ export default function PriceBadge({ brand, model, year, price, className = '' }
 
   return (
     <div
-      className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase tracking-wide ${style.bg} ${style.text} ${className}`}
+      className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${style.bg} ${style.text} ${className}`}
       title={tn(`priceBadge.${badge}Description`)}
     >
-      {style.label}
+      {tn(`priceBadge.${badge}`)}
     </div>
   );
 }

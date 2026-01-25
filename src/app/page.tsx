@@ -190,6 +190,19 @@ export default function Home() {
                               ${item.price.toLocaleString()}
                             </div>
                           )}
+                          
+                          {/* Price Badge - bottom left on image */}
+                          {item.brand && item.model && item.year && item.price && (
+                            <div className="absolute bottom-2 left-2">
+                              <PriceBadge 
+                                brand={item.brand}
+                                model={item.model}
+                                year={item.year}
+                                price={item.price}
+                              />
+                            </div>
+                          )}
+                          
                           {item.is_external && item.external_source === 'mars_dealership' && (
                             <div className="absolute top-2 left-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-full px-2 py-1 text-xs font-bold flex items-center shadow-lg">
                               <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -222,19 +235,6 @@ export default function Home() {
                         {item.title}
                         {item.model ? ` ${item.model}` : ''}
                       </h3>
-
-                      {/* Price Badge */}
-                      {item.brand && item.model && item.year && item.price && (
-                        <div className="mb-2">
-                          <PriceBadge 
-                            brand={item.brand}
-                            model={item.model}
-                            year={item.year}
-                            price={item.price}
-                            className="text-xs"
-                          />
-                        </div>
-                      )}
 
                       {item.year && (
                         <div className="flex items-center text-orange-600 mb-1">
