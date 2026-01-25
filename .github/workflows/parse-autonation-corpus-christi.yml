@@ -2,14 +2,14 @@ name: Parse AutoNation Corpus Christi
 
 on:
   schedule:
-    # Run at 03:45 UTC daily
-    - cron: '45 3 * * *'
+    # Run at 02:00 UTC daily
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 jobs:
   parse:
     runs-on: ubuntu-latest
-    timeout-minutes: 70
+    timeout-minutes: 110
 
     steps:
       - name: Checkout code

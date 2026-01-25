@@ -2,14 +2,14 @@ name: Parse Other Vendors Batch 3
 
 on:
   schedule:
-    # Run at 08:00 UTC daily
-    - cron: '0 8 * * *'
+    # Run at 12:00 UTC daily
+    - cron: '0 12 * * *'
   workflow_dispatch:
 
 jobs:
   parse:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 110
 
     steps:
       - name: Checkout code
