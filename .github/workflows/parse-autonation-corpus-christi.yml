@@ -1,0 +1,38 @@
+name: Parse AutoNation Corpus Christi
+
+on:
+  schedule:
+    # Run at 03:45 UTC daily
+    - cron: '45 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  parse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium for Puppeteer
+        run: npx puppeteer browsers install chrome
+
+      - name: Run AutoNation Corpus Christi parser
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npx tsx scripts/run-autonation-corpus-christi.ts
+
+      - name: Summary
+        if: always()
+        run: echo "✅ AutoNation Corpus Christi parser sync completed!"

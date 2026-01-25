@@ -74,11 +74,11 @@ function normalizeTransmission(transmission: string | null): string | null {
 
 async function fetchDetailPageData(detailUrl: string, browser: Browser): Promise<{ transmission: string | null; engine_size: string | null }> {
   const page = await browser.newPage();
-  const DETAIL_PAGE_TIMEOUT = 20000; // 20 seconds per detail page
+  const DETAIL_PAGE_TIMEOUT = 60000; // 60 seconds per detail page (increased for slow site)
   try {
     const fullUrl = detailUrl.startsWith('http') ? detailUrl : `https://www.autonationusa.com${detailUrl}`;
     
-    await page.goto(fullUrl, { waitUntil: 'networkidle2', timeout: DETAIL_PAGE_TIMEOUT });
+    await page.goto(fullUrl, { waitUntil: 'networkidle0', timeout: DETAIL_PAGE_TIMEOUT });
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     const detailData = await page.evaluate(() => {
@@ -396,8 +396,8 @@ async function fetchListings(): Promise<VehicleData[]> {
           }
         });
 
-        // Execute with 5 concurrent detail fetches
-        const vehicleResults = await runWithLimit(detailFetchTasks, 5);
+        // Execute with 2 concurrent detail fetches (reduced from 5 to avoid timeout stress)
+        const vehicleResults = await runWithLimit(detailFetchTasks, 2);
         vehicleResults.forEach(result => {
           if (result) {
             vehicles.push(result);
